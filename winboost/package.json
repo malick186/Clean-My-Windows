@@ -1,6 +1,6 @@
 {
   "name": "winboost",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Manage, optimize, and supercharge your Windows experience. A free, open-source Windows optimization suite with 12 powerful tools.",
   "author": {
     "name": "malick186",
@@ -55,7 +55,9 @@
       "target": [
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "public/icon.png",
@@ -90,7 +92,8 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.2",
-    "recharts": "^3.10.1"
+    "recharts": "^3.10.1",
+    "systeminformation": "^5.33.1"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",

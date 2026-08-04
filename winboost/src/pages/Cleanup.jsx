@@ -1,46 +1,47 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Brush, Globe, FolderOpen, Database, Download, Recycle, FileText, CheckCircle, Loader, Search, Sparkles } from 'lucide-react'
-
-const categories = [
-  { id: 'temp', icon: FolderOpen, label: 'Temporary Files', desc: 'Windows temp folder, app cache, logs', size: '1.2 GB', detail: 'C:\\Windows\\Temp, %TEMP%' },
-  { id: 'browser', icon: Globe, label: 'Browser Cache', desc: 'Chrome, Edge, Firefox data', size: '856 MB', detail: 'History, cookies, cache' },
-  { id: 'recycle', icon: Recycle, label: 'Recycle Bin', desc: 'Deleted files waiting to be purged', size: '340 MB', detail: 'All drives recycle bins' },
-  { id: 'downloads', icon: Download, label: 'Downloads Folder', desc: 'Old installers and unused files', size: '2.4 GB', detail: 'Files older than 30 days' },
-  { id: 'thumbnails', icon: FileText, label: 'Thumbnail Cache', desc: 'Windows explorer thumbnails', size: '180 MB', detail: 'thumbs.db, icon cache' },
-  { id: 'logs', icon: Database, label: 'System Logs', desc: 'Event logs and crash dumps', size: '520 MB', detail: 'Event Viewer, .dmp files' },
-]
+import { scanCleanup, runCleanup } from '../lib/api'
 
 export default function Cleanup() {
+  const [categories, setCategories] = useState([])
   const [scanning, setScanning] = useState(false)
   const [cleaning, setCleaning] = useState(false)
   const [selected, setSelected] = useState(new Set())
   const [progress, setProgress] = useState(0)
   const [stage, setStage] = useState('')
   const [done, setDone] = useState(false)
+  const [freed, setFreed] = useState(0)
+
+  useEffect(() => {
+    scanCleanup().then(data => setCategories(data))
+  }, [])
+
+  const catMap = Object.fromEntries(categories.map(c => [c.id, { icon: Globe, size: c.size }]))
+  const iconFor = (id) => {
+    const m = { temp: FolderOpen, browser: Globe, recycle: Recycle, downloads: Download, thumbnails: FileText, logs: Database }
+    return m[id] || FolderOpen
+  }
 
   const toggle = (id) => { const n = new Set(selected); n.has(id) ? n.delete(id) : n.add(id); setSelected(n) }
   const toggleAll = () => setSelected(selected.size === categories.length ? new Set() : new Set(categories.map(c => c.id)))
-  const totalSel = [...selected].reduce((s, id) => s + parseFloat(categories.find(c => c.id === id).size), 0)
+  const totalSel = [...selected].reduce((s, id) => s + (categories.find(c => c.id === id)?.size || 0), 0)
 
-  const scan = () => {
-    setScanning(true); setDone(false); setProgress(0)
-    const stages = ['Scanning temp folders...', 'Checking browser caches...', 'Analyzing downloads...', 'Inspecting system logs...']
-    let p = 0, si = 0
-    const iv = setInterval(() => {
-      p += 3.5; const ni = Math.floor(p / 25)
-      if (ni > si) { si = ni; setStage(stages[Math.min(si, stages.length - 1)]) }
-      if (p >= 100) { p = 100; clearInterval(iv); setScanning(false) }
-      setProgress(Math.round(p))
-    }, 50)
+  const scan = async () => {
+    setScanning(true); setDone(false); setProgress(0); setStage('Scanning temp folders...')
+    const data = await scanCleanup()
+    setCategories(data)
+    setScanning(false); setProgress(100)
   }
 
-  const clean = () => {
+  const clean = async () => {
     setCleaning(true); setProgress(0)
-    let p = 0
-    const iv = setInterval(() => {
-      p += 3; if (p >= 100) { p = 100; clearInterval(iv); setCleaning(false); setDone(true); setSelected(new Set()) }
-      setProgress(Math.round(p))
-    }, 50)
+    const result = await runCleanup([...selected], ({ percent, stage: st }) => {
+      setProgress(percent); if (st) setStage(st)
+    })
+    setFreed(result.freed)
+    setCleaning(false); setDone(true); setSelected(new Set())
+    const updated = await scanCleanup()
+    setCategories(updated)
   }
 
   return (
@@ -60,7 +61,7 @@ export default function Cleanup() {
           <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
             {scanning && <Loader size={16} className="animate-spin text-blue-500" />}
             {done && <CheckCircle size={16} className="text-[var(--green)]" />}
-            <span>{scanning ? stage : done ? 'Cleanup complete!' : `${categories.length} categories found`}</span>
+            <span>{scanning ? stage : done ? 'Cleanup complete!' : `${categories.length} categories`}</span>
           </div>
           <div className="flex gap-2">
             <button onClick={scan} disabled={scanning || cleaning} className="btn btn-secondary btn-sm">
@@ -85,21 +86,22 @@ export default function Cleanup() {
         {done && (
           <div className="mb-5 p-3 rounded-xl flex items-center gap-2 text-sm font-medium"
             style={{ background: 'var(--green-bg)', color: 'var(--green)' }}>
-            <CheckCircle size={16} /> Freed {totalSel.toFixed(1)} GB of disk space
+            <CheckCircle size={16} /> Freed {freed.toFixed(1)} GB of disk space
           </div>
         )}
 
         <div className="flex items-center justify-between mb-3 text-xs text-[var(--text-secondary)]">
           <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input type="checkbox" className="chk" checked={selected.size === categories.length} onChange={toggleAll} />
+            <input type="checkbox" className="chk" checked={selected.size === categories.length && categories.length > 0} onChange={toggleAll} />
             Select All
           </label>
           <span>{selected.size} of {categories.length}</span>
         </div>
 
         <div className="space-y-1.5">
-          {categories.map(({ id, icon: Icon, label, desc, size, detail }) => {
+          {categories.map(({ id, name: label, desc, size, path: detail, files }) => {
             const sel = selected.has(id)
+            const Icon = iconFor(id)
             return (
               <div key={id} onClick={() => toggle(id)}
                 className={`flex items-center gap-4 p-3.5 rounded-xl cursor-pointer transition-all border ${
@@ -112,9 +114,9 @@ export default function Cleanup() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-semibold">{label}</div>
-                  <div className="text-xs text-[var(--text-tertiary)] mt-0.5">{desc} &middot; {detail}</div>
+                  <div className="text-xs text-[var(--text-tertiary)] mt-0.5">{desc} &middot; {files} files &middot; {detail.slice(0, 60)}</div>
                 </div>
-                <div className="text-sm font-semibold text-[var(--text-secondary)] shrink-0">{size}</div>
+                <div className="text-sm font-semibold text-[var(--text-secondary)] shrink-0">{size.toFixed(1)} GB</div>
               </div>
             )
           })}

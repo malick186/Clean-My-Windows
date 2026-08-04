@@ -1,31 +1,44 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Power, Zap, Timer, Info } from 'lucide-react'
-
-const programs = [
-  { name: 'Microsoft OneDrive', pub: 'Microsoft', impact: 'High', on: true, delay: '0s' },
-  { name: 'Spotify', pub: 'Spotify AB', impact: 'Medium', on: true, delay: '3s' },
-  { name: 'Discord', pub: 'Discord Inc.', impact: 'Medium', on: false, delay: '0s' },
-  { name: 'Adobe Creative Cloud', pub: 'Adobe Inc.', impact: 'High', on: true, delay: '8s' },
-  { name: 'Steam Client', pub: 'Valve Corp.', impact: 'Low', on: false, delay: '0s' },
-  { name: 'Java Update Scheduler', pub: 'Oracle', impact: 'Low', on: true, delay: '0s' },
-  { name: 'Microsoft Teams', pub: 'Microsoft', impact: 'High', on: true, delay: '5s' },
-  { name: 'Dropbox', pub: 'Dropbox Inc.', impact: 'Medium', on: false, delay: '0s' },
-  { name: 'Google Drive', pub: 'Google LLC', impact: 'Medium', on: true, delay: '2s' },
-  { name: 'Cortana', pub: 'Microsoft', impact: 'Low', on: false, delay: '0s' },
-]
+import { listStartup, toggleStartup } from '../lib/api'
 
 const impactCls = { High: 'badge-red', Medium: 'badge-orange', Low: 'badge-green' }
 
 export default function StartupManager() {
-  const [progs, setProgs] = useState(programs)
+  const [progs, setProgs] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  const toggle = (i) => {
-    const n = [...progs]; n[i] = { ...n[i], on: !n[i].on }; setProgs(n)
+  useEffect(() => {
+    listStartup().then(data => { setProgs(data); setLoading(false) })
+  }, [])
+
+  const toggle = async (i) => {
+    const p = progs[i]
+    try { await toggleStartup(p.name, !p.enabled) } catch (_) {}
+    const n = [...progs]; n[i] = { ...n[i], enabled: !n[i].enabled }; setProgs(n)
   }
 
-  const on = progs.filter(p => p.on)
+  const on = progs.filter(p => p.enabled)
   const score = on.reduce((a, p) => a + (p.impact === 'High' ? 3 : p.impact === 'Medium' ? 2 : 1), 0)
   const boot = (8 + score * 1.2).toFixed(1)
+
+  if (loading) {
+    return (
+      <div className="anim-fade-up space-y-6">
+        <div>
+          <div className="flex items-center gap-3 mb-1">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'var(--orange-bg)' }}>
+              <Power size={20} color="#ff9500" />
+            </div>
+            <h1 className="text-2xl font-bold tracking-[-0.02em]">Startup Manager</h1>
+          </div>
+        </div>
+        <div className="card p-10 text-center text-sm text-[var(--text-tertiary)]">
+          Scanning startup entries...
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="anim-fade-up space-y-6">
@@ -60,14 +73,21 @@ export default function StartupManager() {
           <div className="col-span-2">Impact</div>
           <div className="col-span-2">Status</div>
         </div>
-        {progs.map((p, i) => (
-          <div key={p.name} className="grid grid-cols-12 gap-4 px-5 py-3.5 items-center hover:bg-[var(--bg-secondary)] transition-colors border-b border-[var(--border)]">
-            <div className={`col-span-5 text-sm font-medium ${p.on ? '' : 'text-[var(--text-tertiary)]'}`}>{p.name}</div>
-            <div className="col-span-3 text-xs text-[var(--text-tertiary)]">{p.pub}</div>
-            <div className="col-span-2"><span className={`badge ${impactCls[p.impact]}`}>{p.impact}</span></div>
-            <div className="col-span-2"><div onClick={() => toggle(i)} className={`toggle ${p.on ? 'on' : ''}`} /></div>
-          </div>
-        ))}
+        {progs.length === 0 ? (
+          <div className="text-center py-10 text-sm text-[var(--text-tertiary)]">No startup entries found</div>
+        ) : (
+          progs.map((p, i) => (
+            <div key={p.name} className="grid grid-cols-12 gap-4 px-5 py-3.5 items-center hover:bg-[var(--bg-secondary)] transition-colors border-b border-[var(--border)]">
+              <div className={`col-span-5 text-sm font-medium ${p.enabled ? '' : 'text-[var(--text-tertiary)]'}`}>
+                <div className="truncate max-w-[200px]">{p.name}</div>
+                {p.path && <div className="text-[11px] text-[var(--text-tertiary)] truncate max-w-[200px]">{p.path}</div>}
+              </div>
+              <div className="col-span-3 text-xs text-[var(--text-tertiary)]">{p.pub}</div>
+              <div className="col-span-2"><span className={`badge ${impactCls[p.impact] || 'badge-blue'}`}>{p.impact}</span></div>
+              <div className="col-span-2"><div onClick={() => toggle(i)} className={`toggle ${p.enabled ? 'on' : ''}`} /></div>
+            </div>
+          ))
+        )}
       </div>
 
       <div className="p-4 rounded-xl flex items-start gap-3" style={{ background: 'var(--blue-bg)' }}>

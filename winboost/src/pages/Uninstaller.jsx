@@ -1,18 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Trash2, Package, Search, Loader, CheckCircle, Calendar, HardDrive } from 'lucide-react'
+import { listApps, uninstallApp } from '../lib/api'
 
-const apps = [
-  { name: 'Adobe Creative Cloud', pub: 'Adobe Inc.', size: '2.4 GB', date: '2024-03-12', leftovers: 340, color: '#007aff' },
-  { name: 'Spotify', pub: 'Spotify AB', size: '180 MB', date: '2024-06-22', leftovers: 45, color: '#34c759' },
-  { name: 'Microsoft Teams', pub: 'Microsoft', size: '520 MB', date: '2023-11-05', leftovers: 128, color: '#5856d6' },
-  { name: 'Discord', pub: 'Discord Inc.', size: '210 MB', date: '2024-01-18', leftovers: 62, color: '#af52de' },
-  { name: 'Java Runtime 8', pub: 'Oracle', size: '310 MB', date: '2022-09-30', leftovers: 89, color: '#ff9500' },
-  { name: 'Node.js v18', pub: 'OpenJS Foundation', size: '85 MB', date: '2024-04-10', leftovers: 28, color: '#34c759' },
-  { name: 'Slack', pub: 'Slack Technologies', size: '380 MB', date: '2023-08-15', leftovers: 112, color: '#ff3b30' },
-  { name: 'VS Code', pub: 'Microsoft', size: '420 MB', date: '2024-05-02', leftovers: 56, color: '#007aff' },
-]
+const COLORS = ['#007aff', '#34c759', '#5856d6', '#af52de', '#ff9500', '#ff3b30']
 
 export default function Uninstaller() {
+  const [apps, setApps] = useState([])
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(null)
   const [uninstalling, setUninstalling] = useState(false)
@@ -20,17 +13,21 @@ export default function Uninstaller() {
   const [done, setDone] = useState(false)
   const [removed, setRemoved] = useState(new Set())
 
-  const filtered = apps.filter(a => a.name.toLowerCase().includes(search.toLowerCase()) && !removed.has(a.name))
-  const total = apps.filter(a => !removed.has(a.name)).reduce((s, a) => s + (parseFloat(a.size) || 0.4), 0)
+  useEffect(() => { listApps().then(setApps) }, [])
 
-  const uninstall = (app) => {
+  const filtered = apps.filter(a => a.name.toLowerCase().includes(search.toLowerCase()) && !removed.has(a.name))
+  const total = apps.filter(a => !removed.has(a.name)).reduce((s, a) => s + (a.size || 0.4), 0)
+
+  const uninstall = async (app) => {
     setSelected(app); setUninstalling(true); setDone(false); setProgress(0)
-    let p = 0
-    const iv = setInterval(() => {
-      p += Math.random() * 5 + 2
-      if (p >= 100) { p = 100; clearInterval(iv); setUninstalling(false); setDone(true); setRemoved(prev => new Set([...prev, app.name])) }
-      setProgress(Math.round(p))
-    }, 80)
+    try {
+      await uninstallApp(app.name, ({ percent }) => setProgress(percent))
+      setRemoved(prev => new Set([...prev, app.name]))
+      setDone(true)
+    } catch (_) {
+      setDone(true)
+    }
+    setUninstalling(false); setProgress(100)
   }
 
   return (
@@ -47,9 +44,9 @@ export default function Uninstaller() {
 
       <div className="grid grid-cols-3 gap-4">
         {[
-          { icon: Package, val: filtered.length, sub: 'Apps installed', color: '#ff9500' },
+          { icon: Package, val: apps.length, sub: 'Apps detected', color: '#ff9500' },
           { icon: HardDrive, val: `${total.toFixed(1)} GB`, sub: 'Total size', color: '#007aff' },
-          { icon: Search, val: apps.reduce((s, a) => s + a.leftovers, 0), sub: 'Leftover files', color: '#af52de' },
+          { icon: Search, val: apps.reduce((s, a) => s + (a.leftovers || 0), 0), sub: 'Leftover files', color: '#af52de' },
         ].map(s => (
           <div key={s.sub} className="card p-4">
             <s.icon size={18} style={{ color: s.color }} className="mb-2" />
@@ -62,7 +59,7 @@ export default function Uninstaller() {
       {uninstalling && selected && (
         <div className="card p-5 space-y-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm" style={{ background: selected.color }}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm" style={{ background: COLORS[Math.floor(Math.random() * COLORS.length)] }}>
               {selected.name[0]}
             </div>
             <div className="flex-1">
@@ -80,7 +77,7 @@ export default function Uninstaller() {
           <CheckCircle size={18} color="var(--green)" />
           <div>
             <div className="font-semibold text-sm">{selected.name} removed</div>
-            <div className="text-xs" style={{ color: 'var(--green)' }}>{selected.size} freed + {selected.leftovers} leftovers cleaned</div>
+            <div className="text-xs" style={{ color: 'var(--green)' }}>{(selected.size || 0).toFixed(1)} GB freed + {selected.leftovers || 0} leftovers cleaned</div>
           </div>
         </div>
       )}
@@ -95,22 +92,29 @@ export default function Uninstaller() {
         <div className="divide-y divide-[var(--border)]">
           {filtered.map((app, i) => (
             <div key={app.name} className="flex items-center gap-4 px-5 py-3.5 hover:bg-[var(--bg-secondary)] transition-colors">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0" style={{ background: app.color }}>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0" style={{ background: COLORS[i % COLORS.length] }}>
                 {app.name[0]}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold">{app.name}</div>
-                <div className="text-xs text-[var(--text-tertiary)] mt-0.5">{app.pub} &middot; {app.size}</div>
-                <div className="flex items-center gap-3 mt-1">
-                  <span className="text-[11px] text-[var(--text-tertiary)] flex items-center gap-1"><Calendar size={10} />{app.date}</span>
-                  <span className="text-[11px] flex items-center gap-1" style={{ color: 'var(--orange)' }}><Search size={10} />{app.leftovers} leftovers</span>
-                </div>
+                <div className="text-xs text-[var(--text-tertiary)] mt-0.5">{app.pub} &middot; {(app.size || 0).toFixed(1)} GB</div>
+                {app.date && (
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className="text-[11px] text-[var(--text-tertiary)] flex items-center gap-1"><Calendar size={10} />{app.date}</span>
+                    <span className="text-[11px] flex items-center gap-1" style={{ color: 'var(--orange)' }}><Search size={10} />{app.leftovers || 0} leftovers</span>
+                  </div>
+                )}
               </div>
               <button onClick={() => uninstall(app)} className="btn btn-secondary btn-sm">
                 <Trash2 size={13} /> Uninstall
               </button>
             </div>
           ))}
+          {filtered.length === 0 && (
+            <div className="text-center py-10 text-sm text-[var(--text-tertiary)]">
+              {apps.length === 0 ? 'Scanning for installed apps...' : 'No apps match your search'}
+            </div>
+          )}
         </div>
       </div>
     </div>

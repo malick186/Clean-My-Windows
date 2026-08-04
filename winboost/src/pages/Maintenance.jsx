@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Wrench, CheckCircle, Loader, Play, RefreshCw, HardDrive, Globe, Database, Monitor, FileText, Trash2, Zap, Search } from 'lucide-react'
+import { Wrench, CheckCircle, Loader, Play, RefreshCw, HardDrive, Globe, Database, Monitor, FileText, Trash2, Zap, Search, AlertTriangle } from 'lucide-react'
+import { runMaintenanceTask, runAllMaintenanceTasks } from '../lib/api'
 
 const tasks = [
   { id: 'flushdns', icon: Globe, label: 'Flush DNS Cache', desc: 'Clear DNS resolver cache', cat: 'Network', risk: 'Low' },
@@ -19,29 +20,38 @@ const tasks = [
 export default function Maintenance() {
   const [running, setRunning] = useState(null)
   const [progress, setProgress] = useState(0)
+  const [stage, setStage] = useState('')
   const [done, setDone] = useState(new Set())
+  const [errors, setErrors] = useState(new Set())
   const [selected, setSelected] = useState(new Set(tasks.map(t => t.id)))
   const [batch, setBatch] = useState(false)
 
   const toggle = (id) => { const n = new Set(selected); n.has(id) ? n.delete(id) : n.add(id); setSelected(n) }
   const toggleAll = () => setSelected(selected.size === tasks.length ? new Set() : new Set(tasks.map(t => t.id)))
 
-  const runOne = (id) => {
-    setRunning(id); setProgress(0)
-    const t = tasks.find(x => x.id === id)
-    let p = 0
-    const iv = setInterval(() => { p += Math.random() * 4 + 2; if (p >= 100) { p = 100; clearInterval(iv); setRunning(null); setDone(prev => new Set([...prev, id])) } setProgress(Math.round(p)) }, t.risk === 'Medium' ? 120 : 70)
+  const runOne = async (id) => {
+    setRunning(id); setProgress(0); setStage('Running...')
+    const result = await runMaintenanceTask(id, ({ percent, stage: st }) => {
+      setProgress(percent)
+      if (st) setStage(st)
+    })
+    setRunning(null)
+    if (result?.success) setDone(prev => new Set([...prev, id]))
+    else setErrors(prev => new Set([...prev, id]))
   }
 
   const runAll = async () => {
     setBatch(true)
-    for (const id of selected) {
-      setRunning(id); setProgress(0)
-      await new Promise(res => {
-        const t = tasks.find(x => x.id === id)
-        let p = 0
-        const iv = setInterval(() => { p += Math.random() * 4 + 2; if (p >= 100) { p = 100; clearInterval(iv); setDone(prev => new Set([...prev, id])); res() } setProgress(Math.round(p)) }, t.risk === 'Medium' ? 120 : 70)
-      })
+    const results = await runAllMaintenanceTasks([...selected], ({ taskId, percent, stage: st }) => {
+      setRunning(taskId)
+      setProgress(percent)
+      if (st) setStage(st)
+    })
+    if (results?.results) {
+      for (const r of results.results) {
+        if (r.success) setDone(prev => new Set([...prev, r.taskId]))
+        else setErrors(prev => new Set([...prev, r.taskId]))
+      }
     }
     setRunning(null); setBatch(false)
   }
@@ -64,7 +74,7 @@ export default function Maintenance() {
           <span className="text-[var(--text-secondary)]">Select All ({selected.size}/{tasks.length})</span>
         </label>
         <div className="flex gap-2">
-          <button onClick={() => setDone(new Set())} className="btn btn-secondary btn-sm"><RefreshCw size={13} /> Reset</button>
+          <button onClick={() => { setDone(new Set()); setErrors(new Set()) }} className="btn btn-secondary btn-sm"><RefreshCw size={13} /> Reset</button>
           <button onClick={runAll} disabled={batch || selected.size === 0} className="btn btn-primary btn-sm">
             {batch ? <Loader size={13} className="animate-spin" /> : <Play size={13} />}
             Run All Selected
@@ -79,7 +89,7 @@ export default function Maintenance() {
               <Loader size={16} className="animate-spin" style={{ color: 'var(--accent)' }} />
               <div>
                 <div className="text-sm font-semibold">{tasks.find(t => t.id === running)?.label}</div>
-                <div className="text-xs text-[var(--text-tertiary)]">{tasks.find(t => t.id === running)?.desc}</div>
+                <div className="text-xs text-[var(--text-tertiary)]">{stage}</div>
               </div>
             </div>
             <span className="text-sm font-bold text-gradient">{progress}%</span>
@@ -92,17 +102,18 @@ export default function Maintenance() {
         {tasks.map(t => {
           const isRunning = running === t.id
           const isDone = done.has(t.id)
+          const isErr = errors.has(t.id)
           const isSel = selected.has(t.id)
           const riskCls = t.risk === 'Medium' ? 'badge-orange' : 'badge-green'
 
           return (
             <div key={t.id} className={`flex items-center gap-4 px-5 py-3.5 border-b border-[var(--border)] transition-colors ${
-              isRunning ? 'bg-[#0071e3]/[0.02]' : isDone ? 'bg-[#34c759]/[0.02]' : 'hover:bg-[var(--bg-secondary)]'
+              isRunning ? 'bg-[#0071e3]/[0.02]' : isDone ? 'bg-[#34c759]/[0.02]' : isErr ? 'bg-[#ff3b30]/[0.02]' : 'hover:bg-[var(--bg-secondary)]'
             }`}>
               <input type="checkbox" className="chk" checked={isSel} onChange={() => toggle(t.id)} disabled={isRunning} />
               <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                style={{ background: isDone ? 'var(--green-bg)' : isRunning ? 'var(--blue-bg)' : 'var(--bg-secondary)' }}>
-                {isDone ? <CheckCircle size={17} color="var(--green)" /> : <t.icon size={17} style={{ color: isRunning ? 'var(--blue)' : 'var(--text-tertiary)' }} />}
+                style={{ background: isDone ? 'var(--green-bg)' : isErr ? 'var(--red-bg)' : isRunning ? 'var(--blue-bg)' : 'var(--bg-secondary)' }}>
+                {isDone ? <CheckCircle size={17} color="var(--green)" /> : isErr ? <AlertTriangle size={17} color="#ff3b30" /> : <t.icon size={17} style={{ color: isRunning ? 'var(--blue)' : 'var(--text-tertiary)' }} />}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold">{t.label}</div>
@@ -112,6 +123,7 @@ export default function Maintenance() {
                 <span className={`badge ${riskCls}`}>{t.risk}</span>
                 <span className="text-[11px] text-[var(--text-tertiary)]">{t.cat}</span>
                 {isDone ? <span className="badge badge-green">Done</span> :
+                 isErr ? <span className="badge badge-red">Error</span> :
                  isRunning ? <Loader size={14} className="animate-spin" style={{ color: 'var(--accent)' }} /> :
                  <button onClick={() => runOne(t.id)} className="btn btn-secondary btn-sm"><Play size={11} /> Run</button>}
               </div>
@@ -123,7 +135,7 @@ export default function Maintenance() {
       {done.size > 0 && (
         <div className="p-4 rounded-xl text-center" style={{ background: 'var(--green-bg)' }}>
           <CheckCircle size={18} color="var(--green)" className="inline mr-2 -mt-0.5" />
-          <span className="text-sm font-medium" style={{ color: 'var(--green)' }}>{done.size} task{done.size > 1 ? 's' : ''} completed</span>
+          <span className="text-sm font-medium" style={{ color: 'var(--green)' }}>{done.size} task{done.size > 1 ? 's' : ''} completed{errors.size > 0 ? `, ${errors.size} failed` : ''}</span>
         </div>
       )}
     </div>

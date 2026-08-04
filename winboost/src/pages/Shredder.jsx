@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Shredder as SIcon, File, FolderOpen, Loader, CheckCircle, AlertTriangle } from 'lucide-react'
+import { pickFilesToShred, shredFiles } from '../lib/api'
 
 const methods = [
   { id: 1, label: 'Single Pass', desc: 'Overwrite once with zeros', speed: 'Fast', sec: 'Basic' },
@@ -15,26 +16,25 @@ export default function Shredder() {
   const [progress, setProgress] = useState(0)
   const [log, setLog] = useState([])
 
-  const add = (type) => {
-    const names = type === 'file' ? ['tax_return_2023.pdf', 'passwords_backup.txt', 'contract_draft.docx'] : ['C:\\Users\\...\\OldProject\\']
-    const name = names[Math.floor(Math.random() * names.length)]
-    const size = `${(Math.random() * 500 + 15).toFixed(1)} MB`
-    setFiles(prev => [...prev, { id: Date.now(), name, size, type }])
+  const add = async (type) => {
+    const picked = await pickFilesToShred()
+    if (picked.length > 0) {
+      setFiles(prev => [...prev, ...picked.map(f => ({ ...f, type: type || 'file' }))])
+    }
   }
-  const rm = (id) => setFiles(prev => prev.filter(f => f.id !== id))
 
-  const shred = () => {
+  const rm = (id) => setFiles(prev => prev.filter(f => f.name !== id && f.path !== id))
+
+  const shred = async () => {
     setShredding(true); setProgress(0); setLog([])
-    let p = 0
-    const iv = setInterval(() => {
-      p += 2.5
-      if (p % 20 < 2.5 && files.length > 0) {
-        const f = files[Math.floor(Math.random() * files.length)]
-        setLog(prev => [...prev, `${f.name} - pass ${Math.min(Math.floor(p / (100 / nPass)) + 1, nPass)}/${nPass}`])
-      }
-      if (p >= 100) { p = 100; clearInterval(iv); setShredding(false); setFiles([]) }
-      setProgress(Math.round(p))
-    }, 100)
+    const filePaths = files.map(f => f.path || f.name)
+    try {
+      await shredFiles(filePaths, nPass, (data) => {
+        if (data.percent !== undefined) setProgress(data.percent)
+        if (data.log) setLog(prev => [...prev, data.log])
+      })
+    } catch (_) {}
+    setShredding(false); setFiles([]); setProgress(100)
   }
 
   return (
@@ -62,7 +62,7 @@ export default function Shredder() {
         <div className="grid grid-cols-4 gap-3">
           {methods.map(m => (
             <button key={m.id} onClick={() => setNPass(m.id)}
-              className={`p-4 rounded-xl border text-left transition-all ${
+              className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
                 nPass === m.id ? 'border-[#0071e3]/30 bg-[#0071e3]/[0.04]' : 'border-[var(--border)] hover:border-[var(--border-hover)]'
               }`}>
               <div className="font-semibold text-sm">{m.label}</div>
@@ -80,28 +80,27 @@ export default function Shredder() {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold">Files to Shred</h3>
           <div className="flex gap-2">
-            <button onClick={() => add('file')} className="btn btn-secondary btn-sm"><File size={13} /> Add File</button>
-            <button onClick={() => add('folder')} className="btn btn-secondary btn-sm"><FolderOpen size={13} /> Add Folder</button>
+            <button onClick={() => add('file')} className="btn btn-secondary btn-sm"><File size={13} /> Select Files</button>
           </div>
         </div>
 
         {files.length === 0 ? (
           <div className="text-center py-10 text-[var(--text-tertiary)] text-sm">
             <SIcon size={36} className="mx-auto mb-3 opacity-15" />
-            Add files or folders to securely shred
+            Add files to securely shred
           </div>
         ) : (
           <div className="space-y-2">
-            {files.map(f => (
-              <div key={f.id} className="flex items-center justify-between p-3 rounded-xl bg-[var(--bg-secondary)]">
+            {files.map((f, i) => (
+              <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-[var(--bg-secondary)]">
                 <div className="flex items-center gap-3">
-                  {f.type === 'file' ? <File size={16} className="text-[var(--text-tertiary)]" /> : <FolderOpen size={16} style={{ color: 'var(--orange)' }} />}
+                  <File size={16} className="text-[var(--text-tertiary)]" />
                   <div>
-                    <div className="text-sm font-medium">{f.name}</div>
-                    <div className="text-xs text-[var(--text-tertiary)]">{f.size}</div>
+                    <div className="text-sm font-medium truncate max-w-[400px]">{f.name}</div>
+                    <div className="text-xs text-[var(--text-tertiary)]">{f.size !== undefined ? `${f.size} MB` : ''}</div>
                   </div>
                 </div>
-                <button onClick={() => rm(f.id)} className="text-xs text-[var(--text-tertiary)] hover:text-[var(--red)] transition-colors">Remove</button>
+                <button onClick={() => rm(f.path || f.name)} className="text-xs text-[var(--text-tertiary)] hover:text-[var(--red)] transition-colors">Remove</button>
               </div>
             ))}
           </div>
@@ -116,7 +115,7 @@ export default function Shredder() {
           </div>
           <div className="progress"><div className="progress-fill" style={{ width: `${progress}%` }} /></div>
           <div className="max-h-28 overflow-y-auto space-y-1">
-            {log.slice(-4).map((l, i) => (
+            {log.slice(-5).map((l, i) => (
               <div key={i} className="text-xs text-[var(--text-tertiary)] flex items-center gap-1.5">
                 <CheckCircle size={10} color="var(--green)" /> {l}
               </div>
