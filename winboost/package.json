@@ -1,7 +1,34 @@
 {
   "name": "winboost",
-  "private": true,
   "version": "1.0.0",
+  "description": "Manage, optimize, and supercharge your Windows experience. A free, open-source Windows optimization suite with 12 powerful tools.",
+  "author": {
+    "name": "malick186",
+    "url": "https://github.com/malick186"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/malick186/Clean-My-Windows",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/malick186/Clean-My-Windows.git",
+    "directory": "winboost"
+  },
+  "bugs": {
+    "url": "https://github.com/malick186/Clean-My-Windows/issues"
+  },
+  "keywords": [
+    "windows",
+    "optimizer",
+    "cleaner",
+    "performance",
+    "privacy",
+    "maintenance",
+    "desktop-app",
+    "electron",
+    "react",
+    "system-utility"
+  ],
+  "private": true,
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -33,26 +60,29 @@
           ]
         }
       ],
-      "icon": "public/favicon.svg"
+      "icon": "public/icon.png"
     },
     "nsis": {
       "oneClick": false,
+      "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "WinBoost"
+      "shortcutName": "WinBoost",
+      "installerIcon": "public/icon.png",
+      "uninstallerIcon": "public/icon.png"
     },
     "linux": {
       "target": [
         "AppImage"
       ],
-      "icon": "public/favicon.svg"
+      "icon": "public/icon.png"
     },
     "mac": {
       "target": [
         "dmg"
       ],
-      "icon": "public/favicon.svg"
+      "icon": "public/icon.png"
     }
   },
   "dependencies": {
@@ -72,6 +102,7 @@
     "electron": "^43.2.0",
     "electron-builder": "^26.15.3",
     "oxlint": "^1.75.0",
+    "sharp": "^0.35.3",
     "vite": "^8.2.0",
     "wait-on": "^9.1.0"
   }
