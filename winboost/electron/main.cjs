@@ -1,6 +1,5 @@
 const { app, BrowserWindow, shell } = require('electron')
 const path = require('path')
-const fs = require('fs')
 
 let mainWindow
 
@@ -11,12 +10,11 @@ function createWindow() {
     minWidth: 960,
     minHeight: 640,
     title: 'WinBoost - Windows Optimizer',
-    icon: path.join(__dirname, '../public/favicon.svg'),
-    backgroundColor: '#0b0b14',
-    frame: false,
-    titleBarStyle: 'hidden',
+    icon: path.join(__dirname, '../public/icon.png'),
+    backgroundColor: '#f5f5f7',
+    frame: true,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
     },

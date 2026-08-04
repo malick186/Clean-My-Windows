@@ -54,13 +54,12 @@
     "win": {
       "target": [
         {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
+          "target": "portable",
+          "arch": ["x64"]
         }
       ],
-      "icon": "public/icon.png"
+      "icon": "public/icon.png",
+      "signAndEditExecutable": false
     },
     "nsis": {
       "oneClick": false,
@@ -70,7 +69,8 @@
       "createStartMenuShortcut": true,
       "shortcutName": "WinBoost",
       "installerIcon": "public/icon.png",
-      "uninstallerIcon": "public/icon.png"
+      "uninstallerIcon": "public/icon.png",
+      "runAfterFinish": true
     },
     "linux": {
       "target": [
