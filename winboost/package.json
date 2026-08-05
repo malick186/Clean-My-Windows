@@ -1,7 +1,7 @@
 {
   "name": "winboost",
-  "version": "2.0.0",
-  "description": "Manage, optimize, and supercharge your Windows experience. A free, open-source Windows optimization suite with 12 powerful tools.",
+  "version": "2.1.0",
+  "description": "A local-first Windows maintenance suite with verified system actions, recovery safeguards, Microsoft Defender integration, and a polished animated interface.",
   "author": {
     "name": "malick186",
     "url": "https://github.com/malick186"

@@ -1,96 +1,75 @@
-import { useState, useEffect } from 'react'
-import { Search, HardDrive, Calendar, FileVideo, FileImage, FileArchive, File } from 'lucide-react'
-import { scanLargeFiles } from '../lib/api'
+import { useCallback, useEffect, useState } from 'react'
+import { AlertTriangle, Calendar, ExternalLink, File, FileArchive, FileImage, FileVideo, HardDrive, Loader, RotateCcw, Search, Trash2 } from 'lucide-react'
+import { revealLargeFile, scanLargeFiles, trashLargeFile } from '../lib/api'
 
-const icons = { video: FileVideo, image: FileImage, archive: FileArchive, disk: HardDrive, cache: File, system: File, cloud: File, audio: FileVideo }
+const icons = { videos: FileVideo, images: FileImage, archives: FileArchive, disk: HardDrive, other: File, music: File }
 
 export default function LargeFiles() {
   const [files, setFiles] = useState([])
   const [loading, setLoading] = useState(true)
   const [minSize, setMinSize] = useState(100)
+  const [progress, setProgress] = useState(0)
+  const [stage, setStage] = useState('')
+  const [meta, setMeta] = useState({ root: '', scannedItems: 0, limited: false })
+  const [busy, setBusy] = useState(null)
+  const [error, setError] = useState('')
 
-  const fetchFiles = async (size) => {
-    setLoading(true)
-    const results = await scanLargeFiles(size)
-    setFiles(results)
-    setLoading(false)
+  const fetchFiles = useCallback(async size => {
+    setLoading(true); setError(''); setProgress(0)
+    try {
+      const result = await scanLargeFiles(size, data => { setProgress(data.percent || 0); if (data.stage) setStage(data.stage) })
+      setFiles(result.files || []); setMeta(result)
+    } catch (err) { setError(err.message) }
+    finally { setLoading(false) }
+  }, [])
+
+  useEffect(() => { fetchFiles(100) }, [fetchFiles])
+
+  const trash = async file => {
+    setBusy(file.id); setError('')
+    try { await trashLargeFile(file.id); setFiles(items => items.filter(item => item.id !== file.id)) }
+    catch (err) { setError(err.message) }
+    finally { setBusy(null) }
   }
 
-  useEffect(() => { fetchFiles(minSize) }, [])
-
-  const total = files.reduce((s, f) => s + f.size, 0)
+  const total = files.reduce((sum, file) => sum + file.size, 0)
 
   return (
     <div className="anim-fade-up space-y-6">
-      <div>
-        <div className="flex items-center gap-3 mb-1">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'var(--teal-bg)' }}>
-            <Search size={20} color="#5ac8fa" />
-          </div>
-          <h1 className="text-2xl font-bold tracking-[-0.02em]">Large Files Finder</h1>
-        </div>
-        <p className="text-sm text-[var(--text-secondary)] ml-12">Discover large files consuming valuable disk space</p>
+      <div className="page-hero compact-hero">
+        <div className="page-hero-icon cyan"><Search size={23} /></div>
+        <div><span className="eyebrow"><HardDrive size={12} /> Recoverable file management</span><h1>Large Files Explorer</h1><p>Find real storage consumers in your user profile, reveal them in Explorer or move them safely to the Recycle Bin.</p></div>
+        <button className="btn btn-secondary btn-sm hero-action" onClick={() => fetchFiles(minSize)} disabled={loading}><RotateCcw size={13} className={loading ? 'animate-spin' : ''} /> Rescan</button>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      {error && <div className="notice-banner error"><AlertTriangle size={17} />{error}</div>}
+
+      <div className="grid grid-cols-3 gap-4 stat-card-grid">
         {[
-          { icon: HardDrive, val: files.length, sub: 'Large files found', color: '#5ac8fa' },
-          { icon: Search, val: `${total.toFixed(1)} GB`, sub: 'Total space', color: '#af52de' },
-          { icon: FileArchive, val: `>${minSize} MB`, sub: 'Minimum file size', color: '#ff9500' },
-        ].map(s => (
-          <div key={s.sub} className="card p-4">
-            <s.icon size={18} style={{ color: s.color }} className="mb-2" />
-            <div className="text-xl font-bold">{s.val}</div>
-            <div className="text-xs text-[var(--text-tertiary)]">{s.sub}</div>
+          { icon: HardDrive, val: files.length, sub: 'Large files found', color: '#45e8ff' },
+          { icon: Search, val: `${total.toFixed(2)} GB`, sub: 'Visible space', color: '#bd6cff' },
+          { icon: FileArchive, val: `${(meta.scannedItems || 0).toLocaleString()}`, sub: 'Items inspected', color: '#ffb45b' },
+        ].map(item => <div key={item.sub} className="card metric-card"><item.icon size={18} style={{ color: item.color }} /><strong>{item.val}</strong><span>{item.sub}</span></div>)}
+      </div>
+
+      <div className="filter-strip card"><span>Minimum size</span>{[10, 100, 500, 1000, 5000].map(size => <button key={size} onClick={() => { setMinSize(size); fetchFiles(size) }} className={minSize === size ? 'active' : ''}>{size >= 1000 ? `${size / 1000} GB` : `${size} MB`}</button>)}<small>{meta.root}</small></div>
+
+      {loading && <div className="task-progress-card"><div><Loader className="animate-spin" size={17} /><span><strong>Scanning your files</strong><small>{stage}</small></span><b>{progress}%</b></div><div className="progress"><div className="progress-fill" style={{ width: `${progress}%` }} /></div></div>}
+
+      <div className="card overflow-hidden file-table">
+        <div className="file-table-head"><span>File</span><span>Location</span><span>Size</span><span>Modified</span><span>Actions</span></div>
+        {!loading && files.length === 0 ? <div className="empty-compact">No files larger than {minSize} MB were found.</div> : files.map(file => {
+          const Icon = icons[file.type] || File
+          return <div key={file.id} className="file-table-row">
+            <div><span className="file-type-icon"><Icon size={16} /></span><p><strong>{file.name}</strong><small>{file.type}</small></p></div>
+            <span className="truncate" title={file.path}>{file.path}</span>
+            <strong>{file.size >= 1 ? `${file.size.toFixed(2)} GB` : `${(file.size * 1024).toFixed(0)} MB`}</strong>
+            <span><Calendar size={11} />{file.date}</span>
+            <div className="row-actions"><button onClick={() => revealLargeFile(file.id)} title="Show in Explorer"><ExternalLink size={14} /></button><button className="danger" onClick={() => trash(file)} disabled={busy === file.id} title="Move to Recycle Bin">{busy === file.id ? <Loader size={14} className="animate-spin" /> : <Trash2 size={14} />}</button></div>
           </div>
-        ))}
+        })}
       </div>
-
-      <div className="flex gap-2 items-center">
-        <span className="text-xs text-[var(--text-tertiary)]">Min size (MB):</span>
-        {[1, 10, 100, 500, 1000].map(s => (
-          <button key={s} onClick={() => { setMinSize(s); fetchFiles(s) }}
-            className={`text-xs px-2 py-1 rounded-lg border transition-colors ${minSize === s ? 'border-[#0071e3]/30 bg-[#0071e3]/[0.04] text-[var(--accent)]' : 'border-[var(--border)] text-[var(--text-tertiary)] hover:border-[var(--border-hover)]'}`}>
-            {s}
-          </button>
-        ))}
-      </div>
-
-      <div className="card overflow-hidden">
-        <div className="grid grid-cols-12 gap-4 px-5 py-3 text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider border-b border-[var(--border)] bg-[var(--bg-secondary)]/50">
-          <div className="col-span-5">File</div>
-          <div className="col-span-3">Location</div>
-          <div className="col-span-2">Size</div>
-          <div className="col-span-2">Modified</div>
-        </div>
-        {loading ? (
-          <div className="text-center py-10 text-sm text-[var(--text-tertiary)]">Scanning filesystem...</div>
-        ) : files.length === 0 ? (
-          <div className="text-center py-10 text-sm text-[var(--text-tertiary)]">No files larger than {minSize} MB found</div>
-        ) : (
-          files.map(f => {
-            const Icon = icons[f.type] || File
-            return (
-              <div key={f.name + f.path} className="grid grid-cols-12 gap-4 px-5 py-3 items-center hover:bg-[var(--bg-secondary)] transition-colors border-b border-[var(--border)]">
-                <div className="col-span-5 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--bg-secondary)]">
-                    <Icon size={15} className="text-[var(--text-tertiary)]" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium truncate max-w-[200px]">{f.name}</div>
-                    <span className="text-[11px] text-[var(--text-tertiary)] capitalize">{f.type}</span>
-                  </div>
-                </div>
-                <div className="col-span-3 text-xs text-[var(--text-tertiary)] truncate">{f.path}</div>
-                <div className="col-span-2 text-sm font-semibold" style={{ color: 'var(--orange)' }}>{f.size.toFixed(1)} GB</div>
-                <div className="col-span-2 text-xs text-[var(--text-tertiary)] flex items-center gap-1.5">
-                  <Calendar size={11} />{f.date}
-                </div>
-              </div>
-            )
-          })
-        )}
-      </div>
+      {meta.limited && <div className="notice-banner warning"><AlertTriangle size={16} />The scan reached its safety limit. Results show the largest files discovered so far.</div>}
     </div>
   )
 }

@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
-import { Database, Search, AlertTriangle, CheckCircle, Loader, FileText, Trash2, RefreshCw } from 'lucide-react'
-import { scanRegistry, fixRegistry } from '../lib/api'
+import { useState } from 'react'
+import { Database, Search, AlertTriangle, CheckCircle, Loader, FileText, Trash2, RefreshCw, FolderOpen } from 'lucide-react'
+import { scanRegistry, fixRegistry, openRegistryBackups } from '../lib/api'
 
 export default function RegistryCleaner() {
   const [scanning, setScanning] = useState(false)
@@ -10,18 +10,27 @@ export default function RegistryCleaner() {
   const [cp, setCp] = useState(0)
   const [cd, setCd] = useState(false)
   const [found, setFound] = useState([])
+  const [error, setError] = useState('')
+  const [fixedCount, setFixedCount] = useState(0)
 
   const scan = async () => {
-    setScanning(true); setSd(false); setCd(false); setSp(0); setFound([])
-    const results = await scanRegistry(({ percent }) => setSp(percent))
-    setFound(results)
-    setScanning(false); setSd(true); setSp(100)
+    setScanning(true); setSd(false); setCd(false); setSp(0); setFound([]); setError('')
+    try {
+      const results = await scanRegistry(({ percent }) => setSp(percent))
+      setFound(results); setSd(true); setSp(100)
+    } catch (err) { setError(err.message) }
+    finally { setScanning(false) }
   }
 
   const clean = async () => {
-    setCleaning(true); setCp(0)
-    await fixRegistry(found.map(f => f.key))
-    setCleaning(false); setCp(100); setCd(true); setFound([]); setSd(false)
+    setCleaning(true); setCp(25); setError('')
+    try {
+      const result = await fixRegistry(found.map(f => f.id || f.key))
+      setFixedCount(result.fixed || 0); setCp(100)
+      if (result.errors?.length) setError(result.errors.join(' · '))
+      if (result.fixed > 0) { setCd(true); setFound([]); setSd(false) }
+    } catch (err) { setError(err.message) }
+    finally { setCleaning(false) }
   }
 
   const sevCls = { High: 'badge-red', Medium: 'badge-orange', Low: 'badge-blue' }
@@ -37,6 +46,8 @@ export default function RegistryCleaner() {
         </div>
         <p className="text-sm text-[var(--text-secondary)] ml-12">Scan and fix Windows registry issues for a smoother system</p>
       </div>
+
+      {error && <div className="notice-banner error"><AlertTriangle size={17} />{error}</div>}
 
       <div className="p-4 rounded-xl flex items-start gap-3" style={{ background: 'var(--orange-bg)', border: '1px solid rgba(255,149,0,0.15)' }}>
         <AlertTriangle size={18} color="#ff9500" className="shrink-0 mt-0.5" />
@@ -115,7 +126,7 @@ export default function RegistryCleaner() {
               {cleaning ? <Loader size={18} className="animate-spin" style={{ color: 'var(--purple)' }} /> : <CheckCircle size={18} color="var(--green)" />}
               <div>
                 <div className="font-semibold text-sm">{cleaning ? 'Fixing issues...' : 'Registry cleaned'}</div>
-                <div className="text-xs text-[var(--text-tertiary)]">{cleaning ? 'Removing invalid entries' : 'All issues resolved'}</div>
+                <div className="text-xs text-[var(--text-tertiary)]">{cleaning ? 'Backing up and removing verified entries' : `${fixedCount} issue${fixedCount === 1 ? '' : 's'} resolved`}</div>
               </div>
             </div>
             {cleaning && <span className="text-lg font-bold text-gradient">{cp}%</span>}
@@ -130,7 +141,8 @@ export default function RegistryCleaner() {
       )}
 
       {cd && (
-        <div className="flex justify-center">
+        <div className="flex justify-center gap-2">
+          <button onClick={openRegistryBackups} className="btn btn-secondary"><FolderOpen size={15} /> Open Backups</button>
           <button onClick={() => { setSd(false); setCd(false); scan() }} className="btn btn-primary">
             <RefreshCw size={15} /> Scan Again
           </button>
@@ -144,7 +156,7 @@ export default function RegistryCleaner() {
           </div>
           <div className="text-xl font-bold mb-1">Registry Scan</div>
           <div className="text-sm text-[var(--text-secondary)] max-w-sm mx-auto">
-            Scans for broken references, orphaned entries, and invalid settings in the Windows registry
+            Performs a narrow scan for verifiably missing startup and uninstall targets. No guessed or fabricated issues are shown.
           </div>
           <button onClick={scan} className="btn btn-primary btn-lg mt-5">
             <Search size={16} /> Start Scan

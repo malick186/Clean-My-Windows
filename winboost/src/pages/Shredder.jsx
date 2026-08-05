@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { Shredder as SIcon, File, FolderOpen, Loader, CheckCircle, AlertTriangle } from 'lucide-react'
+import { Shredder as SIcon, File, Loader, CheckCircle, AlertTriangle } from 'lucide-react'
 import { pickFilesToShred, shredFiles } from '../lib/api'
 
 const methods = [
   { id: 1, label: 'Single Pass', desc: 'Overwrite once with zeros', speed: 'Fast', sec: 'Basic' },
   { id: 3, label: 'DoD 3-Pass', desc: '3 passes: zeros, ones, random', speed: 'Medium', sec: 'Standard' },
-  { id: 7, label: 'DoD 7-Pass', desc: 'Per DoD 5220.22-M standard', speed: 'Slow', sec: 'High' },
-  { id: 35, label: 'Gutmann 35-Pass', desc: '35 overwrite patterns', speed: 'Very slow', sec: 'Maximum' },
+  { id: 7, label: 'Legacy 7-Pass', desc: 'Multiple overwrite passes for magnetic disks', speed: 'Slow', sec: 'Legacy' },
+  { id: 35, label: 'Legacy 35-Pass', desc: 'Historic magnetic-disk overwrite method', speed: 'Very slow', sec: 'Legacy' },
 ]
 
 export default function Shredder() {
@@ -15,6 +15,8 @@ export default function Shredder() {
   const [shredding, setShredding] = useState(false)
   const [progress, setProgress] = useState(0)
   const [log, setLog] = useState([])
+  const [error, setError] = useState('')
+  const [completed, setCompleted] = useState(false)
 
   const add = async (type) => {
     const picked = await pickFilesToShred()
@@ -26,15 +28,17 @@ export default function Shredder() {
   const rm = (id) => setFiles(prev => prev.filter(f => f.name !== id && f.path !== id))
 
   const shred = async () => {
-    setShredding(true); setProgress(0); setLog([])
+    setShredding(true); setProgress(0); setLog([]); setError(''); setCompleted(false)
     const filePaths = files.map(f => f.path || f.name)
     try {
-      await shredFiles(filePaths, nPass, (data) => {
+      const result = await shredFiles(filePaths, nPass, (data) => {
         if (data.percent !== undefined) setProgress(data.percent)
         if (data.log) setLog(prev => [...prev, data.log])
       })
-    } catch (_) {}
-    setShredding(false); setFiles([]); setProgress(100)
+      if (result.errors?.length) setError(result.errors.join(' · '))
+      if (result.deleted > 0) { setFiles([]); setCompleted(true) }
+    } catch (err) { setError(err.message) }
+    finally { setShredding(false); setProgress(100) }
   }
 
   return (
@@ -49,11 +53,13 @@ export default function Shredder() {
         <p className="text-sm text-[var(--text-secondary)] ml-12">Securely delete files beyond recovery using multiple overwrite passes</p>
       </div>
 
+      {error && <div className="notice-banner error"><AlertTriangle size={17} />{error}</div>}
+
       <div className="p-4 rounded-xl flex items-start gap-3" style={{ background: 'var(--orange-bg)', border: '1px solid rgba(255,149,0,0.15)' }}>
         <AlertTriangle size={18} color="#ff9500" className="shrink-0 mt-0.5" />
         <div>
           <div className="font-semibold text-sm" style={{ color: 'var(--orange)' }}>Warning</div>
-          <div className="text-xs text-[var(--text-secondary)] mt-0.5">Shredded files cannot be recovered. Verify you have selected the correct files.</div>
+          <div className="text-xs text-[var(--text-secondary)] mt-0.5">Verify every selected file. Overwriting is best suited to magnetic disks; SSD wear-leveling can prevent software from guaranteeing every physical copy was overwritten.</div>
         </div>
       </div>
 
@@ -124,11 +130,11 @@ export default function Shredder() {
         </div>
       )}
 
-      {!shredding && log.length > 0 && files.length === 0 && (
+      {!shredding && completed && files.length === 0 && (
         <div className="card p-6 text-center">
           <CheckCircle size={32} color="var(--green)" className="mx-auto mb-2" />
           <div className="font-semibold">Files Shredded</div>
-          <div className="text-xs text-[var(--text-tertiary)] mt-0.5">Data overwritten {nPass} times -- unrecoverable</div>
+          <div className="text-xs text-[var(--text-tertiary)] mt-0.5">File content overwritten {nPass} time{nPass === 1 ? '' : 's'} and the filesystem entry removed</div>
         </div>
       )}
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Power, Zap, Timer, Info } from 'lucide-react'
+import { Power, Zap, Timer, Info, AlertTriangle, Loader, LockKeyhole } from 'lucide-react'
 import { listStartup, toggleStartup } from '../lib/api'
 
 const impactCls = { High: 'badge-red', Medium: 'badge-orange', Low: 'badge-green' }
@@ -7,15 +7,21 @@ const impactCls = { High: 'badge-red', Medium: 'badge-orange', Low: 'badge-green
 export default function StartupManager() {
   const [progs, setProgs] = useState([])
   const [loading, setLoading] = useState(true)
+  const [busy, setBusy] = useState(null)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    listStartup().then(data => { setProgs(data); setLoading(false) })
+    listStartup().then(data => setProgs(data)).catch(err => setError(err.message)).finally(() => setLoading(false))
   }, [])
 
   const toggle = async (i) => {
     const p = progs[i]
-    try { await toggleStartup(p.name, !p.enabled) } catch (_) {}
-    const n = [...progs]; n[i] = { ...n[i], enabled: !n[i].enabled }; setProgs(n)
+    setBusy(p.id); setError('')
+    try {
+      await toggleStartup(p.id, !p.enabled)
+      const n = [...progs]; n[i] = { ...n[i], enabled: !n[i].enabled }; setProgs(n)
+    } catch (err) { setError(err.message) }
+    finally { setBusy(null) }
   }
 
   const on = progs.filter(p => p.enabled)
@@ -52,6 +58,8 @@ export default function StartupManager() {
         <p className="text-sm text-[var(--text-secondary)] ml-12">Control which programs launch at startup to reduce boot time</p>
       </div>
 
+      {error && <div className="notice-banner error"><AlertTriangle size={17} />{error}</div>}
+
       <div className="grid grid-cols-3 gap-4">
         {[
           { icon: Timer, val: `${boot}s`, sub: 'Est. boot time', color: '#5ac8fa' },
@@ -79,12 +87,12 @@ export default function StartupManager() {
           progs.map((p, i) => (
             <div key={p.name} className="grid grid-cols-12 gap-4 px-5 py-3.5 items-center hover:bg-[var(--bg-secondary)] transition-colors border-b border-[var(--border)]">
               <div className={`col-span-5 text-sm font-medium ${p.enabled ? '' : 'text-[var(--text-tertiary)]'}`}>
-                <div className="truncate max-w-[200px]">{p.name}</div>
+                <div className="truncate max-w-[200px] flex items-center gap-1.5">{p.name}{p.requiresAdmin && <LockKeyhole size={11} title="Machine-wide entry" />}</div>
                 {p.path && <div className="text-[11px] text-[var(--text-tertiary)] truncate max-w-[200px]">{p.path}</div>}
               </div>
               <div className="col-span-3 text-xs text-[var(--text-tertiary)]">{p.pub}</div>
               <div className="col-span-2"><span className={`badge ${impactCls[p.impact] || 'badge-blue'}`}>{p.impact}</span></div>
-              <div className="col-span-2"><div onClick={() => toggle(i)} className={`toggle ${p.enabled ? 'on' : ''}`} /></div>
+              <div className="col-span-2">{busy === p.id ? <Loader size={15} className="animate-spin" /> : <button onClick={() => toggle(i)} className={`toggle ${p.enabled ? 'on' : ''}`} aria-label={`${p.enabled ? 'Disable' : 'Enable'} ${p.name}`} />}</div>
             </div>
           ))
         )}

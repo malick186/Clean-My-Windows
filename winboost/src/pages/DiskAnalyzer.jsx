@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { HardDrive, Folder, Film, Image, File, Archive, Music } from 'lucide-react'
+import { HardDrive, Folder, Film, Image, File, Archive, Music, AlertTriangle, Loader } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts'
 import { analyzeDisk } from '../lib/api'
 
@@ -7,15 +7,19 @@ export default function DiskAnalyzer() {
   const [folders, setFolders] = useState([])
   const [types, setTypes] = useState([])
   const [loading, setLoading] = useState(true)
+  const [progress, setProgress] = useState(0)
+  const [stage, setStage] = useState('Preparing scan...')
+  const [meta, setMeta] = useState(null)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    analyzeDisk('C:\\', ({ percent, stage }) => {
-      if (stage) console.log(stage)
+    analyzeDisk('home', ({ percent, stage: nextStage }) => {
+      setProgress(percent || 0); if (nextStage) setStage(nextStage)
     }).then(data => {
       setFolders(data.folders || [])
       setTypes(data.types || [])
-      setLoading(false)
-    })
+      setMeta(data)
+    }).catch(err => setError(err.message)).finally(() => setLoading(false))
   }, [])
 
   const folderColors = ['#007aff', '#af52de', '#ff9500', '#34c759', '#ffcc00', '#5ac8fa', '#ff3b30', '#5856d6']
@@ -33,8 +37,10 @@ export default function DiskAnalyzer() {
             <h1 className="text-2xl font-bold tracking-[-0.02em]">Disk Analyzer</h1>
           </div>
         </div>
-        <div className="card p-10 text-center text-sm text-[var(--text-tertiary)]">
-          Scanning disk... This may take a moment.
+        <div className="card p-10 text-center text-sm text-[var(--text-tertiary)] space-y-3">
+          <Loader size={22} className="animate-spin mx-auto" />
+          <div>{stage}</div>
+          <div className="progress"><div className="progress-fill" style={{ width: `${progress}%` }} /></div>
         </div>
       </div>
     )
@@ -51,6 +57,9 @@ export default function DiskAnalyzer() {
         </div>
         <p className="text-sm text-[var(--text-secondary)] ml-12">Analyze disk usage and find what's consuming your storage</p>
       </div>
+
+      {error && <div className="notice-banner error"><AlertTriangle size={17} />{error}</div>}
+      {meta && <div className="scan-meta-strip"><span>Analyzed <strong>{meta.root}</strong></span><span>{meta.scannedItems?.toLocaleString()} items</span><span>{meta.totalSize?.toFixed(2)} GB visible</span>{meta.limited && <span className="warning">Safety limit reached</span>}</div>}
 
       {folders.length > 0 && (
         <div className="card p-6">

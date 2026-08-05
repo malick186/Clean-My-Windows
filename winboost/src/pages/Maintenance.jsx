@@ -1,143 +1,90 @@
-import { useState } from 'react'
-import { Wrench, CheckCircle, Loader, Play, RefreshCw, HardDrive, Globe, Database, Monitor, FileText, Trash2, Zap, Search, AlertTriangle } from 'lucide-react'
-import { runMaintenanceTask, runAllMaintenanceTasks } from '../lib/api'
+import { useEffect, useState } from 'react'
+import { AlertTriangle, CheckCircle, Database, Globe, HardDrive, Loader, LockKeyhole, Monitor, Play, RefreshCw, RotateCcw, ShieldCheck, Wrench, Zap } from 'lucide-react'
+import { listMaintenanceTasks, runAllMaintenanceTasks, runMaintenanceTask } from '../lib/api'
 
-const tasks = [
-  { id: 'flushdns', icon: Globe, label: 'Flush DNS Cache', desc: 'Clear DNS resolver cache', cat: 'Network', risk: 'Low' },
-  { id: 'chkdsk', icon: HardDrive, label: 'Check Disk Errors', desc: 'Scan & repair file system (CHKDSK)', cat: 'Disk', risk: 'Low' },
-  { id: 'sfc', icon: FileText, label: 'System File Checker', desc: 'Restore corrupted system files (SFC)', cat: 'System', risk: 'Low' },
-  { id: 'dism', icon: Database, label: 'Repair Windows Image', desc: 'Fix system image (DISM)', cat: 'System', risk: 'Medium' },
-  { id: 'reindex', icon: Search, label: 'Rebuild Search Index', desc: 'Rebuild Windows search index', cat: 'System', risk: 'Low' },
-  { id: 'winsock', icon: Globe, label: 'Reset Network Stack', desc: 'Reset Winsock & TCP/IP', cat: 'Network', risk: 'Medium' },
-  { id: 'wucache', icon: Trash2, label: 'Clean Update Cache', desc: 'Remove old Windows Update files', cat: 'Cleanup', risk: 'Low' },
-  { id: 'prefetch', icon: Zap, label: 'Clear Prefetch', desc: 'Clear Windows prefetch cache', cat: 'Performance', risk: 'Low' },
-  { id: 'fontcache', icon: Monitor, label: 'Rebuild Font Cache', desc: 'Clear corrupted font cache', cat: 'System', risk: 'Low' },
-  { id: 'defrag', icon: HardDrive, label: 'Optimize Drives', desc: 'Defragment disk drives', cat: 'Disk', risk: 'Low' },
-  { id: 'thumbcache', icon: Monitor, label: 'Clear Thumbnail Cache', desc: 'Delete thumbnail database', cat: 'Cleanup', risk: 'Low' },
-  { id: 'store', icon: Database, label: 'Reset Store Cache', desc: 'Clear Microsoft Store cache', cat: 'Apps', risk: 'Low' },
-]
+const icons = { Network: Globe, Disk: HardDrive, System: Database, Cleanup: Zap, Apps: Monitor }
 
 export default function Maintenance() {
+  const [tasks, setTasks] = useState([])
+  const [selected, setSelected] = useState(new Set())
   const [running, setRunning] = useState(null)
   const [progress, setProgress] = useState(0)
   const [stage, setStage] = useState('')
-  const [done, setDone] = useState(new Set())
-  const [errors, setErrors] = useState(new Set())
-  const [selected, setSelected] = useState(new Set(tasks.map(t => t.id)))
+  const [results, setResults] = useState(new Map())
   const [batch, setBatch] = useState(false)
+  const [error, setError] = useState('')
 
-  const toggle = (id) => { const n = new Set(selected); n.has(id) ? n.delete(id) : n.add(id); setSelected(n) }
-  const toggleAll = () => setSelected(selected.size === tasks.length ? new Set() : new Set(tasks.map(t => t.id)))
+  useEffect(() => {
+    listMaintenanceTasks().then(items => {
+      setTasks(items); setSelected(new Set(items.filter(item => item.recommended).map(item => item.id)))
+    }).catch(err => setError(err.message))
+  }, [])
 
-  const runOne = async (id) => {
-    setRunning(id); setProgress(0); setStage('Running...')
-    const result = await runMaintenanceTask(id, ({ percent, stage: st }) => {
-      setProgress(percent)
-      if (st) setStage(st)
-    })
-    setRunning(null)
-    if (result?.success) setDone(prev => new Set([...prev, id]))
-    else setErrors(prev => new Set([...prev, id]))
+  const toggle = id => setSelected(previous => {
+    const next = new Set(previous); if (next.has(id)) next.delete(id); else next.add(id); return next
+  })
+
+  const runOne = async id => {
+    setRunning(id); setProgress(0); setError('')
+    try {
+      const result = await runMaintenanceTask(id, data => { setProgress(data.percent || 0); if (data.stage) setStage(data.stage) })
+      setResults(previous => new Map(previous).set(id, result))
+      if (!result.success) setError(result.error || 'The maintenance task failed.')
+    } catch (err) { setError(err.message) }
+    finally { setRunning(null) }
   }
 
-  const runAll = async () => {
-    setBatch(true)
-    const results = await runAllMaintenanceTasks([...selected], ({ taskId, percent, stage: st }) => {
-      setRunning(taskId)
-      setProgress(percent)
-      if (st) setStage(st)
-    })
-    if (results?.results) {
-      for (const r of results.results) {
-        if (r.success) setDone(prev => new Set([...prev, r.taskId]))
-        else setErrors(prev => new Set([...prev, r.taskId]))
-      }
-    }
-    setRunning(null); setBatch(false)
+  const runSelected = async () => {
+    setBatch(true); setError('')
+    try {
+      const response = await runAllMaintenanceTasks([...selected], data => {
+        setRunning(data.taskId); setProgress(data.percent || 0); if (data.stage) setStage(data.stage)
+      })
+      const next = new Map(results)
+      for (const result of response.results || []) next.set(result.taskId, result)
+      setResults(next)
+      const failures = (response.results || []).filter(result => !result.success)
+      if (failures.length) setError(`${failures.length} selected task${failures.length === 1 ? '' : 's'} could not complete. Open each result for details.`)
+    } catch (err) { setError(err.message) }
+    finally { setRunning(null); setBatch(false) }
   }
 
   return (
     <div className="anim-fade-up space-y-6">
-      <div>
-        <div className="flex items-center gap-3 mb-1">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'var(--green-bg)' }}>
-            <Wrench size={20} color="#34c759" />
-          </div>
-          <h1 className="text-2xl font-bold tracking-[-0.02em]">System Maintenance</h1>
-        </div>
-        <p className="text-sm text-[var(--text-secondary)] ml-12">Run maintenance scripts to keep your system healthy</p>
+      <div className="page-hero compact-hero">
+        <div className="page-hero-icon green"><Wrench size={23} /></div>
+        <div><span className="eyebrow"><ShieldCheck size={12} /> Microsoft system tools</span><h1>Maintenance Lab</h1><p>Run genuine Windows diagnostics and repairs with clear elevation, restart and result states.</p></div>
+        <button className="btn btn-secondary btn-sm hero-action" onClick={() => setResults(new Map())}><RefreshCw size={13} /> Clear results</button>
       </div>
 
-      <div className="flex items-center justify-between">
-        <label className="flex items-center gap-2 cursor-pointer select-none text-sm">
-          <input type="checkbox" className="chk" checked={selected.size === tasks.length} onChange={toggleAll} />
-          <span className="text-[var(--text-secondary)]">Select All ({selected.size}/{tasks.length})</span>
-        </label>
-        <div className="flex gap-2">
-          <button onClick={() => { setDone(new Set()); setErrors(new Set()) }} className="btn btn-secondary btn-sm"><RefreshCw size={13} /> Reset</button>
-          <button onClick={runAll} disabled={batch || selected.size === 0} className="btn btn-primary btn-sm">
-            {batch ? <Loader size={13} className="animate-spin" /> : <Play size={13} />}
-            Run All Selected
-          </button>
-        </div>
+      {error && <div className="notice-banner error"><AlertTriangle size={17} />{error}</div>}
+
+      <div className="maintenance-toolbar card">
+        <div><strong>{selected.size} selected</strong><span>Recommended cache tools are selected by default. Advanced repairs stay opt-in.</span></div>
+        <button className="btn btn-primary" onClick={runSelected} disabled={batch || !selected.size}>{batch ? <Loader size={14} className="animate-spin" /> : <Play size={14} />}Run Selected</button>
       </div>
 
-      {running && (
-        <div className="card p-4 space-y-2" style={{ borderColor: 'rgba(0,113,227,0.2)' }}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Loader size={16} className="animate-spin" style={{ color: 'var(--accent)' }} />
-              <div>
-                <div className="text-sm font-semibold">{tasks.find(t => t.id === running)?.label}</div>
-                <div className="text-xs text-[var(--text-tertiary)]">{stage}</div>
-              </div>
-            </div>
-            <span className="text-sm font-bold text-gradient">{progress}%</span>
-          </div>
-          <div className="progress"><div className="progress-fill" style={{ width: `${progress}%` }} /></div>
-        </div>
-      )}
+      {running && <div className="task-progress-card"><div><Loader size={17} className="animate-spin" /><span><strong>{tasks.find(item => item.id === running)?.label}</strong><small>{stage}</small></span><b>{progress}%</b></div><div className="progress"><div className="progress-fill" style={{ width: `${progress}%` }} /></div></div>}
 
-      <div className="card overflow-hidden">
-        {tasks.map(t => {
-          const isRunning = running === t.id
-          const isDone = done.has(t.id)
-          const isErr = errors.has(t.id)
-          const isSel = selected.has(t.id)
-          const riskCls = t.risk === 'Medium' ? 'badge-orange' : 'badge-green'
-
+      <div className="maintenance-grid">
+        {tasks.map(task => {
+          const Icon = icons[task.cat] || Wrench
+          const result = results.get(task.id)
           return (
-            <div key={t.id} className={`flex items-center gap-4 px-5 py-3.5 border-b border-[var(--border)] transition-colors ${
-              isRunning ? 'bg-[#0071e3]/[0.02]' : isDone ? 'bg-[#34c759]/[0.02]' : isErr ? 'bg-[#ff3b30]/[0.02]' : 'hover:bg-[var(--bg-secondary)]'
-            }`}>
-              <input type="checkbox" className="chk" checked={isSel} onChange={() => toggle(t.id)} disabled={isRunning} />
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                style={{ background: isDone ? 'var(--green-bg)' : isErr ? 'var(--red-bg)' : isRunning ? 'var(--blue-bg)' : 'var(--bg-secondary)' }}>
-                {isDone ? <CheckCircle size={17} color="var(--green)" /> : isErr ? <AlertTriangle size={17} color="#ff3b30" /> : <t.icon size={17} style={{ color: isRunning ? 'var(--blue)' : 'var(--text-tertiary)' }} />}
+            <article key={task.id} className={`maintenance-card ${result?.success ? 'complete' : result ? 'failed' : ''}`}>
+              <div className="maintenance-card-top">
+                <button className={`check-orb ${selected.has(task.id) ? 'checked' : ''}`} onClick={() => toggle(task.id)} aria-label={`Select ${task.label}`}>{selected.has(task.id) && <CheckCircle size={15} />}</button>
+                <span className="tool-icon"><Icon size={19} /></span>
+                <div className="task-badges">{task.admin && <span className="badge badge-purple"><LockKeyhole size={10} /> UAC</span>}<span className={`badge ${task.risk === 'Medium' ? 'badge-orange' : 'badge-green'}`}>{task.risk}</span></div>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold">{t.label}</div>
-                <div className="text-xs text-[var(--text-tertiary)] mt-0.5">{t.desc}</div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <span className={`badge ${riskCls}`}>{t.risk}</span>
-                <span className="text-[11px] text-[var(--text-tertiary)]">{t.cat}</span>
-                {isDone ? <span className="badge badge-green">Done</span> :
-                 isErr ? <span className="badge badge-red">Error</span> :
-                 isRunning ? <Loader size={14} className="animate-spin" style={{ color: 'var(--accent)' }} /> :
-                 <button onClick={() => runOne(t.id)} className="btn btn-secondary btn-sm"><Play size={11} /> Run</button>}
-              </div>
-            </div>
+              <h3>{task.label}</h3><p>{task.desc}</p>
+              {task.restart && <small className="restart-note"><RotateCcw size={11} /> Restart required</small>}
+              {result && <div className={`task-result ${result.success ? 'success' : 'error'}`}>{result.success ? <CheckCircle size={13} /> : <AlertTriangle size={13} />}<span>{result.success ? (result.output || 'Completed').slice(0, 120) : result.error}</span></div>}
+              <button className="btn btn-secondary btn-sm" onClick={() => runOne(task.id)} disabled={Boolean(running)}>{running === task.id ? <Loader size={12} className="animate-spin" /> : <Play size={12} />}Run</button>
+            </article>
           )
         })}
       </div>
-
-      {done.size > 0 && (
-        <div className="p-4 rounded-xl text-center" style={{ background: 'var(--green-bg)' }}>
-          <CheckCircle size={18} color="var(--green)" className="inline mr-2 -mt-0.5" />
-          <span className="text-sm font-medium" style={{ color: 'var(--green)' }}>{done.size} task{done.size > 1 ? 's' : ''} completed{errors.size > 0 ? `, ${errors.size} failed` : ''}</span>
-        </div>
-      )}
     </div>
   )
 }

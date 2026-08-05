@@ -1,29 +1,39 @@
 import { useState, useEffect } from 'react'
-import { Shield, Eye, EyeOff, Radio, Wifi, Monitor, MapPin, Video } from 'lucide-react'
+import { Shield, Eye, EyeOff, Radio, Wifi, Monitor, MapPin, Video, AlertTriangle, Loader, LockKeyhole, CheckCircle } from 'lucide-react'
 import { listPrivacy, setPrivacy, applyRecommendedPrivacy } from '../lib/api'
 
 export default function PrivacyTools() {
   const [groups, setGroups] = useState([])
   const [loading, setLoading] = useState(true)
+  const [busy, setBusy] = useState(null)
+  const [notice, setNotice] = useState(null)
 
   useEffect(() => {
-    listPrivacy().then(data => { setGroups(data); setLoading(false) })
+    listPrivacy().then(setGroups).catch(err => setNotice({ type: 'error', text: err.message })).finally(() => setLoading(false))
   }, [])
 
   const toggle = async (groupIdx, itemIdx) => {
     const g = groups[groupIdx]
     const item = g.items[itemIdx]
-    try { await setPrivacy(item.name, !item.enabled) } catch (_) {}
-    const newGroups = [...groups]
-    newGroups[groupIdx] = { ...g, items: [...g.items] }
-    newGroups[groupIdx].items[itemIdx] = { ...item, enabled: !item.enabled }
-    setGroups(newGroups)
+    setBusy(item.name); setNotice(null)
+    try {
+      await setPrivacy(item.name, !item.enabled)
+      const newGroups = [...groups]
+      newGroups[groupIdx] = { ...g, items: [...g.items] }
+      newGroups[groupIdx].items[itemIdx] = { ...item, enabled: !item.enabled }
+      setGroups(newGroups)
+    } catch (err) { setNotice({ type: 'error', text: err.message }) }
+    finally { setBusy(null) }
   }
 
   const applyRecommended = async () => {
-    const results = await applyRecommendedPrivacy()
-    const refreshed = await listPrivacy()
-    setGroups(refreshed)
+    setBusy('recommended'); setNotice(null)
+    try {
+      const results = await applyRecommendedPrivacy()
+      setGroups(await listPrivacy())
+      setNotice({ type: results.errors?.length ? 'warning' : 'success', text: `${results.applied || 0} privacy controls updated${results.errors?.length ? `; ${results.errors.length} need attention` : ''}.` })
+    } catch (err) { setNotice({ type: 'error', text: err.message }) }
+    finally { setBusy(null) }
   }
 
   const onCount = groups.reduce((s, g) => s + g.items.filter(i => i.enabled).length, 0)
@@ -46,7 +56,7 @@ export default function PrivacyTools() {
     )
   }
 
-  const groupIcons = { 'Telemetry & Data Collection': Radio, 'Location & Sensors': MapPin, 'Camera & Microphone': Video, 'Network & Sync': Wifi, 'Activity & Input': Monitor }
+  const groupIcons = { 'Telemetry & Data Collection': Radio, 'Location & Sensors': MapPin, 'Camera & Microphone': Video, 'Network & Sync': Wifi, 'Activity & Input': Monitor, Recommendations: Shield }
 
   return (
     <div className="anim-fade-up space-y-6">
@@ -59,6 +69,8 @@ export default function PrivacyTools() {
         </div>
         <p className="text-sm text-[var(--text-secondary)] ml-12">Control your Windows privacy settings and manage data sharing</p>
       </div>
+
+      {notice && <div className={`notice-banner ${notice.type}`}>{notice.type === 'success' ? <CheckCircle size={17} /> : <AlertTriangle size={17} />}{notice.text}</div>}
 
       <div className="grid grid-cols-3 gap-4">
         {[
@@ -87,11 +99,11 @@ export default function PrivacyTools() {
                 <div className="flex items-center gap-3">
                   {item.enabled ? <Eye size={15} style={{ color: 'var(--orange)' }} /> : <EyeOff size={15} style={{ color: 'var(--green)' }} />}
                   <div>
-                    <div className="text-sm font-medium">{item.name}</div>
+                    <div className="text-sm font-medium flex items-center gap-1.5">{item.name}{item.requiresAdmin && <LockKeyhole size={11} title="Requires administrator approval" />}</div>
                     <div className="text-xs text-[var(--text-tertiary)]">{item.desc}</div>
                   </div>
                 </div>
-                <div onClick={() => toggle(gi, ii)} className={`toggle ${item.enabled ? 'on' : ''}`} />
+                {busy === item.name ? <Loader size={15} className="animate-spin" /> : <button onClick={() => toggle(gi, ii)} className={`toggle ${item.enabled ? 'on' : ''}`} aria-label={`Toggle ${item.name}`} />}
               </div>
             ))}
           </div>
@@ -99,7 +111,7 @@ export default function PrivacyTools() {
       })}
 
       <div className="flex gap-3">
-        <button onClick={applyRecommended} className="btn btn-primary flex-1">Apply Recommended Settings</button>
+        <button onClick={applyRecommended} disabled={Boolean(busy)} className="btn btn-primary flex-1">{busy === 'recommended' && <Loader size={14} className="animate-spin" />}Apply Recommended Settings</button>
         <button onClick={() => listPrivacy().then(setGroups)} className="btn btn-secondary">Refresh</button>
       </div>
     </div>

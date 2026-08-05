@@ -1,35 +1,44 @@
+import { lazy, Suspense } from 'react'
 import { HashRouter, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
-import Dashboard from './pages/Dashboard'
-import Cleanup from './pages/Cleanup'
-import StartupManager from './pages/StartupManager'
-import DiskAnalyzer from './pages/DiskAnalyzer'
-import PrivacyTools from './pages/PrivacyTools'
-import Performance from './pages/Performance'
-import MalwareScanner from './pages/MalwareScanner'
-import Uninstaller from './pages/Uninstaller'
-import Shredder from './pages/Shredder'
-import Maintenance from './pages/Maintenance'
-import LargeFiles from './pages/LargeFiles'
-import RegistryCleaner from './pages/RegistryCleaner'
+import { Loader } from 'lucide-react'
+
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const Cleanup = lazy(() => import('./pages/Cleanup'))
+const StartupManager = lazy(() => import('./pages/StartupManager'))
+const DiskAnalyzer = lazy(() => import('./pages/DiskAnalyzer'))
+const PrivacyTools = lazy(() => import('./pages/PrivacyTools'))
+const Performance = lazy(() => import('./pages/Performance'))
+const MalwareScanner = lazy(() => import('./pages/MalwareScanner'))
+const Uninstaller = lazy(() => import('./pages/Uninstaller'))
+const Shredder = lazy(() => import('./pages/Shredder'))
+const Maintenance = lazy(() => import('./pages/Maintenance'))
+const LargeFiles = lazy(() => import('./pages/LargeFiles'))
+const RegistryCleaner = lazy(() => import('./pages/RegistryCleaner'))
+const SafetyCenter = lazy(() => import('./pages/SafetyCenter'))
+
+function page(Component) {
+  return <Suspense fallback={<div className="route-loader"><Loader size={21} className="animate-spin" /><span>Loading module...</span></div>}><Component /></Suspense>
+}
 
 export default function App() {
   return (
     <HashRouter>
       <Routes>
         <Route path="/" element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="cleanup" element={<Cleanup />} />
-          <Route path="malware" element={<MalwareScanner />} />
-          <Route path="uninstaller" element={<Uninstaller />} />
-          <Route path="startup" element={<StartupManager />} />
-          <Route path="disk" element={<DiskAnalyzer />} />
-          <Route path="largefiles" element={<LargeFiles />} />
-          <Route path="registry" element={<RegistryCleaner />} />
-          <Route path="privacy" element={<PrivacyTools />} />
-          <Route path="shredder" element={<Shredder />} />
-          <Route path="performance" element={<Performance />} />
-          <Route path="maintenance" element={<Maintenance />} />
+          <Route index element={page(Dashboard)} />
+          <Route path="cleanup" element={page(Cleanup)} />
+          <Route path="malware" element={page(MalwareScanner)} />
+          <Route path="uninstaller" element={page(Uninstaller)} />
+          <Route path="startup" element={page(StartupManager)} />
+          <Route path="disk" element={page(DiskAnalyzer)} />
+          <Route path="largefiles" element={page(LargeFiles)} />
+          <Route path="registry" element={page(RegistryCleaner)} />
+          <Route path="privacy" element={page(PrivacyTools)} />
+          <Route path="shredder" element={page(Shredder)} />
+          <Route path="performance" element={page(Performance)} />
+          <Route path="maintenance" element={page(Maintenance)} />
+          <Route path="safety" element={page(SafetyCenter)} />
         </Route>
       </Routes>
     </HashRouter>

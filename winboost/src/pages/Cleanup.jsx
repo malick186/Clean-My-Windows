@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Brush, Globe, FolderOpen, Database, Download, Recycle, FileText, CheckCircle, Loader, Search, Sparkles } from 'lucide-react'
+import { Brush, Globe, FolderOpen, Database, Download, Recycle, FileText, CheckCircle, Loader, Search, Sparkles, AlertTriangle } from 'lucide-react'
 import { scanCleanup, runCleanup } from '../lib/api'
 
 export default function Cleanup() {
@@ -11,37 +11,45 @@ export default function Cleanup() {
   const [stage, setStage] = useState('')
   const [done, setDone] = useState(false)
   const [freed, setFreed] = useState(0)
+  const [resultInfo, setResultInfo] = useState(null)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    scanCleanup().then(data => setCategories(data))
+    scanCleanup().then(data => {
+      setCategories(data)
+      setSelected(new Set(data.filter(item => item.recommended).map(item => item.id)))
+    }).catch(err => setError(err.message))
   }, [])
 
-  const catMap = Object.fromEntries(categories.map(c => [c.id, { icon: Globe, size: c.size }]))
   const iconFor = (id) => {
-    const m = { temp: FolderOpen, browser: Globe, recycle: Recycle, downloads: Download, thumbnails: FileText, logs: Database }
+    const m = { temp: FolderOpen, browser: Globe, recycle: Recycle, downloads: Download, thumbnails: FileText, crashlogs: Database, shaders: Sparkles }
     return m[id] || FolderOpen
   }
 
-  const toggle = (id) => { const n = new Set(selected); n.has(id) ? n.delete(id) : n.add(id); setSelected(n) }
-  const toggleAll = () => setSelected(selected.size === categories.length ? new Set() : new Set(categories.map(c => c.id)))
+  const toggle = (id) => { const n = new Set(selected); if (n.has(id)) n.delete(id); else n.add(id); setSelected(n) }
+  const recommended = categories.filter(item => item.recommended)
+  const toggleAll = () => setSelected(recommended.every(item => selected.has(item.id)) ? new Set() : new Set(recommended.map(item => item.id)))
   const totalSel = [...selected].reduce((s, id) => s + (categories.find(c => c.id === id)?.size || 0), 0)
 
   const scan = async () => {
-    setScanning(true); setDone(false); setProgress(0); setStage('Scanning temp folders...')
-    const data = await scanCleanup()
-    setCategories(data)
-    setScanning(false); setProgress(100)
+    setScanning(true); setDone(false); setError(''); setProgress(0); setStage('Scanning safe cleanup locations...')
+    try {
+      const data = await scanCleanup()
+      setCategories(data); setProgress(100)
+    } catch (err) { setError(err.message) }
+    finally { setScanning(false) }
   }
 
   const clean = async () => {
-    setCleaning(true); setProgress(0)
-    const result = await runCleanup([...selected], ({ percent, stage: st }) => {
-      setProgress(percent); if (st) setStage(st)
-    })
-    setFreed(result.freed)
-    setCleaning(false); setDone(true); setSelected(new Set())
-    const updated = await scanCleanup()
-    setCategories(updated)
+    setCleaning(true); setProgress(0); setError(''); setResultInfo(null)
+    try {
+      const result = await runCleanup([...selected], ({ percent, stage: st }) => {
+        setProgress(percent); if (st) setStage(st)
+      })
+      setFreed(result.freed || 0); setResultInfo(result); setDone(true); setSelected(new Set())
+      setCategories(await scanCleanup())
+    } catch (err) { setError(err.message) }
+    finally { setCleaning(false) }
   }
 
   return (
@@ -55,6 +63,8 @@ export default function Cleanup() {
         </div>
         <p className="text-sm text-[var(--text-secondary)] ml-12">Remove junk files, caches, and temporary data to free up space</p>
       </div>
+
+      {error && <div className="notice-banner error"><AlertTriangle size={17} />{error}</div>}
 
       <div className="card p-6">
         <div className="flex items-center justify-between mb-5">
@@ -86,20 +96,21 @@ export default function Cleanup() {
         {done && (
           <div className="mb-5 p-3 rounded-xl flex items-center gap-2 text-sm font-medium"
             style={{ background: 'var(--green-bg)', color: 'var(--green)' }}>
-            <CheckCircle size={16} /> Freed {freed.toFixed(1)} GB of disk space
+            <CheckCircle size={16} /> Reclaimed {freed >= 1 ? `${freed.toFixed(2)} GB` : `${(freed * 1024).toFixed(0)} MB`} from {resultInfo?.deletedFiles || 0} files
+            {resultInfo?.errors?.length > 0 && <span className="ml-2 text-[var(--orange)]">{resultInfo.errors.length} locked or protected items skipped</span>}
           </div>
         )}
 
         <div className="flex items-center justify-between mb-3 text-xs text-[var(--text-secondary)]">
           <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input type="checkbox" className="chk" checked={selected.size === categories.length && categories.length > 0} onChange={toggleAll} />
-            Select All
+            <input type="checkbox" className="chk" checked={recommended.length > 0 && recommended.every(item => selected.has(item.id))} onChange={toggleAll} />
+            Select recommended
           </label>
           <span>{selected.size} of {categories.length}</span>
         </div>
 
         <div className="space-y-1.5">
-          {categories.map(({ id, name: label, desc, size, path: detail, files }) => {
+          {categories.map(({ id, name: label, desc, size, path: detail, files, risk, recommended: isRecommended }) => {
             const sel = selected.has(id)
             const Icon = iconFor(id)
             return (
@@ -113,10 +124,10 @@ export default function Cleanup() {
                   <Icon size={17} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold">{label}</div>
+                  <div className="text-sm font-semibold flex items-center gap-2">{label}<span className={`badge ${risk === 'Review' ? 'badge-orange' : 'badge-green'}`}>{isRecommended ? 'Recommended' : 'Review'}</span></div>
                   <div className="text-xs text-[var(--text-tertiary)] mt-0.5">{desc} &middot; {files} files &middot; {detail.slice(0, 60)}</div>
                 </div>
-                <div className="text-sm font-semibold text-[var(--text-secondary)] shrink-0">{size.toFixed(1)} GB</div>
+                <div className="text-sm font-semibold text-[var(--text-secondary)] shrink-0">{size >= 1 ? `${size.toFixed(2)} GB` : `${(size * 1024).toFixed(0)} MB`}</div>
               </div>
             )
           })}
