@@ -106,9 +106,11 @@ npm install
 # Start development server (browser)
 npm run dev
 
-# Start Electron development mode
+# Start Electron development mode (Windows only)
 npm run electron:dev
 ```
+
+> Note: `npm run electron:dev` is intended for Windows. On non-Windows platforms, use `npm run dev` to preview the app in a browser.
 
 ### Project Structure
 
