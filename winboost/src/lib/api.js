@@ -212,3 +212,25 @@ export async function applyTweak(name) {
 export async function applyAllTweaks() {
   return await invoke('performance:applyAll')
 }
+
+export async function detectClamAV() {
+  if (!hasElectron) return { found: false, clamscan: null, freshclam: null, version: null, definitionsVersion: null, definitionsDate: null, installUrl: 'https://www.clamav.net/downloads' }
+  return invoke('clamav:detect')
+}
+
+export async function updateClamAV(onProgress) {
+  if (!hasElectron) return { success: false, error: 'Not available in preview' }
+  const off = on('clamav:update-progress', data => onProgress?.(data))
+  try { return assertSuccess(await invoke('clamav:update'), 'ClamAV update failed.') }
+  finally { off() }
+}
+
+export async function scanWithClamAV(scanType, onProgress) {
+  if (!hasElectron) {
+    onProgress?.({ percent: 100, stage: 'Preview: scan not available', filesScanned: 0, threatsFound: 0 })
+    return { threats: [], filesScanned: 0, engine: 'preview' }
+  }
+  const off = on('malware:scan-progress', data => onProgress?.(data))
+  try { return await invoke('clamav:scan', scanType) }
+  finally { off() }
+}

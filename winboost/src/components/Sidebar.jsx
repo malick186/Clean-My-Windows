@@ -1,18 +1,17 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Brush, Power, HardDrive, Shield, Gauge,
-  ShieldAlert, Trash2, Shredder as ShredderIcon,
-  Wrench, Search, Database, Boxes, BadgeCheck, Settings2
+  ShieldCheck, Trash2, Shredder as ShredderIcon,
+  Wrench, Search, Database, Boxes, Settings2
 } from 'lucide-react'
 
 const items = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/malware', icon: ShieldAlert, label: 'System Scan' },
+  { to: '/security', icon: ShieldCheck, label: 'Security' },
   { to: '/cleanup', icon: Brush, label: 'Junk Cleaner' },
   { to: '/performance', icon: Gauge, label: 'Performance' },
   { to: '/startup', icon: Power, label: 'Startup Manager' },
   { to: '/privacy', icon: Shield, label: 'Privacy Shield' },
-  { to: '/safety', icon: BadgeCheck, label: 'Safety Center' },
   { to: '/disk', icon: HardDrive, label: 'Disk Health' },
   { to: '/largefiles', icon: Search, label: 'Large Files' },
   { to: '/registry', icon: Database, label: 'Registry' },
@@ -40,7 +39,7 @@ export default function Sidebar() {
       </nav>
       <div className="sidebar-footer">
         <Boxes size={14} />
-        <div><strong>WinBoost 2.2</strong><span>Local system toolkit</span></div>
+        <div><strong>WinBoost 3.0</strong><span>Local system toolkit</span></div>
       </div>
     </aside>
   )

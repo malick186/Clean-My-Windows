@@ -17,6 +17,7 @@ const LargeFiles = lazy(() => import('./pages/LargeFiles'))
 const RegistryCleaner = lazy(() => import('./pages/RegistryCleaner'))
 const SafetyCenter = lazy(() => import('./pages/SafetyCenter'))
 const Settings = lazy(() => import('./pages/Settings'))
+const Security = lazy(() => import('./pages/Security'))
 
 function page(Component) {
   return <Suspense fallback={<div className="route-loader"><Loader size={21} className="animate-spin" /><span>Loading module...</span></div>}><Component /></Suspense>
@@ -29,6 +30,7 @@ export default function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={page(Dashboard)} />
           <Route path="cleanup" element={page(Cleanup)} />
+          <Route path="security" element={page(Security)} />
           <Route path="malware" element={page(MalwareScanner)} />
           <Route path="uninstaller" element={page(Uninstaller)} />
           <Route path="startup" element={page(StartupManager)} />

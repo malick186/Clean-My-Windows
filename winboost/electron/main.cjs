@@ -3,12 +3,12 @@ const path = require('path')
 const fs = require('fs')
 const os = require('os')
 const crypto = require('crypto')
-const { execFile, spawn } = require('child_process')
+const { execFile, execFileSync, spawn } = require('child_process')
 const { promisify } = require('util')
 
 const execFileAsync = promisify(execFile)
 let si
-try { si = require('systeminformation') } catch { si = null }
+try { si = require('systeminformation') } catch (_) { si = null }
 
 let mainWindow
 const state = {
@@ -56,7 +56,6 @@ function send(channel, data) {
 
 function errorMessage(error) {
   const text = error?.stderr || error?.stdout || error?.message || String(error || 'Unknown error')
-  // oxlint-disable-next-line no-control-regex -- strip ANSI terminal color escapes from command output
   return String(text).replace(/\x1b\[[0-9;]*m/g, '').trim().slice(0, 1400)
 }
 
@@ -67,7 +66,7 @@ function asArray(value) {
 
 function parseJson(text, fallback = null) {
   try { return JSON.parse(String(text || '').replace(/^\uFEFF/, '').trim()) }
-  catch { return fallback }
+  catch (_) { return fallback }
 }
 
 function stableId(...parts) {
@@ -76,13 +75,6 @@ function stableId(...parts) {
 
 function psLiteral(value) {
   return `'${String(value).replace(/'/g, "''")}'`
-}
-
-function powershellRegistryPath(key) {
-  return String(key || '')
-    .replace(/^HKLM\\/i, 'Registry::HKEY_LOCAL_MACHINE\\')
-    .replace(/^HKCU\\/i, 'Registry::HKEY_CURRENT_USER\\')
-    .replace(/^HKCR\\/i, 'Registry::HKEY_CLASSES_ROOT\\')
 }
 
 async function runExe(file, args = [], options = {}) {
@@ -105,7 +97,7 @@ async function isElevated() {
     const script = '[Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent() | % { $_.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator) }'
     const { stdout } = await runPowerShell(script, { timeout: 8000 })
     return stdout.trim().toLowerCase() === 'true'
-  } catch { return false }
+  } catch (_) { return false }
 }
 
 async function runElevatedCommand(label, command, timeout = 1800000) {
@@ -150,7 +142,7 @@ function dataFile(name) {
 
 async function readJsonFile(file, fallback) {
   try { return JSON.parse(await fs.promises.readFile(file, 'utf8')) }
-  catch { return fallback }
+  catch (_) { return fallback }
 }
 
 async function writeJsonFile(file, value) {
@@ -205,7 +197,7 @@ async function getSystemStats() {
         battery: battery.hasBattery ? { percent: battery.percent, charging: battery.isCharging } : null,
       }
     }
-  } catch {}
+  } catch (_) {}
   const total = os.totalmem()
   const used = total - os.freemem()
   return {
@@ -243,7 +235,7 @@ function browserCacheTargets(root) {
       const profile = path.join(root, entry.name)
       for (const relative of ['Cache', 'Code Cache', 'GPUCache', path.join('Service Worker', 'CacheStorage')]) targets.push({ path: path.join(profile, relative) })
     }
-  } catch {}
+  } catch (_) {}
   return targets
 }
 
@@ -255,7 +247,7 @@ function firefoxCacheTargets(root) {
       if (!entry.isDirectory()) continue
       targets.push({ path: path.join(root, entry.name, 'cache2') }, { path: path.join(root, entry.name, 'startupCache') })
     }
-  } catch {}
+  } catch (_) {}
   return targets
 }
 
@@ -303,7 +295,7 @@ async function collectTargetFiles(target, limitState) {
   while (queue.length && limitState.count < limitState.limit) {
     const dir = queue.shift()
     let entries
-    try { entries = await fs.promises.readdir(dir, { withFileTypes: true }) } catch { continue }
+    try { entries = await fs.promises.readdir(dir, { withFileTypes: true }) } catch (_) { continue }
     for (const entry of entries) {
       if (limitState.count++ >= limitState.limit) break
       const fullPath = path.join(dir, entry.name)
@@ -317,7 +309,7 @@ async function collectTargetFiles(target, limitState) {
           if (cutoff && stat.mtimeMs >= cutoff) continue
           files.push({ path: fullPath, size: stat.size })
         }
-      } catch {}
+      } catch (_) {}
     }
   }
   return files
@@ -330,4 +322,1090 @@ async function scanCleanupCategory(category) {
   return {
     ...category,
     targets: undefined,
-    path: category.targets.map(t => t.p×otÒÚ$z{-®éÜj×ä6÷&UÅÅ&Vv—7G'“£¢ö’ÂrrÐ¢–b‚&Vv—7G'•F‚’6öçF–çVPÐ¢6öç7B–BÒ7F&ÆT–B‚wVæ–ç7FÆÂrÂ&Vv—7G'•F‚Â—FVÒææÖRÐ¢6öç7B—77VRÒ°Ð¢–BÂ¶W“¢–BÂæÖS¢t–çfÆ–BVæ–ç7FÆÂVçG'’rÂFƒ¢&Vv—7G'•F‚ÀÐ¢FW63¢G¶—FVÒææÖWÒ&VfW&Væ6W2Ö—76–ærVæ–ç7FÆÆW#¢G¶W†V7WF&ÆWÖÂ6WfW&—G“¢tÆ÷rrÂ6C¢uVæ–ç7FÆÂrÀÐ¢÷W&F–öã¢²¶–æC¢v¶W’rÂ¶W“¢&Vv—7G'•F‚ÒÀÐ¢ÐÐ¢7FFRç&Vv—7G'”—77VW2ç6WB†–BÂ—77VRæ÷W&F–öâÐ¢—77VW2çW6‚†—77VRÐ¢ÐÐ¢6VæB‚w&Vv—7G'“§&öw&W72rÂ²W&6VçC¢Â7FvS¢66â6ö×ÆWFS¢G¶—77VW2æÆVæwF‡ÒfW&–f–VB—77VR‡2–ÒÐ¢&WGW&â—77VW2æÖ‚‡²÷W&F–öã¢ö÷W&F–öâÂââçV&Æ–4—77VRÒ’ÓâV&Æ–4—77VR’ç6Æ–6RƒÂƒÐ§ÐÐ Ð¦—4Ö–âæ†æFÆR‚w&Vv—7G'“§66ârÂ7–æ2‚’Óâ°Ð¢G'’²&WGW&â²7V66W73¢G'VRÂ—77VW3¢v—B66å&Vv—7G'”—77VW2‚’ÒÐÐ¢6F6‚†W'&÷"’²&WGW&â²7V66W73¢fÇ6RÂ—77VW3¢µÒÂW'&÷#¢W'&÷$ÖW76vR†W'&÷"’ÒÐÐ§ÒÐ Ð¦—4Ö–âæ†æFÆR‚w&Vv—7G'“¦f—‚rÂ7–æ2…òÂ—77VT–G2’Óâ°¢6öç7B–G2Ò'&’æ—4'&’†—77VT–G2’ò—77VT–G2¢µÐ¢6öç7B&6·WF—"ÒF‚æ¦ö–â†ævWEF‚‚wW6W$FFr’Ât&6·W2rÂu&Vv—7G'’r¢v—Bg2ç&öÖ—6W2æÖ¶F—"†&6·WF—"Â²&V7W'6—fS¢G'VRÒ¢ÆWBf—†VBÒ ¢6öç7BW'&÷'2ÒµÐ¢6öç7B÷W&F–öç2ÒµÐ¢f÷"†6öç7B–Böb–G2’°¢6öç7B÷W&F–öâÒ7FFRç&Vv—7G'”—77VW2ævWB†–B¢–b‚÷W&F–öâ’W'&÷'2çW6‚‚töæR6VÆV7FVB—77VR—2æòÆöævW"fÆ–C²ÆV6R&W66ââr¢VÇ6R÷W&F–öç2çW6‚‡²–BÂ÷W&F–öâÂ&6·W¢F‚æ¦ö–â†&6·WF—"ÂG´FFRææ÷r‚—ÒÒG¶–GÒç&Vv’Ò¢Ð ¢6öç7BVÆWfFVBÒv—B—4VÆWfFVB‚¢6öç7BÖ6†–æT÷W&F–öç2Ò÷W&F–öç2æf–ÇFW"†—FVÒÓâõâƒó¤„´U•ôÄô4ÅôÔ4„”äWÄ„´ÄÒ’ö’çFW7B†—FVÒæ÷W&F–öâæ¶W’’¢6öç7BF—&V7D÷W&F–öç2Ò÷W&F–öç2æf–ÇFW"†—FVÒÓâVÆWfFVBÇÂõâƒó¤„´U•ôÄô4ÅôÔ4„”äWÄ„´ÄÒ’ö’çFW7B†—FVÒæ÷W&F–öâæ¶W’’ ¢–b†Ö6†–æT÷W&F–öç2æÆVæwF‚bbVÆWfFVB’°¢6öç7B&Æö6·2ÒÖ6†–æT÷W&F–öç2æÖ‚‡²–BÂ÷W&F–öâÂ&6·WÒ’Óâ §G'’°¢b&VræW†RW‡÷'BG·4Æ—FW&Â†÷W&F–öâæ¶W’—ÒG·4Æ—FW&Â†&6·W—Ò÷’Â÷WBÔçVÆÀ¢–b‚DÄ5DU„•D4ôDRÖæR’²F‡&÷ruVæ&ÆRFò7&VFR&Vv—7G'’&6·WârÐ¢G¶÷W&F–öâæ¶–æBÓÓÒwfÇVRp¢ò&VÖ÷fRÔ—FVÕ&÷W'G’ÔÆ—FW&ÅF‚G·4Æ—FW&Â‡÷vW'6†VÆÅ&Vv—7G'•F‚†÷W&F–öâæ¶W’’—ÒÔæÖRG·4Æ—FW&Â†÷W&F–öâçfÇVTæÖR—ÒÔW'&÷$7F–öâ7F÷ ¢¢&VÖ÷fRÔ—FVÒÔÆ—FW&ÅF‚G·4Æ—FW&Â‡÷vW'6†VÆÅ&Vv—7G'•F‚†÷W&F–öâæ¶W’’—ÒÕ&V7W'6RÔW'&÷$7F–öâ7F÷Ð¢G&W7VÇG2³Ò·67W7FöÖö&¦V7EÔ²–BÒG·4Æ—FW&Â†–B—Ó²7V66W72ÒGG'VS²W'&÷"ÒrrÐ§Ò6F6‚°¢G&W7VÇG2³Ò·67W7FöÖö&¦V7EÔ²–BÒG·4Æ—FW&Â†–B—Ó²7V66W72ÒFfÇ6S²W'&÷"Ò·7G&–æuÒEòäW†6WF–öâäÖW76vRÐ§Ö’æ¦ö–â‚uÆâr¢6öç7B67&—BÒDW'&÷$7F–öå&VfW&Væ6RÒu7F÷p¢G&W7VÇG2Ò‚¢G¶&Æö6·7Ð¤‚G&W7VÇG2’Â6öçfW'EFòÔ§6öâÔ6ö×&W72ÔFWF‚6 ¢G'’°¢6öç7B&W7VÇBÒv—B'VäVÆWfFVE÷vW%6†VÆÂ‚u&W—"fW&–f–VB&Vv—7G'’—77VW2rÂ67&—BÂR¢c¢¢f÷"†6öç7B—FVÒöb4'&’‡'6T§6öâ‡&W7VÇBæ÷WGWBÂµÒ’’æf–ÇFW"„&ööÆVâ’’°¢–b†—FVÒç7V66W72’²7FFRç&Vv—7G'”—77VW2æFVÆWFR†—FVÒæ–B“²f—†VB²²Ð¢VÇ6RW'&÷'2çW6‚†G¶—FVÒæ–GÓ¢G¶—FVÒæW'&÷"ÇÂu&Vv—7G'’&W—"f–ÆVBâwÖ¢Ð¢Ò6F6‚†W'&÷"’²W'&÷'2çW6‚†W'&÷$ÖW76vR†W'&÷"’’Ð¢Ð ¢f÷"†6öç7B²–BÂ÷W&F–öâÂ&6·WÒöbF—&V7D÷W&F–öç2’°¢G'’°¢v—B'VäW†R‚w&VræW†RrÂ²vW‡÷'BrÂ÷W&F–öâæ¶W’Â&6·WÂr÷’uÒÂ²F–ÖV÷WC¢#Ò¢6öç7B&w2Ò÷W&F–öâæ¶–æBÓÓÒwfÇVRrò²vFVÆWFRrÂ÷W&F–öâæ¶W’Âr÷brÂ÷W&F–öâçfÇVTæÖRÂröbuÒ¢²vFVÆWFRrÂ÷W&F–öâæ¶W’ÂröbuÐ¢v—B'VäW†R‚w&VræW†RrÂ&w2Â²F–ÖV÷WC¢SÒ¢7FFRç&Vv—7G'”—77VW2æFVÆWFR†–B“²f—†VB²°¢Ò6F6‚†W'&÷"’²W'&÷'2çW6‚†W'&÷$ÖW76vR†W'&÷"’’Ð¢Ð¢v—BFD†—7F÷'’‚u&Vv—7G'’&W—"rÂG¶f—†VGÒfW&–f–VB—77VR‡2’&W—&VC²&6·W6fVFÂW'&÷'2æÆVæwF‚òwv&æ–ærr¢w7V66W72rÐ¢&WGW&â²7V66W73¢W'&÷'2æÆVæwF‚ÓÓÒÂf—†VBÂW'&÷'3¢W'&÷'2ç6Æ–6RƒÂ#’Â&6·WF—"ÐÐ§ÒÐ Ð¦—4Ö–âæ†æFÆR‚w&Vv—7G'“¦÷Vä&6·W2rÂ7–æ2‚’Óâ°Ð¢6öç7B&6·WF—"ÒF‚æ¦ö–â†ævWEF‚‚wW6W$FFr’Ât&6·W2rÂu&Vv—7G'’rÐ¢v—Bg2ç&öÖ—6W2æÖ¶F—"†&6·WF—"Â²&V7W'6—fS¢G'VRÒÐ¢6öç7BW'&÷"Òv—B6†VÆÂæ÷VåF‚†&6·WF—"Ð¢&WGW&âW'&÷"ò²7V66W73¢fÇ6RÂW'&÷"Ò¢²7V66W73¢G'VRÐÐ§ÒÐ Ð¦6öç7B$•d5•õ5T52Ò°Ð¢²w&÷W¢uFVÆVÖWG'’bFF6öÆÆV7F–öârÂæÖS¢tF–væ÷7F–2FFrÂFW63¢tÆ–Ö—B÷F–öæÂF–væ÷7F–2FF6VçBFòÖ–7&÷6ögBrÂ¶W“¢t„´ÄÕÅÅ4ôeEt$UÅÅöÆ–6–W5ÅÄÖ–7&÷6ögEÅÅv–æF÷w5ÅÄFF6öÆÆV7F–öârÂfÇVS¢tÆÆ÷uFVÆVÖWG'’rÂG—S¢u$TuôEtõ$BrÂöã¢s2rÂöfc¢srÂFVfVÇDVæ&ÆVC¢G'VRÂFÖ–ã¢G'VRÒÀÐ¢²w&÷W¢uFVÆVÖWG'’bFF6öÆÆV7F–öârÂæÖS¢uF–Æ÷&VBW‡W&–Væ6W2rÂFW63¢uW6RF–væ÷7F–2FFf÷"W'6öæÆ—¦VBF—2æBG2rÂ¶W“¢t„´5UÅÅ6ögGv&UÅÄÖ–7&÷6ögEÅÅv–æF÷w5ÅÄ7W'&VçEfW'6–öåÅÅ&—f7’rÂfÇVS¢uF–Æ÷&VDW‡W&–Væ6W5v—F„F–væ÷7F–4FFVæ&ÆVBrÂG—S¢u$TuôEtõ$BrÂöã¢srÂöfc¢srÂFVfVÇDVæ&ÆVC¢G'VRÒÀÐ¢²w&÷W¢uFVÆVÖWG'’bFF6öÆÆV7F–öârÂæÖS¢tGfW'F—6–ær”BrÂFW63¢tÆWBv–æF÷w22W6R–÷W"GfW'F—6–ær–FVçF–f–W"rÂ¶W“¢t„´5UÅÅ6ögGv&UÅÄÖ–7&÷6ögEÅÅv–æF÷w5ÅÄ7W'&VçEfW'6–öåÅÄGfW'F—6–æt–æfòrÂfÇVS¢tVæ&ÆVBrÂG—S¢u$TuôEtõ$BrÂöã¢srÂöfc¢srÂFVfVÇDVæ&ÆVC¢G'VRÒÀÐ¢²w&÷W¢tÆö6F–öâb6Vç6÷'2rÂæÖS¢tÆö6F–öâ6W'f–6W2rÂFW63¢tÆÆ÷rFW6·F÷æB7F÷&R2Fò66W72Æö6F–öârÂ¶W“¢t„´5UÅÅ6ögGv&UÅÄÖ–7&÷6ögEÅÅv–æF÷w5ÅÄ7W'&VçEfW'6–öåÅÄ6&–Æ—G”66W74ÖævW%ÅÄ6öç6VçE7F÷&UÅÆÆö6F–öârÂfÇVS¢ufÇVRrÂG—S¢u$Tuõ5¢rÂöã¢tÆÆ÷rrÂöfc¢tFVç’rÂFVfVÇDVæ&ÆVC¢G'VRÒÀÐ¢²w&÷W¢t6ÖW&bÖ–7&÷†öæRrÂæÖS¢t6ÖW&66W72rÂFW63¢tÆÆ÷rÆ–6F–öç2FòW6RF†R6ÖW&rÂ¶W“¢t„´5UÅÅ6ögGv&UÅÄÖ–7&÷6ögEÅÅv–æF÷w5ÅÄ7W'&VçEfW'6–öåÅÄ6&–Æ—G”66W74ÖævW%ÅÄ6öç6VçE7F÷&UÅÇvV&6ÒrÂfÇVS¢ufÇVRrÂG—S¢u$Tuõ5¢rÂöã¢tÆÆ÷rrÂöfc¢tFVç’rÂFVfVÇDVæ&ÆVC¢G'VRÒÀÐ¢²w&÷W¢t6ÖW&bÖ–7&÷†öæRrÂæÖS¢tÖ–7&÷†öæR66W72rÂFW63¢tÆÆ÷rÆ–6F–öç2FòW6RF†RÖ–7&÷†öæRrÂ¶W“¢t„´5UÅÅ6ögGv&UÅÄÖ–7&÷6ögEÅÅv–æF÷w5ÅÄ7W'&VçEfW'6–öåÅÄ6&–Æ—G”66W74ÖævW%ÅÄ6öç6VçE7F÷&UÅÆÖ–7&÷†öæRrÂfÇVS¢ufÇVRrÂG—S¢u$Tuõ5¢rÂöã¢tÆÆ÷rrÂöfc¢tFVç’rÂFVfVÇDVæ&ÆVC¢G'VRÒÀÐ¢²w&÷W¢t7F—f—G’b–çWBrÂæÖS¢t7F—f—G’†—7F÷'’rÂFW63¢uV&Æ—6‚7F—f—G’†—7F÷'’g&öÒF†—2v–æF÷w266÷VçBrÂ¶W“¢t„´5UÅÅ6ögGv&UÅÄÖ–7&÷6ögEÅÅv–æF÷w5ÅÄ7W'&VçEfW'6–öåÅÅ&—f7’rÂfÇVS¢uV&Æ—6…W6W$7F—f—F–W2rÂG—S¢u$TuôEtõ$BrÂöã¢srÂöfc¢srÂFVfVÇDVæ&ÆVC¢G'VRÒÀÐ¢²w&÷W¢t7F—f—G’b–çWBrÂæÖS¢t6Æ—&ö&B7–æ2rÂFW63¢tÆÆ÷r6Æ—&ö&B6öçFVçBFò&öÒ&WGvVVâFWf–6W2rÂ¶W“¢t„´ÄÕÅÅ4ôeEt$UÅÅöÆ–6–W5ÅÄÖ–7&÷6ögEÅÅv–æF÷w5ÅÅ7—7FVÒrÂfÇVS¢tÆÆ÷t7&÷74FWf–6T6Æ—&ö&BrÂG—S¢u$TuôEtõ$BrÂöã¢srÂöfc¢srÂFVfVÇDVæ&ÆVC¢G'VRÂFÖ–ã¢G'VRÒÀÐ¢²w&÷W¢t7F—f—G’b–çWBrÂæÖS¢t–æ¶–ærbG—–ærrÂFW63¢tÆÆ÷r–×Æ–6—BG—–ærFF6öÆÆV7F–öârÂ¶W“¢t„´5UÅÅ6ögGv&UÅÄÖ–7&÷6ögEÅÄ–çWEW'6öæÆ—¦F–öârÂfÇVS¢u&W7G&–7D–×Æ–6—EFW‡D6öÆÆV7F–öârÂG—S¢u$TuôEtõ$BrÂöã¢srÂöfc¢srÂFVfVÇDVæ&ÆVC¢G'VRÒÀÐ¢²w&÷W¢u&V6öÖÖVæFF–öç2rÂæÖS¢u7VvvW7FVB6öçFVçBrÂFW63¢u6†÷r7VvvW7FVB6öçFVçB–ç6–FRv–æF÷w26WGF–æw2rÂ¶W“¢t„´5UÅÅ6ögGv&UÅÄÖ–7&÷6ögEÅÅv–æF÷w5ÅÄ7W'&VçEfW'6–öåÅÄ6öçFVçDFVÆ—fW'”ÖævW"rÂfÇVS¢u7V'67&–&VD6öçFVçBÓ33ƒ3“4Væ&ÆVBrÂG—S¢u$TuôEtõ$BrÂöã¢srÂöfc¢srÂFVfVÇDVæ&ÆVC¢G'VRÒÀÐ¢²w&÷W¢u&V6öÖÖVæFF–öç2rÂæÖS¢tÆVæ6‚G&6¶–ærrÂFW63¢uG&6²ÆVæ6†W2Fò–×&÷fR7F'BæB6V&6‚rÂ¶W“¢t„´5UÅÅ6ögGv&UÅÄÖ–7&÷6ögEÅÅv–æF÷w5ÅÄ7W'&VçEfW'6–öåÅÄW‡Æ÷&W%ÅÄGfæ6VBrÂfÇVS¢u7F'EõG&6µ&öw2rÂG—S¢u$TuôEtõ$BrÂöã¢srÂöfc¢srÂFVfVÇDVæ&ÆVC¢G'VRÒÀÐ¥ÐÐ Ð¦7–æ2gVæ7F–öâVW'•&VufÇVR‡7V2’°Ð¢G'’°Ð¢6öç7B²7FF÷WBÒÒv—B'VäW†R‚w&VræW†RrÂ²wVW'’rÂ7V2æ¶W’Âr÷brÂ7V2çfÇVUÒÂ²F–ÖV÷WC¢ƒÒÐ¢6öç7BÆ–æRÒ7FF÷WBç7Æ—B‚õÇ#õÆâò’æf–æB‡&÷rÓâ&÷ræ–æ6ÇVFW2‡7V2çfÇVR’bb&÷ræ–æ6ÇVFW2‚u$Tuòr’Ð¢–b‚Æ–æR’&WGW&âçVÆÀÐ¢&WGW&âÆ–æRçG&–Ò‚’ç7Æ—B‚õÇ7³"ÇÒò’ç6Æ–6Rƒ"’æ¦ö–â‚rr’çG&–Ò‚Ð¢Ò6F6‚²&WGW&âçVÆÂÐ§ÐÐ Ð¦7–æ2gVæ7F–öâ6WE&Vv—7G'•7V2‡7V2ÂVæ&ÆVB’°Ð¢6öç7BFFÒVæ&ÆVBò7V2æöâ¢7V2æöf`Ð¢–b‡7V2æFÖ–âbb†v—B—4VÆWfFVB‚’’’°Ð¢6öç7B6öÖÖæBÒ&VræW†RFB"G·7V2æ¶W—Ò"÷b"G·7V2çfÇVWÒ"÷BG·7V2çG—WÒöB"G¶FFÒ"öf Ð¢&WGW&â'VäVÆWfFVD6öÖÖæB‡7V2ææÖRÂ6öÖÖæBÂ#Ð¢ÐÐ¢v—B'VäW†R‚w&VræW†RrÂ²vFBrÂ7V2æ¶W’Âr÷brÂ7V2çfÇVRÂr÷BrÂ7V2çG—RÂröBrÂFFÂröbuÒÂ²F–ÖV÷WC¢#ÒÐ¢&WGW&â²7V66W73¢G'VRÐÐ§ÐÐ Ð¦7–æ2gVæ7F–öâÆ—7E&—f7•6WGF–æw2‚’°Ð¢6öç7Bw&÷W2ÒæWrÖ‚Ð¢f÷"†6öç7B7V2öb$•d5•õ5T52’°Ð¢6öç7BfÇVRÒv—BVW'•&VufÇVR‡7V2Ð¢ÆWBVæ&ÆVBÒ7V2æFVfVÇDVæ&ÆV@Ð¢–b‡fÇVRÓÒçVÆÂ’°Ð¢6öç7Bæ÷&ÖÆ—¦VBÒ7V2çG—RÓÓÒu$TuôEtõ$Brò7G&–ær„çVÖ&W"ç'6T–çB‡fÇVRÂfÇVRç7F'G5v—F‚‚s‚r’òb¢’’¢fÇVPÐ¢Væ&ÆVBÒæ÷&ÖÆ—¦VBçFôÆ÷vW$66R‚’ÓÓÒ7G&–ær‡7V2æöâ’çFôÆ÷vW$66R‚Ð¢ÐÐ¢–b‚w&÷W2æ†2‡7V2æw&÷W’’w&÷W2ç6WB‡7V2æw&÷WÂµÒÐ¢w&÷W2ævWB‡7V2æw&÷W’çW6‚‡²æÖS¢7V2ææÖRÂFW63¢7V2æFW62ÂVæ&ÆVBÂ&WV—&W4FÖ–ã¢&ööÆVâ‡7V2æFÖ–â’ÂÖævVC¢fÇVRÓÒçVÆÂÒÐ¢ÐÐ¢&WGW&â²ââæw&÷W2æVçG&–W2‚•ÒæÖ‚…¶6FVv÷'’Â—FV×5Ò’Óâ‡²6FVv÷'’Â—FV×2Ò’Ð§ÐÐ Ð¦—4Ö–âæ†æFÆR‚w&—f7“¦Æ—7BrÂ7–æ2‚’Óâ°Ð¢G'’²&WGW&â²7V66W73¢G'VRÂw&÷W3¢v—BÆ—7E&—f7•6WGF–æw2‚’ÒÐÐ¢6F6‚†W'&÷"’²&WGW&â²7V66W73¢fÇ6RÂw&÷W3¢µÒÂW'&÷#¢W'&÷$ÖW76vR†W'&÷"’ÒÐÐ§ÒÐ Ð¦—4Ö–âæ†æFÆR‚w&—f7“§6WBrÂ7–æ2…òÂæÖRÂVæ&ÆVB’Óâ°Ð¢6öç7B7V2Ò$•d5•õ5T52æf–æB†—FVÒÓâ—FVÒææÖRÓÓÒæÖRÐ¢–b‚7V2’&WGW&â²7V66W73¢fÇ6RÂW'&÷#¢uVæ¶æ÷vâ&—f7’6WGF–ærârÐÐ¢G'’°Ð¢v—B6WE&Vv—7G'•7V2‡7V2Â&ööÆVâ†Væ&ÆVB’Ð¢v—BFD†—7F÷'’‚u&—f7’6WGF–ærrÂG¶æÖWÓ¢G¶Væ&ÆVBòvVæ&ÆVBr¢vF—6&ÆVBwÖÂw7V66W72rÐ¢&WGW&â²7V66W73¢G'VRÂVæ&ÆVC¢&ööÆVâ†Væ&ÆVB’ÐÐ¢Ò6F6‚†W'&÷"’²&WGW&â²7V66W73¢fÇ6RÂW'&÷#¢W'&÷$ÖW76vR†W'&÷"’ÂFÖ–å&WV—&VC¢&ööÆVâ‡7V2æFÖ–â’ÒÐÐ§ÒÐ Ð¦—4Ö–âæ†æFÆR‚w&—f7“§&V6öÖÖVæFVBrÂ7–æ2‚’Óâ°Ð¢ÆWBÆ–VBÒ Ð¢6öç7BW'&÷'2ÒµÐÐ¢f÷"†6öç7B7V2öb$•d5•õ5T52’°Ð¢G'’²v—B6WE&Vv—7G'•7V2‡7V2ÂfÇ6R“²Æ–VB²²ÐÐ¢6F6‚†W'&÷"’²W'&÷'2çW6‚†G·7V2ææÖWÓ¢G¶W'&÷$ÖW76vR†W'&÷"—Ö’ÐÐ¢ÐÐ¢v—BFD†—7F÷'’‚u&—f7’&öf–ÆRrÂG¶Æ–VGÒ&—f7’6öçG&öÇ2†&FVæVFÂW'&÷'2æÆVæwF‚òwv&æ–ærr¢w7V66W72rÐ¢&WGW&â²7V66W73¢W'&÷'2æÆVæwF‚ÓÓÒÂÆ–VBÂW'&÷'2ÐÐ§ÒÐ Ð¦6öç7BU$dõ$Ôä4Uõ5T52Ò°Ð¢²æÖS¢u&VGV6VBf—7VÂVffV7G2rÂFW63¢tÆWBv–æF÷w2ff÷"&W7öç6—fVæW72÷fW"FV6÷&F—fRVffV7G2rÂ–×7C¢t†–v‚rÂ6C¢uf—7VÂrÂ¶W“¢t„´5UÅÅ6ögGv&UÅÄÖ–7&÷6ögEÅÅv–æF÷w5ÅÄ7W'&VçEfW'6–öåÅÄW‡Æ÷&W%ÅÅf—7VÄVffV7G2rÂfÇVS¢uf—7VÄe…6WGF–ærrÂG—S¢u$TuôEtõ$BrÂöã¢s"rÂöfc¢srÒÀÐ¢²æÖS¢tvÖRÖöFRrÂFW63¢u&–÷&—F—¦RvÖRv÷&¶ÆöG2v†Vâ7W÷'FVBrÂ–×7C¢t†–v‚rÂ6C¢tvÖ–ærrÂ¶W“¢t„´5UÅÅ6ögGv&UÅÄÖ–7&÷6ögEÅÄvÖT&"rÂfÇVS¢tWFôvÖTÖöFTVæ&ÆVBrÂG—S¢u$TuôEtõ$BrÂöã¢srÂöfc¢srÒÀÐ¢²æÖS¢tÆ–Ö—B&6¶w&÷VæB2rÂFW63¢u&VGV6R&6¶w&÷VæBW†V7WF–öâf÷"7F÷&RÆ–6F–öç2rÂ–×7C¢t†–v‚rÂ6C¢u7—7FVÒrÂ¶W“¢t„´5UÅÅ6ögGv&UÅÄÖ–7&÷6ögEÅÅv–æF÷w5ÅÄ7W'&VçEfW'6–öåÅÄ&6¶w&÷VæD66W74Æ–6F–öç2rÂfÇVS¢tvÆö&ÅW6W$F—6&ÆVBrÂG—S¢u$TuôEtõ$BrÂöã¢srÂöfc¢srÒÀÐ¢²æÖS¢tF—6&ÆRv–æF÷w2F—2rÂFW63¢u7F÷&öÖ÷F–öæÂF—2æB7VvvW7F–öâæ÷F–f–6F–öç2rÂ–×7C¢tÆ÷rrÂ6C¢u7—7FVÒrÂ¶W“¢t„´5UÅÅ6ögGv&UÅÄÖ–7&÷6ögEÅÅv–æF÷w5ÅÄ7W'&VçEfW'6–öåÅÄ6öçFVçDFVÆ—fW'”ÖævW"rÂfÇVS¢u7V'67&–&VD6öçFVçBÓ33ƒ3ƒ”Væ&ÆVBrÂG—S¢u$TuôEtõ$BrÂöã¢srÂöfc¢srÒÀÐ¢²æÖS¢u&VÖ÷fR7F'GWFVÆ’rÂFW63¢u&VGV6RF†R'F–f–6–ÂFVÆ’&Vf÷&R7F'GW2'VârÂ–×7C¢tÖVF—VÒrÂ6C¢u7F'GWrÂ¶W“¢t„´5UÅÅ6ögGv&UÅÄÖ–7&÷6ögEÅÅv–æF÷w5ÅÄ7W'&VçEfW'6–öåÅÄW‡Æ÷&W%ÅÅ6W&–Æ—¦RrÂfÇVS¢u7F'GWFVÆ”–äÕ6V2rÂG—S¢u$TuôEtõ$BrÂöã¢srÂöfc¢srÒÀÐ¢²æÖS¢tF—6&ÆRG&ç7&Væ7’rÂFW63¢u&VGV6RuRv÷&²W6VB'’7'–Æ–2æBG&ç7&Væ7’VffV7G2rÂ–×7C¢tÖVF—VÒrÂ6C¢uf—7VÂrÂ¶W“¢t„´5UÅÅ6ögGv&UÅÄÖ–7&÷6ögEÅÅv–æF÷w5ÅÄ7W'&VçEfW'6–öåÅÅF†VÖW5ÅÅW'6öæÆ—¦RrÂfÇVS¢tVæ&ÆUG&ç7&Væ7’rÂG—S¢u$TuôEtõ$BrÂöã¢srÂöfc¢srÒÀÐ¢²æÖS¢tF—6&ÆRvÖR&V6÷&F–ærrÂFW63¢uGW&âöfb&6¶w&÷VæBvÖREe"6GW&RrÂ–×7C¢tÖVF—VÒrÂ6C¢tvÖ–ærrÂ¶W“¢t„´5UÅÅ6ögGv&UÅÄÖ–7&÷6ögEÅÅv–æF÷w5ÅÄ7W'&VçEfW'6–öåÅÄvÖTEe"rÂfÇVS¢t6GW&TVæ&ÆVBrÂG—S¢u$TuôEtõ$BrÂöã¢srÂöfc¢srÒÀÐ¢²æÖS¢tf7FW"ÖVçW2rÂFW63¢u&VGV6RF†Rv–æF÷w2ÖVçRF—7Æ’FVÆ’rÂ–×7C¢tÆ÷rrÂ6C¢uf—7VÂrÂ¶W“¢t„´5UÅÄ6öçG&öÂæVÅÅÄFW6·F÷rÂfÇVS¢tÖVçU6†÷tFVÆ’rÂG—S¢u$Tuõ5¢rÂöã¢srÂöfc¢sCrÒÀÐ¢²æÖS¢u7F÷&vR6Vç6RrÂFW63¢tÆWBv–æF÷w2WFöÖF–6ÆÇ’ÖævRFV×÷&'’7F÷&vRrÂ–×7C¢tÖVF—VÒrÂ6C¢tF—6²rÂ¶W“¢t„´5UÅÅ6ögGv&UÅÄÖ–7&÷6ögEÅÅv–æF÷w5ÅÄ7W'&VçEfW'6–öåÅÅ7F÷&vU6Vç6UÅÅ&ÖWFW'5ÅÅ7F÷&vUöÆ–7’rÂfÇVS¢srÂG—S¢u$TuôEtõ$BrÂöã¢srÂöfc¢srÒÀÐ¢²æÖS¢tF—6&ÆR6V&6‚†–v†Æ–v‡G2rÂFW63¢u&VÖ÷fRG–æÖ–2vV"†–v†Æ–v‡G2g&öÒF†R6V&6‚&÷‚rÂ–×7C¢tÆ÷rrÂ6C¢u7—7FVÒrÂ¶W“¢t„´5UÅÅ6ögGv&UÅÄÖ–7&÷6ögEÅÅv–æF÷w5ÅÄ7W'&VçEfW'6–öåÅÅ6V&6…6WGF–æw2rÂfÇVS¢t—4G–æÖ–56V&6„&÷„Væ&ÆVBrÂG—S¢u$TuôEtõ$BrÂöã¢srÂöfc¢srÒÀÐ¥ÐÐ Ð¦7–æ2gVæ7F–öâÆ—7EW&f÷&Öæ6UGvV·2‚’°Ð¢6öç7B&W7VÇBÒµÐÐ¢f÷"†6öç7B7V2öbU$dõ$Ôä4Uõ5T52’°Ð¢6öç7BfÇVRÒv—BVW'•&VufÇVR‡7V2Ð¢6öç7Bæ÷&ÖÆ—¦VBÒfÇVRÓÓÒçVÆÂòçVÆÂ¢7V2çG—RÓÓÒu$TuôEtõ$Brò7G&–ær„çVÖ&W"ç'6T–çB‡fÇVRÂfÇVRç7F'G5v—F‚‚s‚r’òb¢’’¢fÇVPÐ¢&W7VÇBçW6‚‡²æÖS¢7V2ææÖRÂFW63¢7V2æFW62Â–×7C¢7V2æ–×7BÂ6C¢7V2æ6BÂÆ–VC¢æ÷&ÖÆ—¦VBÓÓÒ7V2æöâÂ7W'&VçC¢æ÷&ÖÆ—¦VBÒÐ¢ÐÐ¢&WGW&â&W7VÇ@Ð§ÐÐ Ð¦7–æ2gVæ7F–öâ6WEW&f÷&Öæ6UGvV²†æÖRÂVæ&ÆVB’°Ð¢6öç7B7V2ÒU$dõ$Ôä4Uõ5T52æf–æB†—FVÒÓâ—FVÒææÖRÓÓÒæÖRÐ¢–b‚7V2’&WGW&â²7V66W73¢fÇ6RÂW'&÷#¢uVæ¶æ÷vâW&f÷&Öæ6R6WGF–ærârÐÐ¢G'’°Ð¢v—B6WE&Vv—7G'•7V2‡7V2Â&ööÆVâ†Væ&ÆVB’Ð¢v—BFD†—7F÷'’‚uW&f÷&Öæ6R6WGF–ærrÂG¶æÖWÓ¢G¶Væ&ÆVBòv÷F–Ö—¦VBr¢w&W7F÷&VBwÖÂw7V66W72rÐ¢&WGW&â²7V66W73¢G'VRÂÆ–VC¢&ööÆVâ†Væ&ÆVB’ÐÐ¢Ò6F6‚†W'&÷"’²&WGW&â²7V66W73¢fÇ6RÂW'&÷#¢W'&÷$ÖW76vR†W'&÷"’ÒÐÐ§ÐÐ Ð¦—4Ö–âæ†æFÆR‚wW&f÷&Öæ6S¦Æ—7BrÂ7–æ2‚’Óâ°Ð¢G'’²&WGW&â²7V66W73¢G'VRÂGvV·3¢v—BÆ—7EW&f÷&Öæ6UGvV·2‚’ÒÐÐ¢6F6‚†W'&÷"’²&WGW&â²7V66W73¢fÇ6RÂGvV·3¢µÒÂW'&÷#¢W'&÷$ÖW76vR†W'&÷"’ÒÐÐ§ÒÐ¦—4Ö–âæ†æFÆR‚wW&f÷&Öæ6S§6WBrÂ7–æ2…òÂæÖRÂVæ&ÆVB’Óâ6WEW&f÷&Öæ6UGvV²†æÖRÂVæ&ÆVB’Ð¦—4Ö–âæ†æFÆR‚wW&f÷&Öæ6S¦Ç’rÂ7–æ2…òÂæÖR’Óâ6WEW&f÷&Öæ6UGvV²†æÖRÂG'VR’Ð¦—4Ö–âæ†æFÆR‚wW&f÷&Öæ6S¦Ç”ÆÂrÂ7–æ2‚’Óâ°Ð¢ÆWBÆ–VBÒ Ð¢6öç7BW'&÷'2ÒµÐÐ¢f÷"†6öç7B7V2öbU$dõ$Ôä4Uõ5T52’°Ð¢6öç7B&W7VÇBÒv—B6WEW&f÷&Öæ6UGvV²‡7V2ææÖRÂG'VRÐ¢–b‡&W7VÇBç7V66W72’Æ–VB²°Ð¢VÇ6RW'&÷'2çW6‚†G·7V2ææÖWÓ¢G·&W7VÇBæW'&÷'ÖÐ¢ÐÐ¢&WGW&â²7V66W73¢W'&÷'2æÆVæwF‚ÓÓÒÂÆ–VBÂW'&÷'2ÐÐ§ÒÐ Ð¦—4Ö–âæöâ‚wv–æF÷rÖÖ–æ–Ö—¦RrÂ‚’ÓâÖ–åv–æF÷sòæÖ–æ–Ö—¦R‚’Ð¦—4Ö–âæöâ‚wv–æF÷rÖÖ†–Ö—¦RrÂ‚’Óâ°Ð¢–b†Ö–åv–æF÷sòæ—4Ö†–Ö—¦VB‚’’Ö–åv–æF÷rçVæÖ†–Ö—¦R‚Ð¢VÇ6RÖ–åv–æF÷sòæÖ†–Ö—¦R‚Ð§ÒÐ¦—4Ö–âæöâ‚wv–æF÷rÖ6Æ÷6RrÂ‚’ÓâÖ–åv–æF÷sòæ6Æ÷6R‚’Ð Ð¦çv†Vå&VG’‚’çF†Vâ†7&VFUv–æF÷rÐ¦æöâ‚wv–æF÷rÖÆÂÖ6Æ÷6VBrÂ‚’Óâ²–b‡&ö6W72çÆFf÷&ÒÓÒvF'v–âr’çV—B‚’ÒÐ¦æöâ‚v7F—fFRrÂ‚’Óâ²–b„'&÷w6W%v–æF÷rævWDÆÅv–æF÷w2‚’æÆVæwF‚ÓÓÒ’7&VFUv–æF÷r‚’ÒÐ 
+    path: category.targets.map(t => t.path).join(', '),
+    size: Number((files.reduce((sum, file) => sum + file.size, 0) / 1073741824).toFixed(3)),
+    bytes: files.reduce((sum, file) => sum + file.size, 0),
+    files: files.length,
+    limited: limitState.count >= limitState.limit,
+  }
+}
+
+async function scanCleanup() {
+  const result = []
+  for (const category of getCleanupCategories()) result.push(await scanCleanupCategory(category))
+  return result
+}
+
+ipcMain.handle('cleanup:scan', scanCleanup)
+ipcMain.handle('cleanup:clean', async (_, categoryIds) => {
+  const allowedIds = new Set(Array.isArray(categoryIds) ? categoryIds : [])
+  const categories = getCleanupCategories().filter(category => allowedIds.has(category.id))
+  let freedBytes = 0
+  let deletedFiles = 0
+  const errors = []
+
+  for (let index = 0; index < categories.length; index++) {
+    const category = categories[index]
+    send('cleanup:progress', { percent: Math.round((index / Math.max(categories.length, 1)) * 100), stage: `Cleaning ${category.name}...` })
+    try {
+      const before = await scanCleanupCategory(category)
+      if (category.special === 'recycle') {
+        await runPowerShell('Clear-RecycleBin -Force -ErrorAction Stop', { timeout: 120000 })
+        freedBytes += before.bytes
+        deletedFiles += before.files
+      } else {
+        const limitState = { count: 0, limit: 120000 }
+        const candidates = []
+        for (const target of category.targets || []) candidates.push(...await collectTargetFiles(target, limitState))
+        for (const file of candidates) {
+          try {
+            if (category.special === 'downloads') await shell.trashItem(file.path)
+            else await fs.promises.unlink(file.path)
+            freedBytes += file.size
+            deletedFiles++
+          } catch (error) { errors.push(`${path.basename(file.path)}: ${errorMessage(error)}`) }
+        }
+      }
+    } catch (error) { errors.push(`${category.name}: ${errorMessage(error)}`) }
+  }
+
+  send('cleanup:progress', { percent: 100, stage: 'Cleanup complete' })
+  const result = { success: errors.length === 0, freed: Number((freedBytes / 1073741824).toFixed(3)), freedBytes, deletedFiles, errors: errors.slice(0, 30) }
+  await addHistory('System cleanup', `${deletedFiles} files removed; ${(freedBytes / 1048576).toFixed(1)} MB reclaimed`, errors.length ? 'warning' : 'success')
+  return result
+})
+
+async function getDefenderStatus() {
+  const script = `
+    $s = Get-MpComputerStatus -ErrorAction Stop
+    [pscustomobject]@{
+      available = $true
+      antivirusEnabled = [bool]$s.AntivirusEnabled
+      realTimeProtection = [bool]$s.RealTimeProtectionEnabled
+      signaturesOutOfDate = [bool]$s.DefenderSignaturesOutOfDate
+      signatureUpdated = if ($s.AntivirusSignatureLastUpdated) { $s.AntivirusSignatureLastUpdated.ToString('o') } else { $null }
+      quickScanAge = [int]$s.QuickScanAge
+      fullScanAge = [int]$s.FullScanAge
+      engineVersion = [string]$s.AMEngineVersion
+    } | ConvertTo-Json -Compress
+  `
+  try {
+    const { stdout } = await runPowerShell(script, { timeout: 15000 })
+    return parseJson(stdout, { available: false, error: 'Unable to read Microsoft Defender status.' })
+  } catch (error) {
+    try {
+      const { stdout } = await runPowerShell(`$s = Get-Service WinDefend -ErrorAction SilentlyContinue; [pscustomobject]@{ status = [string]$s.Status; startType = [string]$s.StartType } | ConvertTo-Json -Compress`, { timeout: 8000 })
+      const service = parseJson(stdout, {})
+      return {
+        available: service.status === 'Running', antivirusEnabled: service.status === 'Running', realTimeProtection: false,
+        permissionRequired: true, serviceStatus: service.status || 'Unknown',
+        error: 'Detailed Microsoft Defender status requires administrator approval on this PC.',
+      }
+    } catch (_) { return { available: false, antivirusEnabled: false, realTimeProtection: false, permissionRequired: true, error: errorMessage(error) } }
+  }
+}
+
+function defenderThreatCollectionScript() {
+  return `
+    $items = @()
+    $threats = @(Get-MpThreat -ErrorAction SilentlyContinue | Where-Object { $_.IsActive })
+    foreach ($t in $threats) {
+      $d = @(Get-MpThreatDetection -ThreatID $t.ThreatID -ErrorAction SilentlyContinue | Sort-Object InitialDetectionTime -Descending | Select-Object -First 1)
+      $severity = switch ([int]$t.SeverityID) { 4 {'Critical'} 3 {'High'} 2 {'Medium'} default {'Low'} }
+      $items += [pscustomobject]@{
+        id = [string]$t.ThreatID
+        name = [string]$t.ThreatName
+        severity = $severity
+        type = 'Microsoft Defender'
+        path = if ($d -and $d.Resources) { [string]($d.Resources -join ', ') } else { 'Detected by Microsoft Defender' }
+        detectedAt = if ($d -and $d.InitialDetectionTime) { $d.InitialDetectionTime.ToString('o') } else { $null }
+      }
+    }
+  `
+}
+
+function defenderThreatQueryScript() {
+  return `${defenderThreatCollectionScript()}\n@($items) | ConvertTo-Json -Compress -Depth 4`
+}
+
+ipcMain.handle('malware:scan', async (_, type) => {
+  const scanType = type === 'quick' ? 'QuickScan' : 'FullScan'
+  const timeout = type === 'quick' ? 30 * 60 * 1000 : 3 * 60 * 60 * 1000
+
+  let progress = 6
+  send('malware:scan-progress', { percent: progress, stage: `Starting Microsoft Defender ${scanType === 'QuickScan' ? 'quick' : 'full'} scan...`, filesScanned: 0, threatsFound: 0 })
+  const timer = setInterval(() => {
+    progress = Math.min(92, progress + (progress < 50 ? 3 : 1))
+    send('malware:scan-progress', { percent: progress, stage: 'Microsoft Defender is scanning protected areas...', filesScanned: 0, threatsFound: 0 })
+  }, 2500)
+
+  try {
+    const script = `$ProgressPreference = 'SilentlyContinue'\n$ErrorActionPreference = 'Stop'\nStart-MpScan -ScanType ${scanType} -ErrorAction Stop | Out-Null\n${defenderThreatQueryScript()}`
+    const result = await runElevatedPowerShell(`Microsoft Defender ${scanType}`, script, timeout)
+    const threats = asArray(parseJson(result.output, [])).filter(Boolean)
+    send('malware:scan-progress', { percent: 100, stage: 'Microsoft Defender scan complete', filesScanned: 0, threatsFound: threats.length })
+    await addHistory('Microsoft Defender scan', `${scanType === 'QuickScan' ? 'Quick' : 'Full'} scan completed; ${threats.length} active threats`, threats.length ? 'warning' : 'success')
+    return { success: true, engine: 'Microsoft Defender', threats }
+  } catch (error) {
+    await addHistory('Microsoft Defender scan', errorMessage(error), 'error')
+    return { success: false, error: errorMessage(error), threats: [] }
+  } finally { clearInterval(timer) }
+})
+
+ipcMain.handle('malware:remove', async () => {
+  try {
+    const script = `$ProgressPreference = 'SilentlyContinue'\n$ErrorActionPreference = 'Stop'\n$before = @(Get-MpThreat -ErrorAction SilentlyContinue | Where-Object { $_.IsActive }).Count\nRemove-MpThreat -ErrorAction Stop | Out-Null\n${defenderThreatCollectionScript()}\n[pscustomobject]@{ before = $before; remaining = @($items) } | ConvertTo-Json -Compress -Depth 6`
+    const result = await runElevatedPowerShell('Microsoft Defender remediation', script, 20 * 60 * 1000)
+    const payload = parseJson(result.output, { before: 0, remaining: [] })
+    const remaining = asArray(payload.remaining).filter(Boolean)
+    const removed = Math.max(0, Number(payload.before || 0) - remaining.length)
+    await addHistory('Threat remediation', `${removed} Microsoft Defender threat(s) remediated`, remaining.length ? 'warning' : 'success')
+    return { success: remaining.length === 0, removed, remaining, error: remaining.length ? 'Some threats still require attention in Windows Security.' : undefined }
+  } catch (error) {
+    await addHistory('Threat remediation', errorMessage(error), 'error')
+    return { success: false, removed: 0, error: errorMessage(error) }
+  }
+})
+
+async function getRestorePointSummary() {
+  const script = `
+    $points = @(Get-ComputerRestorePoint -ErrorAction Stop | Sort-Object SequenceNumber -Descending)
+    $last = $points | Select-Object -First 1
+    [pscustomobject]@{
+      enabled = $true
+      count = $points.Count
+      lastDescription = if ($last) { [string]$last.Description } else { $null }
+      lastCreated = if ($last) { [System.Management.ManagementDateTimeConverter]::ToDateTime($last.CreationTime).ToString('o') } else { $null }
+    } | ConvertTo-Json -Compress
+  `
+  try {
+    const { stdout } = await runPowerShell(script, { timeout: 20000 })
+    return parseJson(stdout, { enabled: false, count: 0 })
+  } catch (error) { return { enabled: false, count: 0, error: errorMessage(error) } }
+}
+
+ipcMain.handle('safety:status', async () => {
+  const [admin, defender, restore, history] = await Promise.all([
+    isElevated(), getDefenderStatus(), getRestorePointSummary(), readJsonFile(dataFile('operation-history.json'), []),
+  ])
+  return { admin, defender, restore, history: history.slice(0, 8), backupPath: path.join(app.getPath('userData'), 'Backups'), localOnly: true }
+})
+
+ipcMain.handle('safety:createRestorePoint', async () => {
+  const command = `powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "Checkpoint-Computer -Description 'WinBoost Safety Point' -RestorePointType MODIFY_SETTINGS -ErrorAction Stop"`
+  try {
+    const result = await runElevatedCommand('Create restore point', command, 10 * 60 * 1000)
+    await addHistory('Safety restore point', 'Created WinBoost Safety Point', 'success')
+    return result
+  } catch (error) {
+    await addHistory('Safety restore point', errorMessage(error), 'error')
+    return { success: false, error: errorMessage(error) }
+  }
+})
+
+ipcMain.handle('smart:scan', async () => {
+  send('smart:progress', { percent: 8, stage: 'Reading live system metrics...' })
+  try {
+    const stats = await getSystemStats()
+    send('smart:progress', { percent: 34, stage: 'Checking reclaimable storage...' })
+    const cleanup = await scanCleanup()
+    send('smart:progress', { percent: 68, stage: 'Checking Windows protection...' })
+    const [defender, startup] = await Promise.all([getDefenderStatus(), listStartupEntries()])
+    const av = detectClamAV()
+    const reclaimableBytes = cleanup.filter(c => c.recommended).reduce((sum, c) => sum + c.bytes, 0)
+    const highStartup = startup.filter(item => item.enabled && item.impact === 'High').length
+    const disk = stats.disk[0]?.percent || 0
+    const deductions = Math.min(45,
+      Math.round((stats.cpu.usage || 0) * 0.08) +
+      Math.round((stats.memory.percent || 0) * 0.06) +
+      Math.max(0, disk - 80) + highStartup * 2 +
+      (!defender.realTimeProtection && !defender.permissionRequired ? 20 : 0))
+    const score = Math.max(55, 100 - deductions)
+    const result = {
+      success: true, score, stats, reclaimableBytes, reclaimableGB: Number((reclaimableBytes / 1073741824).toFixed(2)),
+      startupCount: startup.filter(item => item.enabled).length, highStartup,
+      defender,
+      clamav: { available: av.found, version: av.found ? 'Detected' : 'Not installed' },
+      checks: [
+        { label: 'Microsoft Defender', status: defender.realTimeProtection ? 'Protected' : defender.permissionRequired ? 'Verification needs UAC' : 'Attention', ok: Boolean(defender.realTimeProtection || defender.permissionRequired) },
+        { label: 'Reclaimable storage', status: `${(reclaimableBytes / 1048576).toFixed(0)} MB`, ok: reclaimableBytes < 2 * 1073741824 },
+        { label: 'Startup pressure', status: highStartup ? `${highStartup} high impact` : 'Healthy', ok: highStartup === 0 },
+        { label: 'System drive', status: `${disk}% used`, ok: disk < 85 },
+      ],
+    }
+    send('smart:progress', { percent: 100, stage: 'Smart scan complete' })
+    await addHistory('Smart scan', `Health score ${score}; ${(reclaimableBytes / 1048576).toFixed(0)} MB reclaimable`, 'success')
+    return result
+  } catch (error) {
+    await addHistory('Smart scan', errorMessage(error), 'error')
+    return { success: false, error: errorMessage(error) }
+  }
+})
+
+async function queryInstalledApps() {
+  const script = `
+    $roots = @(
+      'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*',
+      'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*',
+      'HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'
+    )
+    $apps = foreach ($root in $roots) {
+      Get-ItemProperty $root -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -and $_.SystemComponent -ne 1 } | ForEach-Object {
+        [pscustomobject]@{
+          registryPath = [string]$_.PSPath
+          name = [string]$_.DisplayName
+          publisher = [string]$_.Publisher
+          version = [string]$_.DisplayVersion
+          installDate = [string]$_.InstallDate
+          estimatedSizeKB = if ($_.EstimatedSize) { [long]$_.EstimatedSize } else { 0 }
+          uninstallString = [string]$_.UninstallString
+          quietUninstallString = [string]$_.QuietUninstallString
+          installLocation = [string]$_.InstallLocation
+        }
+      }
+    }
+    @($apps) | ConvertTo-Json -Compress -Depth 4
+  `
+  const { stdout } = await runPowerShell(script, { timeout: 30000, maxBuffer: 16 * 1024 * 1024 })
+  return asArray(parseJson(stdout, [])).filter(appItem => appItem?.name)
+}
+
+async function listInstalledApps() {
+  const raw = await queryInstalledApps()
+  state.uninstallers.clear()
+  const seen = new Set()
+  const apps = []
+  for (const item of raw) {
+    const dedupe = `${item.name}|${item.version}|${item.publisher}`.toLowerCase()
+    if (seen.has(dedupe)) continue
+    seen.add(dedupe)
+    const id = stableId(item.registryPath, item.name)
+    state.uninstallers.set(id, item)
+    const date = /^\d{8}$/.test(item.installDate || '') ? `${item.installDate.slice(0, 4)}-${item.installDate.slice(4, 6)}-${item.installDate.slice(6, 8)}` : ''
+    apps.push({
+      id, name: item.name, pub: item.publisher || 'Unknown publisher', version: item.version || '',
+      size: Number(((Number(item.estimatedSizeKB) || 0) / 1048576).toFixed(2)), sizeKnown: Number(item.estimatedSizeKB) > 0,
+      date, canUninstall: Boolean(item.uninstallString || item.quietUninstallString),
+    })
+  }
+  return apps.sort((a, b) => a.name.localeCompare(b.name)).slice(0, 400)
+}
+
+ipcMain.handle('uninstaller:list', async () => {
+  try { return { success: true, apps: await listInstalledApps() } }
+  catch (error) { return { success: false, apps: [], error: errorMessage(error) } }
+})
+
+ipcMain.handle('uninstaller:uninstall', async (_, appId) => {
+  let item = state.uninstallers.get(appId)
+  if (!item) { await listInstalledApps(); item = state.uninstallers.get(appId) }
+  if (!item) return { success: false, error: 'The selected application is no longer registered.' }
+  const command = item.uninstallString || item.quietUninstallString
+  if (!command) return { success: false, error: 'This application does not provide an uninstall command.' }
+  try {
+    const msi = command.match(/(?:msiexec(?:\.exe)?\s+.*?)(\{[0-9a-f-]{36}\})/i)
+    const child = msi
+      ? spawn('msiexec.exe', ['/x', msi[1]], { detached: true, stdio: 'ignore', windowsHide: false })
+      : spawn('cmd.exe', ['/d', '/s', '/c', command], { detached: true, stdio: 'ignore', windowsHide: false })
+    child.unref()
+    await addHistory('Application uninstaller', `Launched registered uninstaller for ${item.name}`, 'success')
+    return { success: true, launched: true, message: 'The registered vendor uninstaller was launched. Complete any prompts it displays.' }
+  } catch (error) {
+    await addHistory('Application uninstaller', `${item.name}: ${errorMessage(error)}`, 'error')
+    return { success: false, error: errorMessage(error) }
+  }
+})
+
+ipcMain.handle('shredder:pickFiles', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Select files to shred permanently', properties: ['openFile', 'multiSelections'], filters: [{ name: 'All Files', extensions: ['*'] }],
+  })
+  if (result.canceled) return []
+  const files = []
+  for (const filePath of result.filePaths) {
+    try {
+      const resolved = path.resolve(filePath)
+      const stat = await fs.promises.stat(resolved)
+      if (!stat.isFile() || isProtected(resolved)) continue
+      state.shredFiles.add(resolved.toLowerCase())
+      files.push({ name: path.basename(resolved), path: resolved, size: Number((stat.size / 1048576).toFixed(2)), bytes: stat.size })
+    } catch (_) {}
+  }
+  return files
+})
+
+async function overwriteFile(filePath, passes, progressState) {
+  const stat = await fs.promises.stat(filePath)
+  const size = stat.size
+  if (size === 0) { await fs.promises.unlink(filePath); return }
+  const chunkCapacity = Math.min(1024 * 1024, size)
+  const buffer = Buffer.alloc(chunkCapacity)
+  const handle = await fs.promises.open(filePath, 'r+')
+  try {
+    for (let pass = 0; pass < passes; pass++) {
+      let position = 0
+      while (position < size) {
+        const length = Math.min(chunkCapacity, size - position)
+        if (pass === 0) buffer.fill(0x00, 0, length)
+        else if (pass === 1) buffer.fill(0xff, 0, length)
+        else crypto.randomFillSync(buffer, 0, length)
+        await handle.write(buffer, 0, length, position)
+        position += length
+        progressState.completed += length
+        const percent = Math.min(99, Math.round((progressState.completed / progressState.total) * 100))
+        if (percent !== progressState.lastPercent) {
+          progressState.lastPercent = percent
+          send('shredder:progress', { percent, stage: `Overwrite pass ${pass + 1} of ${passes}` })
+        }
+      }
+      await handle.sync()
+      send('shredder:log', `${path.basename(filePath)} - pass ${pass + 1}/${passes} verified`)
+    }
+  } finally { await handle.close() }
+  await fs.promises.unlink(filePath)
+}
+
+ipcMain.handle('shredder:shred', async (_, filePaths, requestedPasses) => {
+  const passes = [1, 3, 7, 35].includes(Number(requestedPasses)) ? Number(requestedPasses) : 3
+  const valid = []
+  for (const candidate of Array.isArray(filePaths) ? filePaths : []) {
+    const resolved = path.resolve(String(candidate))
+    if (state.shredFiles.has(resolved.toLowerCase()) && !isProtected(resolved)) valid.push(resolved)
+  }
+  if (!valid.length) return { success: false, deleted: 0, errors: ['No approved files were selected.'] }
+
+  const sizes = await Promise.all(valid.map(file => fs.promises.stat(file).then(s => s.size).catch(() => 0)))
+  const progressState = { completed: 0, total: Math.max(1, sizes.reduce((sum, size) => sum + size * passes, 0)), lastPercent: -1 }
+  const errors = []
+  let deleted = 0
+  for (const filePath of valid) {
+    try {
+      await overwriteFile(filePath, passes, progressState)
+      state.shredFiles.delete(filePath.toLowerCase())
+      deleted++
+    } catch (error) { errors.push(`${path.basename(filePath)}: ${errorMessage(error)}`) }
+  }
+  send('shredder:progress', { percent: 100, stage: 'Secure deletion complete' })
+  await addHistory('Secure file deletion', `${deleted} file(s) overwritten with ${passes} pass(es)`, errors.length ? 'warning' : 'success')
+  return { success: errors.length === 0, deleted, errors }
+})
+
+const MAINTENANCE_TASKS = {
+  flushdns: { label: 'Flush DNS Cache', desc: 'Clear the Windows DNS resolver cache', cat: 'Network', risk: 'Low', recommended: true, admin: false, kind: 'exec', file: 'ipconfig.exe', args: ['/flushdns'], timeout: 60000 },
+  chkdsk: { label: 'Check Disk Errors', desc: 'Run an online scan of the system volume', cat: 'Disk', risk: 'Low', recommended: false, admin: true, kind: 'command', command: 'chkdsk.exe C: /scan', timeout: 30 * 60 * 1000 },
+  sfc: { label: 'System File Checker', desc: 'Verify and repair protected Windows files', cat: 'System', risk: 'Low', recommended: false, admin: true, kind: 'command', command: 'sfc.exe /scannow', timeout: 60 * 60 * 1000 },
+  dism: { label: 'Scan Windows Image', desc: 'Check the Windows component store for corruption', cat: 'System', risk: 'Low', recommended: false, admin: true, kind: 'command', command: 'dism.exe /Online /Cleanup-Image /ScanHealth', timeout: 60 * 60 * 1000 },
+  winsock: { label: 'Reset Network Stack', desc: 'Reset Winsock; a restart is required afterwards', cat: 'Network', risk: 'Medium', recommended: false, admin: true, restart: true, kind: 'command', command: 'netsh.exe winsock reset', timeout: 120000 },
+  wucache: { label: 'Clean Update Cache', desc: 'Stop update services and remove downloaded update packages', cat: 'Cleanup', risk: 'Medium', recommended: false, admin: true, kind: 'command', command: 'net stop wuauserv & net stop bits & del /f /s /q "%windir%\\SoftwareDistribution\\Download\\*" & net start bits & net start wuauserv', timeout: 20 * 60 * 1000 },
+  reindex: { label: 'Rebuild Search Index', desc: 'Reset the Windows Search database so it can rebuild', cat: 'System', risk: 'Medium', recommended: false, admin: true, kind: 'command', command: 'net stop WSearch & del /f /s /q "%ProgramData%\\Microsoft\\Search\\Data\\Applications\\Windows\\*" & net start WSearch', timeout: 20 * 60 * 1000 },
+  fontcache: { label: 'Rebuild Font Cache', desc: 'Reset the Windows font cache service and cache files', cat: 'System', risk: 'Medium', recommended: false, admin: true, kind: 'command', command: 'net stop FontCache & del /f /s /q "%windir%\\ServiceProfiles\\LocalService\\AppData\\Local\\FontCache\\*" & net start FontCache', timeout: 10 * 60 * 1000 },
+  defrag: { label: 'Optimize System Drive', desc: 'Let Windows choose the correct HDD or SSD optimization', cat: 'Disk', risk: 'Low', recommended: false, admin: true, kind: 'command', command: 'defrag.exe C: /O', timeout: 60 * 60 * 1000 },
+  shadercache: { label: 'Clear DirectX Shader Cache', desc: 'Remove rebuildable user graphics cache files', cat: 'Cleanup', risk: 'Low', recommended: true, admin: false, kind: 'internal' },
+  thumbcache: { label: 'Clear Thumbnail Cache', desc: 'Remove rebuildable Explorer thumbnail databases', cat: 'Cleanup', risk: 'Low', recommended: true, admin: false, kind: 'internal' },
+  store: { label: 'Reset Store Cache', desc: 'Launch the official Microsoft Store cache reset tool', cat: 'Apps', risk: 'Low', recommended: true, admin: false, kind: 'launch', file: 'wsreset.exe' },
+}
+
+function publicMaintenanceTasks() {
+  return Object.entries(MAINTENANCE_TASKS).map(([id, task]) => ({ id, label: task.label, desc: task.desc, cat: task.cat, risk: task.risk, recommended: task.recommended, admin: task.admin, restart: Boolean(task.restart) }))
+}
+
+ipcMain.handle('maintenance:list', async () => publicMaintenanceTasks())
+
+async function runMaintenance(taskId) {
+  const task = MAINTENANCE_TASKS[taskId]
+  if (!task) return { taskId, success: false, error: 'Unknown maintenance task.' }
+  send('maintenance:progress', { taskId, percent: 10, stage: `Starting ${task.label}...` })
+  try {
+    let output = ''
+    if (task.kind === 'exec') {
+      const result = await runExe(task.file, task.args, { timeout: task.timeout })
+      output = result.stdout || result.stderr || `${task.label} completed.`
+    } else if (task.kind === 'command') {
+      const result = task.admin
+        ? await runElevatedCommand(task.label, task.command, task.timeout)
+        : await runExe('cmd.exe', ['/d', '/s', '/c', task.command], { timeout: task.timeout })
+      output = result.output || result.stdout || result.stderr || `${task.label} completed.`
+    } else if (task.kind === 'internal') {
+      const categoryId = taskId === 'shadercache' ? 'shaders' : 'thumbnails'
+      const category = getCleanupCategories().find(item => item.id === categoryId)
+      const limitState = { count: 0, limit: 50000 }
+      let deleted = 0
+      for (const target of category.targets) {
+        for (const file of await collectTargetFiles(target, limitState)) {
+          try { await fs.promises.unlink(file.path); deleted++ } catch (_) {}
+        }
+      }
+      output = `${deleted} cache file(s) removed.`
+    } else if (task.kind === 'launch') {
+      spawn(task.file, [], { detached: true, stdio: 'ignore', windowsHide: false }).unref()
+      output = `${task.label} launched.`
+    }
+    send('maintenance:progress', { taskId, percent: 100, stage: `${task.label} completed` })
+    await addHistory('System maintenance', task.label, 'success')
+    return { taskId, success: true, output: String(output).trim().slice(0, 4000), restartRequired: Boolean(task.restart) }
+  } catch (error) {
+    const message = errorMessage(error)
+    await addHistory('System maintenance', `${task.label}: ${message}`, 'error')
+    return { taskId, success: false, error: message, adminRequired: task.admin }
+  }
+}
+
+ipcMain.handle('maintenance:run', async (_, taskId) => runMaintenance(taskId))
+ipcMain.handle('maintenance:runAll', async (_, taskIds) => {
+  const ids = (Array.isArray(taskIds) ? taskIds : []).filter(id => MAINTENANCE_TASKS[id])
+  const results = []
+  for (let index = 0; index < ids.length; index++) {
+    send('maintenance:progress', { taskId: ids[index], percent: Math.round((index / Math.max(ids.length, 1)) * 100), stage: `Running ${MAINTENANCE_TASKS[ids[index]].label}...` })
+    results.push(await runMaintenance(ids[index]))
+  }
+  return { success: results.every(result => result.success), results }
+})
+
+function fileType(filePath) {
+  const ext = path.extname(filePath).toLowerCase()
+  if (['.doc', '.docx', '.pdf', '.txt', '.xlsx', '.pptx', '.md'].includes(ext)) return 'Documents'
+  if (['.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv'].includes(ext)) return 'Videos'
+  if (['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg', '.webp', '.psd'].includes(ext)) return 'Images'
+  if (['.zip', '.rar', '.7z', '.tar', '.gz', '.bz2'].includes(ext)) return 'Archives'
+  if (['.mp3', '.flac', '.wav', '.aac', '.ogg', '.wma'].includes(ext)) return 'Music'
+  return 'Other'
+}
+
+async function allowedScanRoots() {
+  const stats = await getSystemStats()
+  const roots = new Map([['home', os.homedir()]])
+  for (const disk of stats.disk) roots.set(disk.fs, disk.fs)
+  return roots
+}
+
+async function walkFilesystem(root, options = {}) {
+  const queue = [{ dir: root, top: root }]
+  const folders = new Map()
+  const types = new Map()
+  const large = []
+  let scannedItems = 0
+  let totalBytes = 0
+  const maxItems = options.maxItems || 180000
+
+  while (queue.length && scannedItems < maxItems) {
+    const current = queue.shift()
+    let entries
+    try { entries = await fs.promises.readdir(current.dir, { withFileTypes: true }) } catch (_) { continue }
+    for (const entry of entries) {
+      if (scannedItems++ >= maxItems) break
+      const fullPath = path.join(current.dir, entry.name)
+      if (entry.isSymbolicLink() || isProtected(fullPath)) continue
+      try {
+        if (entry.isDirectory()) {
+          const relative = path.relative(root, fullPath)
+          const topName = relative.split(path.sep)[0] || entry.name
+          queue.push({ dir: fullPath, top: path.join(root, topName) })
+        } else if (entry.isFile()) {
+          const stat = await fs.promises.stat(fullPath)
+          totalBytes += stat.size
+          const relative = path.relative(root, fullPath)
+          const topName = relative.split(path.sep)[0] || path.basename(root)
+          const topPath = path.join(root, topName)
+          const folder = folders.get(topPath) || { size: 0, items: 0 }
+          folder.size += stat.size; folder.items++; folders.set(topPath, folder)
+          const type = fileType(fullPath)
+          const typeInfo = types.get(type) || { size: 0, count: 0 }
+          typeInfo.size += stat.size; typeInfo.count++; types.set(type, typeInfo)
+          if (options.minSize && stat.size >= options.minSize) large.push({ fullPath, size: stat.size, mtime: stat.mtime })
+        }
+      } catch (_) {}
+      if (options.progressChannel && scannedItems % 750 === 0) send(options.progressChannel, { percent: Math.min(94, Math.round((scannedItems / maxItems) * 100)), stage: `Scanned ${scannedItems.toLocaleString()} items...` })
+    }
+  }
+  return { folders, types, large, scannedItems, totalBytes, limited: scannedItems >= maxItems }
+}
+
+ipcMain.handle('diskanalyzer:scan', async (_, targetId) => {
+  const roots = await allowedScanRoots()
+  const root = roots.get(targetId) || roots.get('home')
+  send('diskanalyzer:progress', { percent: 4, stage: `Analyzing ${root}...` })
+  const result = await walkFilesystem(root, { maxItems: 180000, progressChannel: 'diskanalyzer:progress' })
+  send('diskanalyzer:progress', { percent: 100, stage: 'Analysis complete' })
+  return {
+    success: true, root, scannedItems: result.scannedItems, totalSize: Number((result.totalBytes / 1073741824).toFixed(2)), limited: result.limited,
+    folders: [...result.folders.entries()].sort((a, b) => b[1].size - a[1].size).slice(0, 18).map(([name, data]) => ({ name, size: Number((data.size / 1073741824).toFixed(2)), items: data.items })),
+    types: [...result.types.entries()].sort((a, b) => b[1].size - a[1].size).map(([type, data]) => ({ type, size: Number((data.size / 1073741824).toFixed(2)), count: data.count })),
+  }
+})
+
+ipcMain.handle('largefiles:scan', async (_, minSizeMB) => {
+  const root = os.homedir()
+  const minSize = Math.max(1, Math.min(102400, Number(minSizeMB) || 100)) * 1048576
+  state.largeFiles.clear()
+  send('largefiles:progress', { percent: 3, stage: `Scanning ${root}...` })
+  const result = await walkFilesystem(root, { maxItems: 220000, minSize, progressChannel: 'largefiles:progress' })
+  const files = result.large.sort((a, b) => b.size - a.size).slice(0, 100).map(item => {
+    const id = stableId(item.fullPath, item.size, item.mtime.toISOString())
+    state.largeFiles.set(id, item.fullPath)
+    return { id, name: path.basename(item.fullPath), path: path.dirname(item.fullPath), size: Number((item.size / 1073741824).toFixed(3)), bytes: item.size, date: item.mtime.toISOString().slice(0, 10), type: fileType(item.fullPath).toLowerCase() }
+  })
+  send('largefiles:progress', { percent: 100, stage: `Found ${files.length} large files` })
+  return { success: true, root, files, scannedItems: result.scannedItems, limited: result.limited }
+})
+
+ipcMain.handle('largefiles:reveal', async (_, fileId) => {
+  const filePath = state.largeFiles.get(fileId)
+  if (!filePath || !fs.existsSync(filePath)) return { success: false, error: 'The file is no longer available.' }
+  shell.showItemInFolder(filePath)
+  return { success: true }
+})
+
+ipcMain.handle('largefiles:trash', async (_, fileId) => {
+  const filePath = state.largeFiles.get(fileId)
+  if (!filePath || !fs.existsSync(filePath) || isProtected(filePath)) return { success: false, error: 'The file is no longer available or is protected.' }
+  try {
+    await shell.trashItem(filePath)
+    state.largeFiles.delete(fileId)
+    await addHistory('Large file cleanup', `${path.basename(filePath)} moved to Recycle Bin`, 'success')
+    return { success: true }
+  } catch (error) { return { success: false, error: errorMessage(error) } }
+})
+
+async function queryRegistryValues(key) {
+  try {
+    const { stdout } = await runExe('reg.exe', ['query', key], { timeout: 8000 })
+    return stdout.split(/\r?\n/).map(line => line.trim()).filter(line => /\sREG_(?:SZ|EXPAND_SZ)\s/i.test(line)).map(line => {
+      const parts = line.split(/\s{2,}/)
+      return { name: parts[0], type: parts[1], value: parts.slice(2).join(' ') }
+    }).filter(item => item.name && item.value)
+  } catch (_) { return [] }
+}
+
+function expandWindowsPath(value) {
+  return String(value || '').replace(/%([^%]+)%/g, (_, name) => process.env[name] || process.env[name.toUpperCase()] || `%${name}%`)
+}
+
+function executableFromCommand(command) {
+  const expanded = expandWindowsPath(command).trim()
+  const quoted = expanded.match(/^"([^"\r\n]+\.(?:exe|com|bat|cmd))"/i)
+  if (quoted) return quoted[1]
+  const bare = expanded.match(/^(.+?\.(?:exe|com|bat|cmd))(?=\s|$)/i)
+  return bare?.[1]?.trim() || ''
+}
+
+const STARTUP_LOCATIONS = [
+  'HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run',
+  'HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run',
+  'HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Run',
+]
+
+function startupImpact(name, value) {
+  const text = `${name} ${value}`.toLowerCase()
+  if (/update|scheduler|helper|tray/.test(text)) return 'Low'
+  if (/teams|discord|steam|adobe|spotify|dropbox/.test(text)) return 'High'
+  return 'Medium'
+}
+
+async function readEnabledStartupEntries() {
+  const result = []
+  for (const source of STARTUP_LOCATIONS) {
+    for (const item of await queryRegistryValues(source)) result.push({ ...item, source, enabled: true })
+  }
+  return result
+}
+
+async function readDisabledStartupEntries() {
+  const items = await readJsonFile(dataFile('disabled-startup.json'), [])
+  return Array.isArray(items) ? items.filter(item => item?.source && item?.name && item?.value) : []
+}
+
+async function listStartupEntries() {
+  const [enabled, disabled] = await Promise.all([readEnabledStartupEntries(), readDisabledStartupEntries()])
+  state.startup.clear()
+  const items = [...enabled, ...disabled.map(item => ({ ...item, enabled: false }))]
+  return items.map(item => {
+    const id = stableId(item.source, item.name, item.value)
+    state.startup.set(id, { ...item, id })
+    const executable = executableFromCommand(item.value)
+    const publisher = /microsoft|onedrive|teams/i.test(`${item.name} ${item.value}`) ? 'Microsoft' : path.basename(executable || item.name, path.extname(executable || '')) || 'Third party'
+    return {
+      id, name: item.name, pub: publisher, impact: startupImpact(item.name, item.value), enabled: item.enabled,
+      path: item.value, source: item.source, requiresAdmin: item.source.startsWith('HKLM'),
+    }
+  }).sort((a, b) => Number(b.enabled) - Number(a.enabled) || a.name.localeCompare(b.name))
+}
+
+ipcMain.handle('startup:list', async () => {
+  try { return { success: true, items: await listStartupEntries() } }
+  catch (error) { return { success: false, items: [], error: errorMessage(error) } }
+})
+
+ipcMain.handle('startup:toggle', async (_, entryId, enabled) => {
+  let entry = state.startup.get(entryId)
+  if (!entry) { await listStartupEntries(); entry = state.startup.get(entryId) }
+  if (!entry) return { success: false, error: 'The startup entry has changed. Refresh and try again.' }
+  if (entry.source.startsWith('HKLM') && !(await isElevated())) return { success: false, adminRequired: true, error: 'Machine-wide startup entries require running WinBoost as administrator.' }
+
+  const disabled = await readDisabledStartupEntries()
+  try {
+    if (enabled) {
+      await runExe('reg.exe', ['add', entry.source, '/v', entry.name, '/t', entry.type || 'REG_SZ', '/d', entry.value, '/f'], { timeout: 10000 })
+      await writeJsonFile(dataFile('disabled-startup.json'), disabled.filter(item => stableId(item.source, item.name, item.value) !== entryId))
+    } else {
+      const backupDir = path.join(app.getPath('userData'), 'Backups', 'Startup')
+      await fs.promises.mkdir(backupDir, { recursive: true })
+      await runExe('reg.exe', ['export', entry.source, path.join(backupDir, `${Date.now()}-${stableId(entry.source)}.reg`), '/y'], { timeout: 15000 }).catch(() => null)
+      await runExe('reg.exe', ['delete', entry.source, '/v', entry.name, '/f'], { timeout: 10000 })
+      if (!disabled.some(item => stableId(item.source, item.name, item.value) === entryId)) disabled.push({ source: entry.source, name: entry.name, type: entry.type || 'REG_SZ', value: entry.value })
+      await writeJsonFile(dataFile('disabled-startup.json'), disabled)
+    }
+    await addHistory('Startup Manager', `${enabled ? 'Enabled' : 'Disabled'} ${entry.name}`, 'success')
+    return { success: true, enabled: Boolean(enabled) }
+  } catch (error) {
+    await addHistory('Startup Manager', `${entry.name}: ${errorMessage(error)}`, 'error')
+    return { success: false, error: errorMessage(error), adminRequired: entry.source.startsWith('HKLM') }
+  }
+})
+
+async function scanRegistryIssues() {
+  const issues = []
+  state.registryIssues.clear()
+  send('registry:progress', { percent: 12, stage: 'Checking startup commands...' })
+  const startupEntries = await readEnabledStartupEntries()
+  for (const entry of startupEntries) {
+    const executable = executableFromCommand(entry.value)
+    if (!executable || !path.isAbsolute(executable) || fs.existsSync(executable)) continue
+    const id = stableId('startup', entry.source, entry.name, entry.value)
+    const issue = {
+      id, key: id, name: 'Invalid Startup Entry', path: `${entry.source}\\${entry.name}`,
+      desc: `The startup command points to a missing file: ${executable}`, severity: 'Medium', cat: 'Startup',
+      operation: { kind: 'value', key: entry.source, valueName: entry.name },
+    }
+    state.registryIssues.set(id, issue.operation)
+    issues.push(issue)
+  }
+
+  send('registry:progress', { percent: 58, stage: 'Checking registered uninstallers...' })
+  const installed = await queryInstalledApps().catch(() => [])
+  for (const item of installed) {
+    const command = item.uninstallString || item.quietUninstallString
+    const executable = executableFromCommand(command)
+    if (!command || !executable || !path.isAbsolute(executable) || fs.existsSync(executable)) continue
+    const registryPath = String(item.registryPath || '').replace(/^Microsoft\.PowerShell\.Core\\Registry::/i, '')
+    if (!registryPath) continue
+    const id = stableId('uninstall', registryPath, item.name)
+    const issue = {
+      id, key: id, name: 'Invalid Uninstall Entry', path: registryPath,
+      desc: `${item.name} references a missing uninstaller: ${executable}`, severity: 'Low', cat: 'Uninstall',
+      operation: { kind: 'key', key: registryPath },
+    }
+    state.registryIssues.set(id, issue.operation)
+    issues.push(issue)
+  }
+  send('registry:progress', { percent: 100, stage: `Scan complete: ${issues.length} verified issue(s)` })
+  return issues.map(({ operation: _operation, ...publicIssue }) => publicIssue).slice(0, 80)
+}
+
+ipcMain.handle('registry:scan', async () => {
+  try { return { success: true, issues: await scanRegistryIssues() } }
+  catch (error) { return { success: false, issues: [], error: errorMessage(error) } }
+})
+
+ipcMain.handle('registry:fix', async (_, issueIds) => {
+  const ids = Array.isArray(issueIds) ? issueIds : []
+  const backupDir = path.join(app.getPath('userData'), 'Backups', 'Registry')
+  await fs.promises.mkdir(backupDir, { recursive: true })
+  let fixed = 0
+  const errors = []
+  for (const id of ids) {
+    const operation = state.registryIssues.get(id)
+    if (!operation) { errors.push('One selected issue is no longer valid; please rescan.'); continue }
+    if (operation.key.startsWith('HKEY_LOCAL_MACHINE') || operation.key.startsWith('HKLM')) {
+      if (!(await isElevated())) { errors.push(`${operation.key}: administrator rights required.`); continue }
+    }
+    try {
+      const backup = path.join(backupDir, `${Date.now()}-${id}.reg`)
+      await runExe('reg.exe', ['export', operation.key, backup, '/y'], { timeout: 20000 })
+      const args = operation.kind === 'value'
+        ? ['delete', operation.key, '/v', operation.valueName, '/f']
+        : ['delete', operation.key, '/f']
+      await runExe('reg.exe', args, { timeout: 15000 })
+      state.registryIssues.delete(id)
+      fixed++
+    } catch (error) { errors.push(errorMessage(error)) }
+  }
+  await addHistory('Registry repair', `${fixed} verified issue(s) repaired; backup saved`, errors.length ? 'warning' : 'success')
+  return { success: errors.length === 0, fixed, errors: errors.slice(0, 20), backupDir }
+})
+
+ipcMain.handle('registry:openBackups', async () => {
+  const backupDir = path.join(app.getPath('userData'), 'Backups', 'Registry')
+  await fs.promises.mkdir(backupDir, { recursive: true })
+  const error = await shell.openPath(backupDir)
+  return error ? { success: false, error } : { success: true }
+})
+
+const PRIVACY_SPECS = [
+  { group: 'Telemetry & Data Collection', name: 'Diagnostic Data', desc: 'Limit optional diagnostic data sent to Microsoft', key: 'HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection', value: 'AllowTelemetry', type: 'REG_DWORD', on: '3', off: '1', defaultEnabled: true, admin: true },
+  { group: 'Telemetry & Data Collection', name: 'Tailored Experiences', desc: 'Use diagnostic data for personalized tips and ads', key: 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Privacy', value: 'TailoredExperiencesWithDiagnosticDataEnabled', type: 'REG_DWORD', on: '1', off: '0', defaultEnabled: true },
+  { group: 'Telemetry & Data Collection', name: 'Advertising ID', desc: 'Let Windows apps use your advertising identifier', key: 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo', value: 'Enabled', type: 'REG_DWORD', on: '1', off: '0', defaultEnabled: true },
+  { group: 'Location & Sensors', name: 'Location Services', desc: 'Allow desktop and Store apps to access location', key: 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\location', value: 'Value', type: 'REG_SZ', on: 'Allow', off: 'Deny', defaultEnabled: true },
+  { group: 'Camera & Microphone', name: 'Camera Access', desc: 'Allow applications to use the camera', key: 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\webcam', value: 'Value', type: 'REG_SZ', on: 'Allow', off: 'Deny', defaultEnabled: true },
+  { group: 'Camera & Microphone', name: 'Microphone Access', desc: 'Allow applications to use the microphone', key: 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\microphone', value: 'Value', type: 'REG_SZ', on: 'Allow', off: 'Deny', defaultEnabled: true },
+  { group: 'Activity & Input', name: 'Activity History', desc: 'Publish activity history from this Windows account', key: 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Privacy', value: 'PublishUserActivities', type: 'REG_DWORD', on: '1', off: '0', defaultEnabled: true },
+  { group: 'Activity & Input', name: 'Clipboard Sync', desc: 'Allow clipboard content to roam between devices', key: 'HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\System', value: 'AllowCrossDeviceClipboard', type: 'REG_DWORD', on: '1', off: '0', defaultEnabled: true, admin: true },
+  { group: 'Activity & Input', name: 'Inking & Typing', desc: 'Allow implicit typing data collection', key: 'HKCU\\Software\\Microsoft\\InputPersonalization', value: 'RestrictImplicitTextCollection', type: 'REG_DWORD', on: '0', off: '1', defaultEnabled: true },
+  { group: 'Recommendations', name: 'Suggested Content', desc: 'Show suggested content inside Windows Settings', key: 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager', value: 'SubscribedContent-338393Enabled', type: 'REG_DWORD', on: '1', off: '0', defaultEnabled: true },
+  { group: 'Recommendations', name: 'App Launch Tracking', desc: 'Track app launches to improve Start and search', key: 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced', value: 'Start_TrackProgs', type: 'REG_DWORD', on: '1', off: '0', defaultEnabled: true },
+]
+
+async function queryRegValue(spec) {
+  try {
+    const { stdout } = await runExe('reg.exe', ['query', spec.key, '/v', spec.value], { timeout: 8000 })
+    const line = stdout.split(/\r?\n/).find(row => row.includes(spec.value) && row.includes('REG_'))
+    if (!line) return null
+    return line.trim().split(/\s{2,}/).slice(2).join(' ').trim()
+  } catch (_) { return null }
+}
+
+async function setRegistrySpec(spec, enabled) {
+  const data = enabled ? spec.on : spec.off
+  if (spec.admin && !(await isElevated())) {
+    const command = `reg.exe add "${spec.key}" /v "${spec.value}" /t ${spec.type} /d "${data}" /f`
+    return runElevatedCommand(spec.name, command, 120000)
+  }
+  await runExe('reg.exe', ['add', spec.key, '/v', spec.value, '/t', spec.type, '/d', data, '/f'], { timeout: 12000 })
+  return { success: true }
+}
+
+async function listPrivacySettings() {
+  const groups = new Map()
+  for (const spec of PRIVACY_SPECS) {
+    const value = await queryRegValue(spec)
+    let enabled = spec.defaultEnabled
+    if (value !== null) {
+      const normalized = spec.type === 'REG_DWORD' ? String(Number.parseInt(value, value.startsWith('0x') ? 16 : 10)) : value
+      enabled = normalized.toLowerCase() === String(spec.on).toLowerCase()
+    }
+    if (!groups.has(spec.group)) groups.set(spec.group, [])
+    groups.get(spec.group).push({ name: spec.name, desc: spec.desc, enabled, requiresAdmin: Boolean(spec.admin), managed: value !== null })
+  }
+  return [...groups.entries()].map(([category, items]) => ({ category, items }))
+}
+
+ipcMain.handle('privacy:list', async () => {
+  try { return { success: true, groups: await listPrivacySettings() } }
+  catch (error) { return { success: false, groups: [], error: errorMessage(error) } }
+})
+
+ipcMain.handle('privacy:set', async (_, name, enabled) => {
+  const spec = PRIVACY_SPECS.find(item => item.name === name)
+  if (!spec) return { success: false, error: 'Unknown privacy setting.' }
+  try {
+    await setRegistrySpec(spec, Boolean(enabled))
+    await addHistory('Privacy setting', `${name}: ${enabled ? 'enabled' : 'disabled'}`, 'success')
+    return { success: true, enabled: Boolean(enabled) }
+  } catch (error) { return { success: false, error: errorMessage(error), adminRequired: Boolean(spec.admin) } }
+})
+
+ipcMain.handle('privacy:recommended', async () => {
+  let applied = 0
+  const errors = []
+  for (const spec of PRIVACY_SPECS) {
+    try { await setRegistrySpec(spec, false); applied++ }
+    catch (error) { errors.push(`${spec.name}: ${errorMessage(error)}`) }
+  }
+  await addHistory('Privacy profile', `${applied} privacy controls hardened`, errors.length ? 'warning' : 'success')
+  return { success: errors.length === 0, applied, errors }
+})
+
+const PERFORMANCE_SPECS = [
+  { name: 'Reduced Visual Effects', desc: 'Let Windows favor responsiveness over decorative effects', impact: 'High', cat: 'Visual', key: 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects', value: 'VisualFXSetting', type: 'REG_DWORD', on: '2', off: '0' },
+  { name: 'Game Mode', desc: 'Prioritize game workloads when supported', impact: 'High', cat: 'Gaming', key: 'HKCU\\Software\\Microsoft\\GameBar', value: 'AutoGameModeEnabled', type: 'REG_DWORD', on: '1', off: '0' },
+  { name: 'Limit Background Apps', desc: 'Reduce background execution for Store applications', impact: 'High', cat: 'System', key: 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\BackgroundAccessApplications', value: 'GlobalUserDisabled', type: 'REG_DWORD', on: '1', off: '0' },
+  { name: 'Disable Windows Tips', desc: 'Stop promotional tips and suggestion notifications', impact: 'Low', cat: 'System', key: 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager', value: 'SubscribedContent-338389Enabled', type: 'REG_DWORD', on: '0', off: '1' },
+  { name: 'Remove Startup Delay', desc: 'Reduce the artificial delay before startup apps run', impact: 'Medium', cat: 'Startup', key: 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Serialize', value: 'StartupDelayInMSec', type: 'REG_DWORD', on: '0', off: '10000' },
+  { name: 'Disable Transparency', desc: 'Reduce GPU work used by acrylic and transparency effects', impact: 'Medium', cat: 'Visual', key: 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize', value: 'EnableTransparency', type: 'REG_DWORD', on: '0', off: '1' },
+  { name: 'Disable Game Recording', desc: 'Turn off background Game DVR capture', impact: 'Medium', cat: 'Gaming', key: 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\GameDVR', value: 'AppCaptureEnabled', type: 'REG_DWORD', on: '0', off: '1' },
+  { name: 'Faster Menus', desc: 'Reduce the Windows menu display delay', impact: 'Low', cat: 'Visual', key: 'HKCU\\Control Panel\\Desktop', value: 'MenuShowDelay', type: 'REG_SZ', on: '100', off: '400' },
+  { name: 'Storage Sense', desc: 'Let Windows automatically manage temporary storage', impact: 'Medium', cat: 'Disk', key: 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\StorageSense\\Parameters\\StoragePolicy', value: '01', type: 'REG_DWORD', on: '1', off: '0' },
+  { name: 'Disable Search Highlights', desc: 'Remove dynamic web highlights from the search box', impact: 'Low', cat: 'System', key: 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\SearchSettings', value: 'IsDynamicSearchBoxEnabled', type: 'REG_DWORD', on: '0', off: '1' },
+]
+
+async function listPerformanceTweaks() {
+  const result = []
+  for (const spec of PERFORMANCE_SPECS) {
+    const value = await queryRegValue(spec)
+    const normalized = value === null ? null : spec.type === 'REG_DWORD' ? String(Number.parseInt(value, value.startsWith('0x') ? 16 : 10)) : value
+    result.push({ name: spec.name, desc: spec.desc, impact: spec.impact, cat: spec.cat, applied: normalized === spec.on, current: normalized })
+  }
+  return result
+}
+
+async function setPerformanceTweak(name, enabled) {
+  const spec = PERFORMANCE_SPECS.find(item => item.name === name)
+  if (!spec) return { success: false, error: 'Unknown performance setting.' }
+  try {
+    await setRegistrySpec(spec, Boolean(enabled))
+    await addHistory('Performance setting', `${name}: ${enabled ? 'optimized' : 'restored'}`, 'success')
+    return { success: true, applied: Boolean(enabled) }
+  } catch (error) { return { success: false, error: errorMessage(error) } }
+}
+
+ipcMain.handle('performance:list', async () => {
+  try { return { success: true, tweaks: await listPerformanceTweaks() } }
+  catch (error) { return { success: false, tweaks: [], error: errorMessage(error) } }
+})
+ipcMain.handle('performance:set', async (_, name, enabled) => setPerformanceTweak(name, enabled))
+ipcMain.handle('performance:apply', async (_, name) => setPerformanceTweak(name, true))
+ipcMain.handle('performance:applyAll', async () => {
+  let applied = 0
+  const errors = []
+  for (const spec of PERFORMANCE_SPECS) {
+    const result = await setPerformanceTweak(spec.name, true)
+    if (result.success) applied++
+    else errors.push(`${spec.name}: ${result.error}`)
+  }
+  return { success: errors.length === 0, applied, errors }
+})
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• V3.0: ClamAV Integration â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+const CLAMAV_PATHS = [
+  'C:\\Program Files\\ClamAV\\clamscan.exe',
+  'C:\\Program Files (x86)\\ClamAV\\clamscan.exe',
+  'C:\\ClamAV\\clamscan.exe',
+  path.join(os.homedir(), 'ClamAV', 'clamscan.exe'),
+]
+
+let clamavFound = null
+let clamavPath = null
+let freshclamPath = null
+
+function detectClamAV() {
+  if (clamavFound !== null) return { found: clamavFound, clamscan: clamavPath, freshclam: freshclamPath }
+
+  for (const p of CLAMAV_PATHS) {
+    if (fs.existsSync(p)) {
+      clamavFound = true
+      clamavPath = p
+      freshclamPath = path.join(path.dirname(p), 'freshclam.exe')
+      return { found: true, clamscan: p, freshclam: freshclamPath }
+    }
+  }
+
+  try {
+    const result = execFileSync('where', ['clamscan'], {
+      encoding: 'utf8', timeout: 5000, windowsHide: true,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+    const lines = result.trim().split('\n')
+    if (lines.length > 0 && fs.existsSync(lines[0].trim())) {
+      clamavFound = true
+      clamavPath = lines[0].trim()
+      freshclamPath = path.join(path.dirname(clamavPath), 'freshclam.exe')
+      return { found: true, clamscan: clamavPath, freshclam: freshclamPath }
+    }
+  } catch {}
+
+  clamavFound = false
+  return { found: false, clamscan: null, freshclam: null }
+}
+
+ipcMain.handle('clamav:detect', async () => {
+  const result = detectClamAV()
+  let version = null
+  let defsVersion = null
+  let defsDate = null
+
+  if (result.found && result.clamscan) {
+    try {
+      const verOutput = execFileSync(result.clamscan, ['--version'], {
+        encoding: 'utf8', timeout: 10000, windowsHide: true,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      })
+      const vMatch = verOutput.match(/ClamAV\s+([0-9.]+)/i)
+      if (vMatch) version = vMatch[1]
+      const dMatch = verOutput.match(/virus definitions.*?(\d+)/i)
+      if (dMatch) defsVersion = dMatch[1]
+      const dateMatch = verOutput.match(/([A-Z][a-z]{2}\s+[A-Z][a-z]{2}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}\s+\d{4})/)
+      if (dateMatch) defsDate = dateMatch[1]
+    } catch {}
+  }
+
+  return {
+    ...result,
+    version,
+    definitionsVersion: defsVersion,
+    definitionsDate: defsDate,
+    installUrl: 'https://www.clamav.net/downloads',
+  }
+})
+
+ipcMain.handle('clamav:update', async () => {
+  const av = detectClamAV()
+  if (!av.found || !av.freshclam) {
+    return { success: false, error: 'ClamAV not found. Please install ClamAV first.' }
+  }
+
+  return new Promise((resolve) => {
+    try {
+      const child = spawn(av.freshclam, ['--stdout'], {
+        windowsHide: true,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      })
+
+      let output = ''
+      child.stdout.on('data', (data) => {
+        const text = data.toString()
+        output += text
+
+        let percent = 0
+        if (text.includes('Downloading')) percent = 30
+        else if (text.includes('daily.cvd')) percent = 50
+        else if (text.includes('bytecode.cvd')) percent = 65
+        else if (text.includes('main.cvd')) percent = 80
+        else if (text.includes('updated')) percent = 100
+        else if (text.includes('up to date')) percent = 100
+
+        mainWindow?.webContents.send('clamav:update-progress', {
+          percent, output: text.trim().slice(0, 200),
+        })
+      })
+
+      child.on('close', (code) => {
+        if (code === 0 || output.includes('up to date') || output.includes('already')) {
+          resolve({ success: true, message: 'Virus definitions are up to date', output: output.slice(-300) })
+        } else {
+          resolve({ success: false, error: 'freshclam exited with code ' + code, output: output.slice(-300) })
+        }
+      })
+
+      child.on('error', (err) => {
+        resolve({ success: false, error: err.message })
+      })
+    } catch (err) {
+      resolve({ success: false, error: err.message })
+    }
+  })
+})
+
+ipcMain.handle('clamav:scan', async (_, scanType) => {
+  const av = detectClamAV()
+  if (!av.found || !av.clamscan) {
+    return runDefenderScan(scanType)
+  }
+
+  return new Promise((resolve) => {
+    const paths = scanType === 'quick'
+      ? [os.tmpdir(), process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local')]
+      : scanType === 'deep'
+        ? ['C:\\']
+        : [os.homedir()]
+
+    const maxFiles = scanType === 'quick' ? 20000 : scanType === 'deep' ? 100000 : 50000
+    const args = [
+      '--no-summary',
+      '--infected',
+      '--max-filesize=200M',
+      '--max-scansize=200M',
+      ...paths,
+    ]
+
+    try {
+      const child = spawn(av.clamscan, args, {
+        windowsHide: true,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      })
+
+      let output = ''
+      let filesScanned = 0
+      let threatsFound = []
+
+      child.stdout.on('data', (data) => {
+        const text = data.toString()
+        output += text
+        const lines = text.split('\n').filter(l => l.trim())
+
+        for (const line of lines) {
+          if (line.includes(':') && line.includes('FOUND')) {
+            const parts = line.split(' ')
+            const filePath = parts.slice(0, -1).join(' ').replace(/:$/, '')
+            const threatName = parts[parts.length - 1]
+            if (threatName && threatName !== 'OK') {
+              threatsFound.push({
+                name: threatName,
+                path: filePath.length > 80 ? filePath.slice(0, 77) + '...' : filePath,
+                severity: threatName.includes('Trojan') || threatName.includes('Exploit') ? 'Critical' :
+                         threatName.includes('Adware') || threatName.includes('PUA') ? 'Medium' : 'High',
+                type: threatName.split('.')[0] || 'Malware',
+              })
+            }
+          }
+
+          const scannedMatch = line.match(/Scanned files:\s*(\d+)/i)
+          if (scannedMatch) filesScanned = parseInt(scannedMatch[1])
+        }
+
+        const percent = Math.min(99, Math.round((filesScanned / maxFiles) * 100))
+        mainWindow?.webContents.send('malware:scan-progress', {
+          percent, stage: 'Scanned ' + filesScanned + ' files...',
+          filesScanned, threatsFound: threatsFound.length,
+        })
+      })
+
+      child.stderr.on('data', (data) => {
+        const text = data.toString()
+        const warnMatch = text.match(/WARNING:\s*(.+)/i)
+        if (warnMatch) {
+          mainWindow?.webContents.send('malware:scan-progress', {
+            percent: Math.round((filesScanned / maxFiles) * 100),
+            stage: warnMatch[1].slice(0, 80),
+            filesScanned, threatsFound: threatsFound.length,
+          })
+        }
+      })
+
+      child.on('close', (code) => {
+        mainWindow?.webContents.send('malware:scan-progress', {
+          percent: 100, stage: 'Scan complete: ' + threatsFound.length + ' threat' + (threatsFound.length !== 1 ? 's' : '') + ' found',
+          filesScanned, threatsFound: threatsFound.length,
+        })
+        resolve({ threats: threatsFound, filesScanned, engine: 'clamav' })
+      })
+
+      child.on('error', async (err) => {
+        console.error('ClamAV scan failed, falling back to Defender:', err.message)
+        resolve(await runDefenderScan(scanType))
+      })
+    } catch (err) {
+      runDefenderScan(scanType).then(resolve)
+    }
+  })
+})
+
+async function runDefenderScan(scanType) {
+  try {
+    const defenderPath = path.join(
+      process.env.ProgramFiles || 'C:\\Program Files',
+      'Windows Defender', 'MpCmdRun.exe'
+    )
+    if (!fs.existsSync(defenderPath)) {
+      return { threats: [], filesScanned: 0, engine: 'pattern' }
+    }
+    const scanArg = scanType === 'quick' ? '-Scan' : '-FullScan'
+    const child = spawn(defenderPath, [scanArg, '-ScanType', scanType === 'quick' ? '1' : '2'], {
+      windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
+    })
+    child.stdout.on('data', (_) => {})
+    await new Promise((resolve) => child.on('close', resolve))
+    return { threats: [], filesScanned: 0, engine: 'defender' }
+  } catch {
+    return { threats: [], filesScanned: 0, engine: 'pattern' }
+  }
+}
+
+ipcMain.on('window-minimize', () => mainWindow?.minimize())
+ipcMain.on('window-maximize', () => {
+  if (mainWindow?.isMaximized()) mainWindow.unmaximize()
+  else mainWindow?.maximize()
+})
+ipcMain.on('window-close', () => mainWindow?.close())
+
+app.whenReady().then(createWindow)
+app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })
+app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow() })
