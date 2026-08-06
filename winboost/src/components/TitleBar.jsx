@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Minus, Square, X, Zap, LockKeyhole } from 'lucide-react'
+import { Minus, Square, X, Zap, LockKeyhole, Moon, Sun, Monitor } from 'lucide-react'
+import { useAppearance } from '../context/AppearanceContext'
 
 const labels = {
   '/': 'Dashboard',
@@ -15,6 +16,7 @@ const labels = {
   '/privacy': 'Privacy Shield',
   '/performance': 'Performance',
   '/safety': 'Safety Center',
+  '/settings': 'Settings',
 }
 
 function sendWindowAction(action) {
@@ -24,7 +26,9 @@ function sendWindowAction(action) {
 export default function TitleBar() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { theme, resolvedTheme, cycleTheme } = useAppearance()
   const activeLabel = labels[location.pathname] || 'System Tools'
+  const ThemeIcon = theme === 'system' ? Monitor : resolvedTheme === 'dark' ? Moon : Sun
 
   return (
     <header className="titlebar">
@@ -38,11 +42,17 @@ export default function TitleBar() {
 
       <div className="titlebar-tabs" aria-label="Current section">
         <button className={location.pathname === '/' ? 'active' : ''} onClick={() => navigate('/')}>Dashboard</button>
-        <button className={location.pathname !== '/' ? 'active' : ''} onClick={() => navigate('/maintenance')}>{activeLabel === 'Dashboard' ? 'System Tools' : activeLabel}</button>
+        <button
+          className={location.pathname !== '/' ? 'active' : ''}
+          onClick={() => navigate(location.pathname === '/' ? '/maintenance' : location.pathname)}
+        >
+          {activeLabel === 'Dashboard' ? 'System Tools' : activeLabel}
+        </button>
       </div>
 
       <div className="window-actions">
         <span className="live-indicator"><i /><LockKeyhole size={11} /> Offline &amp; local</span>
+        <button className="theme-quick-toggle" onClick={cycleTheme} aria-label={`Theme: ${theme}. Click to change`} title={`Theme: ${theme}`}><ThemeIcon size={14} /></button>
         <button onClick={() => sendWindowAction('minimize')} aria-label="Minimize"><Minus size={15} /></button>
         <button onClick={() => sendWindowAction('maximize')} aria-label="Maximize"><Square size={12} /></button>
         <button className="window-close" onClick={() => sendWindowAction('close')} aria-label="Close"><X size={15} /></button>

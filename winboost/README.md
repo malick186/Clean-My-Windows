@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.0-blue.svg" alt="Version" />
+  <img src="https://img.shields.io/badge/version-2.2.0-blue.svg" alt="Version" />
   <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-0078d6.svg" alt="Platform" />
   <img src="https://img.shields.io/badge/electron-43.x-47848f.svg" alt="Electron" />
   <img src="https://img.shields.io/badge/react-19.x-61dafb.svg" alt="React" />
@@ -29,9 +29,17 @@
 
 ## Overview
 
-WinBoost is a free, open-source Windows optimization suite that keeps your PC clean, secure, and running at peak performance. Built with a CleanMyMac X-inspired design, it provides 12 powerful tools through an intuitive, modern interface.
+WinBoost is a free, open-source Windows optimization suite that keeps your PC clean, secure, and running at peak performance. It provides verified local system tools through a colorful, modern interface with adaptive light and dark modes.
 
 No bloat. No ads. No telemetry. Just the tools you need.
+
+### New in 2.2
+
+- System-aware light and dark themes with instant switching
+- Aurora, Ocean, Sunset, and Forest accent palettes
+- Full, reduced, or Windows-controlled animation modes
+- Safer per-action UAC prompts for machine-wide startup and registry changes
+- Local backups and clearer result reporting for privileged repairs
 
 ## Features
 
@@ -76,8 +84,7 @@ Dashboard           System Cleanup      Malware Scanner
 
 Download the latest installer from the [Releases](https://github.com/malick186/Clean-My-Windows/releases) page:
 
-- **Windows:** `WinBoost-Setup-1.0.0.exe`
-- **Portable:** `win-unpacked/WinBoost.exe`
+- **Portable:** `WinBoost-2.2.0-Portable.exe`
 
 ### System Requirements
 

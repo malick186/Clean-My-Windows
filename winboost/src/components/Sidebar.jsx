@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Brush, Power, HardDrive, Shield, Gauge,
   ShieldAlert, Trash2, Shredder as ShredderIcon,
-  Wrench, Search, Database, Boxes, BadgeCheck
+  Wrench, Search, Database, Boxes, BadgeCheck, Settings2
 } from 'lucide-react'
 
 const items = [
@@ -19,6 +19,7 @@ const items = [
   { to: '/uninstaller', icon: Trash2, label: 'Uninstaller' },
   { to: '/shredder', icon: ShredderIcon, label: 'File Shredder' },
   { to: '/maintenance', icon: Wrench, label: 'Maintenance' },
+  { to: '/settings', icon: Settings2, label: 'Settings' },
 ]
 
 export default function Sidebar() {
@@ -39,7 +40,7 @@ export default function Sidebar() {
       </nav>
       <div className="sidebar-footer">
         <Boxes size={14} />
-        <div><strong>WinBoost 2.1</strong><span>Local system toolkit</span></div>
+        <div><strong>WinBoost 2.2</strong><span>Local system toolkit</span></div>
       </div>
     </aside>
   )

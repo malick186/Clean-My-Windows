@@ -16,6 +16,7 @@ const Maintenance = lazy(() => import('./pages/Maintenance'))
 const LargeFiles = lazy(() => import('./pages/LargeFiles'))
 const RegistryCleaner = lazy(() => import('./pages/RegistryCleaner'))
 const SafetyCenter = lazy(() => import('./pages/SafetyCenter'))
+const Settings = lazy(() => import('./pages/Settings'))
 
 function page(Component) {
   return <Suspense fallback={<div className="route-loader"><Loader size={21} className="animate-spin" /><span>Loading module...</span></div>}><Component /></Suspense>
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="performance" element={page(Performance)} />
           <Route path="maintenance" element={page(Maintenance)} />
           <Route path="safety" element={page(SafetyCenter)} />
+          <Route path="settings" element={page(Settings)} />
         </Route>
       </Routes>
     </HashRouter>
