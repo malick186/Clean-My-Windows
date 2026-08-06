@@ -23,23 +23,35 @@ const items = [
 
 export default function Sidebar() {
   return (
-    <aside className="sidebar">
-      <nav className="sidebar-nav">
+    <aside className="flex flex-col w-[200px] flex-shrink-0 bg-sidebar border-r border-border overflow-y-auto">
+      <nav className="flex-1 flex flex-col gap-0.5 py-4">
         {items.map(({ to, icon: Icon, label }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={to === '/'}
-            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-          >
-            <span className="sidebar-icon"><Icon size={19} strokeWidth={1.8} /></span>
-            <span>{label}</span>
+          <NavLink key={to} to={to} end={to === '/'}>
+            {({ isActive }) => (
+              <div
+                className={`flex items-center gap-3 px-3 py-[10px] mx-2 rounded-[10px] text-[13px] font-medium transition-all ${
+                  isActive
+                    ? 'text-text bg-accent/10 border-l-[3px] border-l-accent shadow-[inset_0_0_12px_rgba(34,211,238,0.06)]'
+                    : 'text-text-secondary hover:text-text hover:bg-surface-secondary border-l-[3px] border-l-transparent'
+                }`}
+              >
+                <span className={`flex items-center justify-center w-8 h-8 rounded-lg ${
+                  isActive ? 'bg-accent/20 text-accent' : 'text-text-tertiary'
+                }`}>
+                  <Icon size={19} strokeWidth={1.8} />
+                </span>
+                <span>{label}</span>
+              </div>
+            )}
           </NavLink>
         ))}
       </nav>
-      <div className="sidebar-footer">
+      <div className="flex items-center gap-2 px-3 py-3 border-t border-border text-text-tertiary text-[10px]">
         <Boxes size={14} />
-        <div><strong>WinBoost 3.0</strong><span>Local system toolkit</span></div>
+        <div className="flex flex-col">
+          <strong className="text-text-secondary">WinBoost 3.0</strong>
+          <span>Local system toolkit</span>
+        </div>
       </div>
     </aside>
   )

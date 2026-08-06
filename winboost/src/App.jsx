@@ -19,8 +19,15 @@ const SafetyCenter = lazy(() => import('./pages/SafetyCenter'))
 const Settings = lazy(() => import('./pages/Settings'))
 const Security = lazy(() => import('./pages/Security'))
 
+const LoaderFallback = () => (
+  <div className="flex flex-col items-center justify-center gap-3 h-[300px] text-text-tertiary text-[13px]">
+    <Loader size={22} className="animate-spin" />
+    <span>Loading module...</span>
+  </div>
+)
+
 function page(Component) {
-  return <Suspense fallback={<div className="route-loader"><Loader size={21} className="animate-spin" /><span>Loading module...</span></div>}><Component /></Suspense>
+  return <Suspense fallback={<LoaderFallback />}><Component /></Suspense>
 }
 
 export default function App() {

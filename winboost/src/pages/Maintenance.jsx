@@ -50,37 +50,95 @@ export default function Maintenance() {
   }
 
   return (
-    <div className="anim-fade-up space-y-6">
-      <div className="page-hero compact-hero">
-        <div className="page-hero-icon green"><Wrench size={23} /></div>
-        <div><span className="eyebrow"><ShieldCheck size={12} /> Microsoft system tools</span><h1>Maintenance Lab</h1><p>Run genuine Windows diagnostics and repairs with clear elevation, restart and result states.</p></div>
-        <button className="btn btn-secondary btn-sm hero-action" onClick={() => setResults(new Map())}><RefreshCw size={13} /> Clear results</button>
+    <div className="space-y-5 anim-fade-up">
+      <div className="flex items-start justify-between">
+        <div className="flex items-start gap-4">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-orange-bg text-orange">
+            <Wrench size={23} />
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5 text-[9px] font-bold text-accent uppercase tracking-[0.15em] mb-1.5">
+              <ShieldCheck size={12} /> Microsoft system tools
+            </div>
+            <h1 className="text-[22px] font-extrabold leading-tight tracking-tight">Maintenance Lab</h1>
+            <p className="text-[12px] text-text-tertiary mt-1">Run genuine Windows diagnostics and repairs with clear elevation, restart and result states.</p>
+          </div>
+        </div>
+        <button className="flex items-center gap-2 py-2 px-5 rounded-[10px] bg-surface-secondary hover:bg-surface-hover border border-border text-text-secondary text-[13px] font-semibold disabled:opacity-50" onClick={() => setResults(new Map())}>
+          <RefreshCw size={13} /> Clear results
+        </button>
       </div>
 
       {error && <div className="notice-banner error"><AlertTriangle size={17} />{error}</div>}
 
-      <div className="maintenance-toolbar card">
-        <div><strong>{selected.size} selected</strong><span>Recommended cache tools are selected by default. Advanced repairs stay opt-in.</span></div>
-        <button className="btn btn-primary" onClick={runSelected} disabled={batch || !selected.size}>{batch ? <Loader size={14} className="animate-spin" /> : <Play size={14} />}Run Selected</button>
+      <div className="rounded-[14px] bg-surface border border-border p-5 flex items-center justify-between gap-4">
+        <div>
+          <strong className="text-[14px] font-semibold">{selected.size} selected</strong>
+          <span className="text-[12px] text-text-tertiary ml-2">Recommended cache tools are selected by default. Advanced repairs stay opt-in.</span>
+        </div>
+        <button className="flex items-center gap-2 py-2 px-5 rounded-[10px] bg-accent text-black font-semibold text-[13px] hover:opacity-90 disabled:opacity-50" onClick={runSelected} disabled={batch || !selected.size}>
+          {batch ? <Loader size={14} className="animate-spin" /> : <Play size={14} />}Run Selected
+        </button>
       </div>
 
-      {running && <div className="task-progress-card"><div><Loader size={17} className="animate-spin" /><span><strong>{tasks.find(item => item.id === running)?.label}</strong><small>{stage}</small></span><b>{progress}%</b></div><div className="progress"><div className="progress-fill" style={{ width: `${progress}%` }} /></div></div>}
+      {running && (
+        <div className="rounded-[14px] bg-surface border border-border p-5 space-y-3">
+          <div className="flex items-center gap-3">
+            <Loader size={17} className="animate-spin text-accent" />
+            <span className="flex-1">
+              <strong className="text-[13px] font-semibold">{tasks.find(item => item.id === running)?.label}</strong>
+              <small className="text-[11px] text-text-tertiary ml-2">{stage}</small>
+            </span>
+            <b className="text-[14px] text-accent">{progress}%</b>
+          </div>
+          <div className="h-1 rounded-sm bg-surface-secondary overflow-hidden">
+            <div className="h-full rounded-sm bg-accent transition-all duration-300" style={{ width: `${progress}%` }} />
+          </div>
+        </div>
+      )}
 
-      <div className="maintenance-grid">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {tasks.map(task => {
           const Icon = icons[task.cat] || Wrench
           const result = results.get(task.id)
           return (
-            <article key={task.id} className={`maintenance-card ${result?.success ? 'complete' : result ? 'failed' : ''}`}>
-              <div className="maintenance-card-top">
-                <button className={`check-orb ${selected.has(task.id) ? 'checked' : ''}`} onClick={() => toggle(task.id)} aria-label={`Select ${task.label}`}>{selected.has(task.id) && <CheckCircle size={15} />}</button>
-                <span className="tool-icon"><Icon size={19} /></span>
-                <div className="task-badges">{task.admin && <span className="badge badge-purple"><LockKeyhole size={10} /> UAC</span>}<span className={`badge ${task.risk === 'Medium' ? 'badge-orange' : 'badge-green'}`}>{task.risk}</span></div>
+            <article key={task.id} className={`rounded-[14px] bg-surface border p-5 ${result?.success ? 'border-green' : result ? 'border-red' : 'border-border'}`}>
+              <div className="flex items-center justify-between mb-3">
+                <button
+                  className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${selected.has(task.id) ? 'border-accent bg-accent text-black' : 'border-border bg-surface-secondary'}`}
+                  onClick={() => toggle(task.id)}
+                  aria-label={`Select ${task.label}`}
+                >
+                  {selected.has(task.id) && <CheckCircle size={15} />}
+                </button>
+                <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-orange-bg text-orange">
+                  <Icon size={19} />
+                </span>
+                <div className="flex items-center gap-1.5">
+                  {task.admin && <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-bg text-purple flex items-center gap-1"><LockKeyhole size={10} /> UAC</span>}
+                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${task.risk === 'Medium' ? 'bg-orange-bg text-orange' : 'bg-green-bg text-green'}`}>{task.risk}</span>
+                </div>
               </div>
-              <h3>{task.label}</h3><p>{task.desc}</p>
-              {task.restart && <small className="restart-note"><RotateCcw size={11} /> Restart required</small>}
-              {result && <div className={`task-result ${result.success ? 'success' : 'error'}`}>{result.success ? <CheckCircle size={13} /> : <AlertTriangle size={13} />}<span>{result.success ? (result.output || 'Completed').slice(0, 120) : result.error}</span></div>}
-              <button className="btn btn-secondary btn-sm" onClick={() => runOne(task.id)} disabled={Boolean(running)}>{running === task.id ? <Loader size={12} className="animate-spin" /> : <Play size={12} />}Run</button>
+              <h3 className="text-[14px] font-semibold mb-1">{task.label}</h3>
+              <p className="text-[12px] text-text-tertiary mb-3">{task.desc}</p>
+              {task.restart && (
+                <small className="flex items-center gap-1 text-[11px] text-orange mb-3">
+                  <RotateCcw size={11} /> Restart required
+                </small>
+              )}
+              {result && (
+                <div className={`flex items-start gap-2 p-3 rounded-[8px] text-[12px] mb-3 ${result.success ? 'bg-green-bg text-green border border-green/20' : 'bg-red-bg text-red border border-red/20'}`}>
+                  {result.success ? <CheckCircle size={13} className="flex-shrink-0 mt-0.5" /> : <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" />}
+                  <span>{result.success ? (result.output || 'Completed').slice(0, 120) : result.error}</span>
+                </div>
+              )}
+              <button
+                className="flex items-center gap-2 py-2 px-5 rounded-[10px] bg-surface-secondary hover:bg-surface-hover border border-border text-text-secondary text-[13px] font-semibold disabled:opacity-50 w-full justify-center"
+                onClick={() => runOne(task.id)}
+                disabled={Boolean(running)}
+              >
+                {running === task.id ? <Loader size={12} className="animate-spin" /> : <Play size={12} />}Run
+              </button>
             </article>
           )
         })}

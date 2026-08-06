@@ -11,10 +11,10 @@ const themes = [
 ]
 
 const accents = [
-  { id: 'aurora', label: 'Aurora', colors: ['#43e6ff', '#7777ff', '#d159ff'] },
-  { id: 'ocean', label: 'Ocean', colors: ['#20d5ff', '#2e78ff', '#73a7ff'] },
-  { id: 'sunset', label: 'Sunset', colors: ['#ffb14f', '#ff627d', '#bc5dff'] },
-  { id: 'forest', label: 'Forest', colors: ['#45e6a8', '#13b9a6', '#4e8dff'] },
+  { id: 'aurora', label: 'Aurora', colors: ['#22d3ee', '#818cf8', '#c084fc'] },
+  { id: 'ocean', label: 'Ocean', colors: ['#2dd4bf', '#38bdf8', '#818cf8'] },
+  { id: 'sunset', label: 'Sunset', colors: ['#fb923c', '#f87171', '#e879f9'] },
+  { id: 'forest', label: 'Forest', colors: ['#34d399', '#a3e635', '#2dd4bf'] },
 ]
 
 const motionModes = [
@@ -23,81 +23,184 @@ const motionModes = [
   { id: 'reduced', label: 'Reduced', desc: 'Minimize non-essential movement' },
 ]
 
-function Choice({ active, icon: Icon, label, desc, onClick }) {
-  return (
-    <button className={`appearance-choice ${active ? 'active' : ''}`} onClick={onClick} aria-pressed={active}>
-      <span className="appearance-choice-icon"><Icon size={19} /></span>
-      <span><strong>{label}</strong><small>{desc}</small></span>
-      {active && <Check size={15} className="choice-check" />}
-    </button>
-  )
-}
-
 export default function Settings() {
   const { theme, resolvedTheme, setTheme, accent, setAccent, motion, setMotion } = useAppearance()
 
+  const cardClass = "rounded-[14px] bg-surface border border-border p-5"
+  const headingClass = "flex items-center gap-4 mb-4"
+
   return (
-    <div className="settings-page anim-fade-up">
-      <section className="page-hero settings-hero">
-        <div className="page-hero-icon purple"><WandSparkles size={22} /></div>
-        <div>
-          <span className="eyebrow"><Sparkles size={11} /> Personalize WinBoost</span>
-          <h1>Appearance &amp; experience</h1>
-          <p>Choose a Windows-aware theme, color system, and motion level. Every preference is stored locally on this PC.</p>
+    <div className="space-y-5 anim-fade-up">
+      {/* Hero */}
+      <div className="flex items-start justify-between">
+        <div className="flex items-start gap-4">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-purple-bg text-purple flex-shrink-0">
+            <WandSparkles size={22} />
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5 text-[9px] font-bold text-accent uppercase tracking-[0.15em] mb-1.5">
+              <Sparkles size={11} /> Personalize WinBoost
+            </div>
+            <h1 className="text-[22px] font-extrabold leading-tight tracking-tight">Appearance &amp; experience</h1>
+            <p className="text-[12px] text-text-tertiary mt-1">Choose a Windows-aware theme, color system, and motion level. Every preference is stored locally on this PC.</p>
+          </div>
         </div>
-        <div className="theme-preview-pill"><span className={`preview-dot ${resolvedTheme}`} />{resolvedTheme} mode</div>
-      </section>
+        <div className="flex items-center gap-1.5 py-2 px-3 rounded-full bg-surface-secondary border border-border text-[11px] text-text-secondary">
+          <span className={`w-1.5 h-1.5 rounded-full ${resolvedTheme === 'dark' ? 'bg-indigo-400' : 'bg-amber-400'}`} />
+          {resolvedTheme} mode
+        </div>
+      </div>
 
-      <div className="settings-grid">
-        <section className="card settings-card settings-card-wide">
-          <div className="settings-heading"><span><Laptop size={18} /></span><div><h2>Theme</h2><p>Switch instantly or follow your Windows setting</p></div></div>
-          <div className="appearance-choice-grid">
-            {themes.map(option => <Choice key={option.id} {...option} active={theme === option.id} onClick={() => setTheme(option.id)} />)}
+      {/* Settings grid */}
+      <div className="flex flex-col gap-4">
+        {/* Theme */}
+        <div className={cardClass}>
+          <div className={headingClass}>
+            <Laptop size={18} className="flex-shrink-0 text-text-tertiary" />
+            <div>
+              <h2 className="text-[14px] font-semibold text-text">Theme</h2>
+              <p className="text-[11px] text-text-tertiary">Switch instantly or follow your Windows setting</p>
+            </div>
           </div>
-        </section>
-
-        <section className="card settings-card settings-card-wide">
-          <div className="settings-heading"><span><Palette size={18} /></span><div><h2>Accent colors</h2><p>Colorful without compromising readability</p></div></div>
-          <div className="accent-grid">
-            {accents.map(option => (
-              <button key={option.id} className={`accent-choice ${accent === option.id ? 'active' : ''}`} onClick={() => setAccent(option.id)} aria-pressed={accent === option.id}>
-                <span className="accent-swatch">{option.colors.map(color => <i key={color} style={{ background: color }} />)}</span>
-                <strong>{option.label}</strong>
-                {accent === option.id && <Check size={14} />}
+          <div className="grid grid-cols-3 gap-3">
+            {themes.map(({ id, label, desc, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => setTheme(id)}
+                className={`flex items-center gap-3 p-3 rounded-[12px] border text-left transition-all ${
+                  theme === id
+                    ? 'bg-accent/10 border-accent/30 text-text'
+                    : 'bg-surface-secondary border-border text-text-secondary hover:bg-surface-hover'
+                }`}
+              >
+                <span className="flex items-center justify-center w-9 h-9 rounded-lg bg-surface">
+                  <Icon size={19} />
+                </span>
+                <div className="flex flex-col">
+                  <strong className="text-[12px]">{label}</strong>
+                  <small className="text-[10px] text-text-tertiary">{desc}</small>
+                </div>
+                {theme === id && <Check size={15} className="text-accent ml-auto flex-shrink-0" />}
               </button>
             ))}
           </div>
-        </section>
+        </div>
 
-        <section className="card settings-card settings-card-wide">
-          <div className="settings-heading"><span><Gauge size={18} /></span><div><h2>Motion</h2><p>Control graphics and page transitions throughout the app</p></div></div>
-          <div className="motion-grid">
-            {motionModes.map(option => (
-              <button key={option.id} className={`motion-choice ${motion === option.id ? 'active' : ''}`} onClick={() => setMotion(option.id)} aria-pressed={motion === option.id}>
-                <span className="motion-orbit"><i /><b /></span>
-                <span><strong>{option.label}</strong><small>{option.desc}</small></span>
-                {motion === option.id && <Check size={14} />}
+        {/* Accent */}
+        <div className={cardClass}>
+          <div className={headingClass}>
+            <Palette size={18} className="flex-shrink-0 text-text-tertiary" />
+            <div>
+              <h2 className="text-[14px] font-semibold text-text">Accent colors</h2>
+              <p className="text-[11px] text-text-tertiary">Colorful without compromising readability</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-4 gap-3">
+            {accents.map(({ id, label, colors }) => (
+              <button
+                key={id}
+                onClick={() => setAccent(id)}
+                className={`flex flex-col items-center gap-2 p-3 rounded-[12px] border transition-all ${
+                  accent === id
+                    ? 'bg-accent/10 border-accent/30'
+                    : 'bg-surface-secondary border-border hover:bg-surface-hover'
+                }`}
+              >
+                <div className="flex gap-0.5 h-2.5 w-full rounded-full overflow-hidden">
+                  {colors.map((c, i) => (
+                    <span key={i} className="flex-1" style={{ background: c }} />
+                  ))}
+                </div>
+                <strong className="text-[11px] text-text">{label}</strong>
+                {accent === id && <Check size={14} className="text-accent" />}
               </button>
             ))}
           </div>
-        </section>
+        </div>
 
-        <section className="card settings-card assurance-card">
-          <div className="settings-heading"><span><ShieldCheck size={18} /></span><div><h2>Local by design</h2><p>Privacy-first operation</p></div></div>
-          <ul className="assurance-list">
-            <li><Check size={13} />No cloud account or telemetry</li>
-            <li><Check size={13} />UAC requested only when required</li>
-            <li><Check size={13} />Registry and startup backups retained</li>
+        {/* Motion */}
+        <div className={cardClass}>
+          <div className={headingClass}>
+            <Gauge size={18} className="flex-shrink-0 text-text-tertiary" />
+            <div>
+              <h2 className="text-[14px] font-semibold text-text">Motion</h2>
+              <p className="text-[11px] text-text-tertiary">Control graphics and page transitions throughout the app</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {motionModes.map(({ id, label, desc }) => (
+              <button
+                key={id}
+                onClick={() => setMotion(id)}
+                className={`flex items-center gap-3 p-3 rounded-[12px] border text-left transition-all ${
+                  motion === id
+                    ? 'bg-accent/10 border-accent/30 text-text'
+                    : 'bg-surface-secondary border-border text-text-secondary hover:bg-surface-hover'
+                }`}
+              >
+                <span className="flex items-center gap-0.5 w-9 h-9 rounded-lg bg-surface items-center justify-center">
+                  <span className={`w-1 h-1 rounded-full ${id === 'reduced' ? 'bg-text-tertiary' : 'bg-accent'}`} />
+                  <span className={`w-1.5 h-1.5 rounded-full ${id === 'reduced' ? 'bg-text-tertiary' : 'bg-accent'}`} />
+                  <span className={`w-1 h-1 rounded-full ${id === 'reduced' ? 'bg-text-tertiary' : 'bg-accent'}`} />
+                </span>
+                <div className="flex flex-col">
+                  <strong className="text-[12px]">{label}</strong>
+                  <small className="text-[10px] text-text-tertiary">{desc}</small>
+                </div>
+                {motion === id && <Check size={14} className="text-accent ml-auto flex-shrink-0" />}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Assurance */}
+        <div className={cardClass}>
+          <div className={headingClass}>
+            <ShieldCheck size={18} className="flex-shrink-0 text-text-tertiary" />
+            <div>
+              <h2 className="text-[14px] font-semibold text-text">Local by design</h2>
+              <p className="text-[11px] text-text-tertiary">Privacy-first operation</p>
+            </div>
+          </div>
+          <ul className="flex flex-col gap-2">
+            <li className="flex items-center gap-2 text-[12px] text-text-secondary">
+              <Check size={13} className="text-green" /> No cloud account or telemetry
+            </li>
+            <li className="flex items-center gap-2 text-[12px] text-text-secondary">
+              <Check size={13} className="text-green" /> UAC requested only when required
+            </li>
+            <li className="flex items-center gap-2 text-[12px] text-text-secondary">
+              <Check size={13} className="text-green" /> Registry and startup backups retained
+            </li>
           </ul>
-        </section>
+        </div>
 
-        <section className="card settings-card system-card">
-          <div className="settings-heading"><span><Cpu size={18} /></span><div><h2>Optimized shell</h2><p>Built for Windows 10 and 11</p></div></div>
-          <div className="system-feature-grid">
-            <span><HardDrive size={16} /><strong>Local</strong><small>System actions</small></span>
-            <span><Sparkles size={16} /><strong>Adaptive</strong><small>GPU-friendly effects</small></span>
+        {/* System info */}
+        <div className={cardClass}>
+          <div className={headingClass}>
+            <Cpu size={18} className="flex-shrink-0 text-text-tertiary" />
+            <div>
+              <h2 className="text-[14px] font-semibold text-text">Optimized shell</h2>
+              <p className="text-[11px] text-text-tertiary">Built for Windows 10 and 11</p>
+            </div>
           </div>
-        </section>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex items-center gap-3 p-3 rounded-[10px] bg-surface-secondary">
+              <HardDrive size={16} className="text-text-tertiary" />
+              <div className="flex flex-col">
+                <strong className="text-[11px] text-text">Local</strong>
+                <small className="text-[10px] text-text-tertiary">System actions</small>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 rounded-[10px] bg-surface-secondary">
+              <Sparkles size={16} className="text-text-tertiary" />
+              <div className="flex flex-col">
+                <strong className="text-[11px] text-text">Adaptive</strong>
+                <small className="text-[10px] text-text-tertiary">GPU-friendly effects</small>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
