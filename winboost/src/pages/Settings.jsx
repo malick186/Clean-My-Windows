@@ -33,11 +33,11 @@ export default function Settings() {
       {/* Hero */}
       <div className="flex items-start justify-between mb-8">
         <div className="flex items-start gap-5">
-          <div className="flex items-center justify-center w-12 h-12 rounded-xl sparkle-purple/10 sparkle-purple shadow-sm">
+          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-sparkle-purple/10 text-sparkle-purple shadow-sm">
             <WandSparkles size={24} />
           </div>
           <div>
-            <div className="flex items-center gap-2 text-[10px] font-bold sparkle-primary uppercase tracking-[0.15em] mb-2">
+            <div className="flex items-center gap-2 text-[10px] font-bold text-sparkle-primary uppercase tracking-[0.15em] mb-2">
               <Sparkles size={11} /> Personalize WinBoost
             </div>
             <h1 className="text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em]">Appearance &amp; experience</h1>
@@ -74,18 +74,18 @@ export default function Settings() {
                   onClick={() => setTheme(id)}
                   className={`flex items-center gap-3 p-4 rounded-xl border text-left transition-all duration-200 ${
                     theme === id
-                      ? 'sparkle-primary/10 border-sparkle-primary/30 sparkle-text shadow-sm'
-                      : 'sparkle-accent/50 border-sparkle-border sparkle-text-secondary hover:sparkle-accent'
+                      ? 'bg-sparkle-primary/10 border-sparkle-primary/30 sparkle-text shadow-sm'
+                      : 'bg-sparkle-accent/50 border-sparkle-border sparkle-text-secondary hover:bg-sparkle-accent'
                   }`}
                 >
-                  <span className="flex items-center justify-center w-9 h-9 rounded-xl sparkle-card">
+                  <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-sparkle-card">
                     <Icon size={19} />
                   </span>
                   <div className="flex flex-col flex-1">
                     <strong className="text-[13px]">{label}</strong>
                     <small className="text-[11px] sparkle-text-muted">{desc}</small>
                   </div>
-                  {theme === id && <Check size={16} className="sparkle-primary ml-auto flex-shrink-0" />}
+                  {theme === id && <Check size={16} className="text-sparkle-primary ml-auto flex-shrink-0" />}
                 </button>
               ))}
             </div>
@@ -111,8 +111,8 @@ export default function Settings() {
                   onClick={() => setAccent(id)}
                   className={`flex flex-col items-center gap-2.5 p-4 rounded-xl border transition-all duration-200 ${
                     accent === id
-                      ? 'sparkle-primary/10 border-sparkle-primary/30 shadow-sm'
-                      : 'sparkle-accent/50 border-sparkle-border hover:sparkle-accent'
+                      ? 'bg-sparkle-primary/10 border-sparkle-primary/30 shadow-sm'
+                      : 'bg-sparkle-accent/50 border-sparkle-border hover:bg-sparkle-accent'
                   }`}
                 >
                   <div className="flex gap-0.5 h-3 w-full rounded-full overflow-hidden">
@@ -121,7 +121,7 @@ export default function Settings() {
                     ))}
                   </div>
                   <strong className="text-[12px] sparkle-text">{label}</strong>
-                  {accent === id && <Check size={14} className="sparkle-primary" />}
+                  {accent === id && <Check size={14} className="text-sparkle-primary" />}
                 </button>
               ))}
             </div>
@@ -147,11 +147,11 @@ export default function Settings() {
                   onClick={() => setMotion(id)}
                   className={`flex items-center gap-3 p-4 rounded-xl border text-left transition-all duration-200 ${
                     motion === id
-                      ? 'sparkle-primary/10 border-sparkle-primary/30 sparkle-text shadow-sm'
-                      : 'sparkle-accent/50 border-sparkle-border sparkle-text-secondary hover:sparkle-accent'
+                      ? 'bg-sparkle-primary/10 border-sparkle-primary/30 sparkle-text shadow-sm'
+                      : 'bg-sparkle-accent/50 border-sparkle-border sparkle-text-secondary hover:bg-sparkle-accent'
                   }`}
                 >
-                  <span className="flex items-center gap-0.5 w-9 h-9 rounded-xl sparkle-card items-center justify-center">
+                  <span className="flex items-center gap-0.5 w-9 h-9 rounded-xl bg-sparkle-card items-center justify-center">
                     <span className={`w-1 h-1 rounded-full ${id === 'reduced' ? 'bg-sparkle-text-muted' : 'bg-sparkle-primary'}`} />
                     <span className={`w-1.5 h-1.5 rounded-full ${id === 'reduced' ? 'bg-sparkle-text-muted' : 'bg-sparkle-primary'}`} />
                     <span className={`w-1 h-1 rounded-full ${id === 'reduced' ? 'bg-sparkle-text-muted' : 'bg-sparkle-primary'}`} />
@@ -160,7 +160,7 @@ export default function Settings() {
                     <strong className="text-[13px]">{label}</strong>
                     <small className="text-[11px] sparkle-text-muted">{desc}</small>
                   </div>
-                  {motion === id && <Check size={16} className="sparkle-primary ml-auto flex-shrink-0" />}
+                  {motion === id && <Check size={16} className="text-sparkle-primary ml-auto flex-shrink-0" />}
                 </button>
               ))}
             </div>

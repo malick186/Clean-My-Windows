@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   AlertTriangle, BadgeCheck, CheckCircle2, Clock3, Download, ExternalLink,
   FileClock, FolderArchive, Loader, LockKeyhole, RefreshCw, ScanSearch,
-  ShieldCheck, ShieldOff, ShieldAlert, Trash2, X, Info, Database, Play, Square,
+  ShieldCheck, ShieldOff, ShieldAlert, X, Database, Square,
 } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -34,12 +34,12 @@ function HealthRing({ score, scanning, progress }) {
       <svg viewBox="0 0 180 180" role="img">
         <defs>
           <linearGradient id="secRing" x1="15%" y1="0%" x2="85%" y2="100%">
-            <stop offset="0%" stopColor={score >= 80 ? '#6366f1' : score >= 50 ? '#f59e0b' : 'var(--sparkle-danger)'} />
+            <stop offset="0%" stopColor={score >= 80 ? '#6366f1' : score >= 50 ? '#f59e0b' : 'var(--sp-danger)'} />
             <stop offset="50%" stopColor={score >= 80 ? '#7c3aed' : score >= 50 ? '#f97316' : '#dc2626'} />
-            <stop offset="100%" stopColor={score >= 80 ? 'var(--sparkle-purple)' : score >= 50 ? '#ef4444' : '#991b1b'} />
+            <stop offset="100%" stopColor={score >= 80 ? 'var(--sp-purple)' : score >= 50 ? '#ef4444' : '#991b1b'} />
           </linearGradient>
         </defs>
-        <circle cx="90" cy="90" r={radius} fill="none" stroke="var(--sparkle-accent)" strokeWidth="7" />
+        <circle cx="90" cy="90" r={radius} fill="none" stroke="var(--sp-accent)" strokeWidth="7" />
         <circle
           cx="90" cy="90" r={radius} fill="none" stroke="url(#secRing)" strokeWidth="7"
           strokeLinecap="round" strokeDasharray={circumference}
@@ -48,7 +48,7 @@ function HealthRing({ score, scanning, progress }) {
         />
       </svg>
       <div className="health-ring-lg-center">
-        {scanning ? <ScanSearch size={36} style={{ animation: 'scanPulse 1.5s ease-in-out infinite', color: 'var(--sparkle-primary)' }} /> : <ShieldCheck size={40} />}
+        {scanning ? <ScanSearch size={36} style={{ animation: 'scanPulse 1.5s ease-in-out infinite', color: 'var(--sp-primary)' }} /> : <ShieldCheck size={40} />}
         <strong>{value}%</strong>
         <span>{scanning ? 'Scanning...' : score >= 80 ? 'Protected' : score >= 50 ? 'At Risk' : 'Vulnerable'}</span>
       </div>

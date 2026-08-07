@@ -3,6 +3,7 @@ import { Shield, Eye, EyeOff, Radio, Wifi, Monitor, MapPin, Video, AlertTriangle
 import { listPrivacy, setPrivacy, applyRecommendedPrivacy } from '../lib/api'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
 
 export default function PrivacyTools() {
   const [groups, setGroups] = useState([])
@@ -120,7 +121,7 @@ export default function PrivacyTools() {
                     <div className="text-[11px] text-sparkle-muted">{item.desc}</div>
                   </div>
                 </div>
-                {busy === item.name ? <Loader size={15} className="animate-spin" /> : <button onClick={() => toggle(gi, ii)} className="toggle-switch" data-on={item.enabled} aria-label={`Toggle ${item.name}`} />}
+                {busy === item.name ? <Loader size={15} className="animate-spin" /> : <Switch checked={item.enabled} onCheckedChange={() => toggle(gi, ii)} />}
               </div>
             ))}
           </Card>

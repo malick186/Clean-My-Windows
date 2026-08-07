@@ -50,11 +50,11 @@ export default function SafetyCenter() {
     <div className="space-y-6 anim-fade-up">
       <div className="flex items-start justify-between mb-8">
         <div className="flex items-start gap-5">
-          <div className="flex items-center justify-center w-12 h-12 rounded-xl sparkle-purple/10 sparkle-purple shadow-sm">
+          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-sparkle-purple/10 text-sparkle-purple shadow-sm">
             <BadgeCheck size={24} />
           </div>
           <div>
-            <div className="flex items-center gap-2 text-[10px] font-bold sparkle-primary uppercase tracking-[0.15em] mb-2">
+            <div className="flex items-center gap-2 text-[10px] font-bold text-sparkle-primary uppercase tracking-[0.15em] mb-2">
               <LockKeyhole size={11} /> Recovery &amp; Verification
             </div>
             <h1 className="text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em]">Safety Center</h1>
@@ -74,7 +74,7 @@ export default function SafetyCenter() {
         <>
           <div className="grid grid-cols-3 gap-4">
             <Card className="col-span-2 flex flex-row items-center gap-4">
-              <div className={`flex items-center justify-center w-12 h-12 rounded-xl shrink-0 ${defender.realTimeProtection ? 'sparkle-success/10 sparkle-success' : 'sparkle-danger/10 sparkle-danger'}`}>
+              <div className={`flex items-center justify-center w-12 h-12 rounded-xl shrink-0 ${defender.realTimeProtection ? 'bg-sparkle-success/10 text-sparkle-success' : 'bg-sparkle-danger/10 text-sparkle-danger'}`}>
                 {defender.realTimeProtection ? <ShieldCheck size={24} /> : <ShieldOff size={24} />}
               </div>
               <div className="flex-1">
@@ -88,7 +88,7 @@ export default function SafetyCenter() {
             </Card>
             <Card>
               <CardContent>
-                <div className="flex items-center justify-center w-11 h-11 rounded-xl sparkle-teal/10 sparkle-teal mb-3">
+                <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-sparkle-teal/10 text-sparkle-teal mb-3">
                   <UserRoundCog size={22} />
                 </div>
                 <div className="text-[11px] sparkle-text-muted font-semibold uppercase tracking-wider mb-0.5">Execution level</div>
@@ -98,7 +98,7 @@ export default function SafetyCenter() {
             </Card>
             <Card className="col-start-3">
               <CardContent>
-                <div className="flex items-center justify-center w-11 h-11 rounded-xl sparkle-purple/10 sparkle-purple mb-3">
+                <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-sparkle-purple/10 text-sparkle-purple mb-3">
                   <FileClock size={22} />
                 </div>
                 <div className="text-[11px] sparkle-text-muted font-semibold uppercase tracking-wider mb-0.5">System Restore</div>
@@ -138,7 +138,7 @@ export default function SafetyCenter() {
                 <div className="space-y-1">
                   {history.length === 0 ? <div className="text-center py-6 text-xs sparkle-text-muted">No operations recorded yet.</div> : history.slice(0, 6).map(item => (
                     <div key={item.id} className="flex items-center gap-4 p-4 rounded-xl sparkle-accent/50 hover:sparkle-accent transition-all duration-200 border border-sparkle-border">
-                      <span className={`w-2 h-2 rounded-full shrink-0 ${item.status === 'success' ? 'bg-sparkle-success' : item.status === 'error' ? 'bg-sparkle-danger' : item.status === 'info' ? 'sparkle-primary' : 'bg-sparkle-text-muted'}`} />
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${item.status === 'success' ? 'bg-sparkle-success' : item.status === 'error' ? 'bg-sparkle-danger' : item.status === 'info' ? 'text-sparkle-primary' : 'bg-sparkle-text-muted'}`} />
                       <div className="flex-1 min-w-0">
                         <strong className="text-[12px] sparkle-text block">{item.action}</strong>
                         <span className="text-[11px] sparkle-text-muted">{item.detail}</span>

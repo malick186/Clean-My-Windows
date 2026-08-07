@@ -255,9 +255,9 @@ export default function Dashboard() {
           badgeVariant="pink"
           badgeValue="Active"
           rows={[
-            { label: 'Active Tweaks', value: '5 applied' },
-            { label: 'Security', value: 'Protected' },
-            { label: 'Last Scan', value: 'Ready' },
+            { label: 'Active Tweaks', value: stats?.tweaks?.applied != null ? `${stats.tweaks.applied} applied` : '—' },
+            { label: 'Security', value: stats?.tweaks?.status ?? '—' },
+            { label: 'Last Scan', value: stats?.lastScan ?? '—' },
           ]}
         />
       </div>

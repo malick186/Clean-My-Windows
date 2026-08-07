@@ -118,15 +118,15 @@ export default function Debloat() {
     <div className="space-y-6 anim-fade-up">
       <div className="flex items-start justify-between mb-8">
         <div className="flex items-start gap-5">
-          <div className="flex items-center justify-center w-12 h-12 rounded-xl sparkle-danger/10 sparkle-danger shadow-sm">
+          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-sparkle-danger/10 text-sparkle-danger shadow-sm">
             <Trash2 size={24} />
           </div>
           <div>
-            <div className="flex items-center gap-2 text-[10px] font-bold sparkle-primary uppercase tracking-[0.15em] mb-2">
+            <div className="flex items-center gap-2 text-[10px] font-bold text-sparkle-primary uppercase tracking-[0.15em] mb-2">
               <Trash2 size={11} /> System Debloat
             </div>
             <h1 className="text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em]">Debloat Windows</h1>
-            <p className="text-[13px] sparkle-text-muted mt-1.5 leading-relaxed">Remove unwanted Windows apps, features, and telemetry</p>
+            <p className="text-[13px] text-sparkle-text-muted mt-1.5 leading-relaxed">Remove unwanted Windows apps, features, and telemetry</p>
           </div>
         </div>
       </div>
@@ -135,18 +135,18 @@ export default function Debloat() {
         <div className="notice-banner error">
           <AlertTriangle size={17} />
           <span>{error}</span>
-          <button onClick={() => setError('')} className="ml-auto sparkle-text-muted hover:sparkle-text"><X size={14} /></button>
+          <button onClick={() => setError('')} className="ml-auto text-sparkle-text-muted hover:text-sparkle-text"><X size={14} /></button>
         </div>
       )}
 
       {doneMsg && (
-        <div className="flex items-start gap-3 p-5 rounded-xl sparkle-success/10 border border-sparkle-success/20">
-          <CheckCircle2 size={18} className="sparkle-success shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 p-5 rounded-xl bg-sparkle-success/10 border border-sparkle-success/20">
+          <CheckCircle2 size={18} className="text-sparkle-success shrink-0 mt-0.5" />
           <div className="min-w-0">
-            <div className="font-semibold text-sm sparkle-text">Operation complete</div>
-            <div className="text-xs sparkle-success mt-0.5">{doneMsg}</div>
+            <div className="font-semibold text-sm text-sparkle-text">Operation complete</div>
+            <div className="text-xs text-sparkle-success mt-0.5">{doneMsg}</div>
           </div>
-          <button onClick={() => setDoneMsg('')} className="ml-auto sparkle-text-muted hover:sparkle-text"><X size={14} /></button>
+          <button onClick={() => setDoneMsg('')} className="ml-auto text-sparkle-text-muted hover:text-sparkle-text"><X size={14} /></button>
         </div>
       )}
 
@@ -154,14 +154,14 @@ export default function Debloat() {
         <Card>
           <CardContent className="py-5 space-y-3">
             <div className="flex items-center gap-3">
-              <Loader size={18} className="animate-spin sparkle-primary shrink-0" />
+              <Loader size={18} className="animate-spin text-sparkle-primary shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-sm">
                   {removingAll ? `Removing ${selectedIds.size} item(s)...` : 'Removing...'}
                 </div>
-                <div className="text-xs sparkle-text-muted">{progressLabel || 'Please wait...'}</div>
+                <div className="text-xs text-sparkle-text-muted">{progressLabel || 'Please wait...'}</div>
               </div>
-              <span className="text-sm font-semibold sparkle-primary">{Math.round(progress)}%</span>
+              <span className="text-sm font-semibold text-sparkle-primary">{Math.round(progress)}%</span>
             </div>
             <Progress value={progress} />
           </CardContent>
@@ -188,10 +188,10 @@ export default function Debloat() {
       <Card className="p-0 overflow-hidden">
         <CardHeader className="mb-0 pb-0 flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Trash2 size={18} className="sparkle-danger" /> Installed Bloatware
+            <Trash2 size={18} className="text-sparkle-danger" /> Installed Bloatware
           </CardTitle>
           <label className="flex items-center gap-2 cursor-pointer select-none">
-            <span className="text-xs sparkle-text-muted">Select all</span>
+            <span className="text-xs text-sparkle-text-muted">Select all</span>
             <Switch checked={allSelected} onCheckedChange={toggleSelectAll} />
           </label>
         </CardHeader>
@@ -202,7 +202,7 @@ export default function Debloat() {
             <span>Scanning for bloatware...</span>
           </div>
         ) : installedItems.length === 0 ? (
-          <div className="text-center py-12 text-sm sparkle-text-muted">
+          <div className="text-center py-12 text-sm text-sparkle-text-muted">
             No installed bloatware detected.
           </div>
         ) : (
@@ -210,7 +210,7 @@ export default function Debloat() {
             {installedItems.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center gap-4 p-4 rounded-xl mx-2 my-1 sparkle-accent/50 hover:sparkle-accent transition-all duration-200 border border-sparkle-border"
+                className="flex items-center gap-4 p-4 rounded-xl mx-2 my-1 bg-sparkle-accent/50 hover:bg-sparkle-accent transition-all duration-200 border border-sparkle-border"
               >
                 <Switch
                   checked={selectedIds.has(item.id)}
@@ -218,7 +218,7 @@ export default function Debloat() {
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold sparkle-text">{item.name}</span>
+                    <span className="text-sm font-semibold text-sparkle-text">{item.name}</span>
                     {item.category && <Badge variant="purple" className="text-[10px] py-0">{item.category}</Badge>}
                     {item.risk && (
                       <Badge variant={RISK_COLORS[item.risk] || 'default'} className="text-[10px] py-0">
@@ -232,7 +232,7 @@ export default function Debloat() {
                     )}
                   </div>
                   {item.desc && (
-                    <div className="text-xs sparkle-text-muted mt-1 leading-relaxed">{item.desc}</div>
+                    <div className="text-xs text-sparkle-text-muted mt-1 leading-relaxed">{item.desc}</div>
                   )}
                 </div>
                 <Button

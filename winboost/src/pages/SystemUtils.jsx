@@ -7,10 +7,6 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
 
-const COLORS = {
-  purple: { hero: 'bg-sparkle-purple/10 text-sparkle-purple', border: 'ring-sparkle-purple/25 bg-sparkle-purple/10', badge: 'purple' },
-}
-
 function OutputArea({ output }) {
   if (!output) return null
   return (

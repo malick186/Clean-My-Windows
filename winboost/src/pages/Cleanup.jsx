@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress'
 export default function Cleanup() {
   const [categories, setCategories] = useState([])
   const [scanning, setScanning] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [cleaning, setCleaning] = useState(false)
   const [selected, setSelected] = useState(new Set())
   const [progress, setProgress] = useState(0)
@@ -22,7 +23,8 @@ export default function Cleanup() {
     scanCleanup().then(data => {
       setCategories(data)
       setSelected(new Set(data.filter(item => item.recommended).map(item => item.id)))
-    }).catch(err => setError(err.message))
+      setInitialLoading(false)
+    }).catch(err => { setError(err.message); setInitialLoading(false) })
   }, [])
 
   const iconFor = (id) => {
@@ -112,14 +114,17 @@ export default function Cleanup() {
           </CardTitle>
           <div className="flex items-center ml-auto gap-3">
             <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-sparkle-text-secondary">
-              <input type="checkbox" className="w-4 h-4 rounded accent-accent" checked={recommended.length > 0 && recommended.every(item => selected.has(item.id))} onChange={toggleAll} />
+              <input type="checkbox" className="w-4 h-4 rounded accent-sparkle-teal" checked={recommended.length > 0 && recommended.every(item => selected.has(item.id))} onChange={toggleAll} />
               Select recommended
             </label>
             <Badge variant="teal">{selected.size} of {categories.length}</Badge>
           </div>
         </CardHeader>
         <CardContent className="space-y-1.5">
-          {categories.map(({ id, name: label, desc, size, path: detail, files, risk, recommended: isRecommended }) => {
+          {initialLoading && categories.length === 0 ? (
+            <div className="loading-state"><div className="loading-spinner" /><span>Scanning for junk...</span></div>
+          ) : (
+            categories.map(({ id, name: label, desc, size, path: detail, files, risk, recommended: isRecommended }) => {
             const sel = selected.has(id)
             const Icon = iconFor(id)
             return (
@@ -127,7 +132,7 @@ export default function Cleanup() {
                 className={`flex items-center gap-4 p-4 rounded-xl bg-sparkle-accent/50 hover:bg-sparkle-accent transition-all duration-200 border border-sparkle-border cursor-pointer ${
                   sel ? 'ring-1 ring-sparkle-teal/25 bg-sparkle-teal/[0.04]' : ''
                 }`}>
-                <input type="checkbox" className="w-4 h-4 rounded accent-accent" checked={sel} readOnly />
+                <input type="checkbox" className="w-4 h-4 rounded accent-sparkle-teal" checked={sel} readOnly />
                 <div className={`flex items-center justify-center w-10 h-10 rounded-xl shrink-0 ${sel ? 'bg-sparkle-teal/10 text-sparkle-teal' : 'bg-sparkle-accent text-sparkle-muted'}`}>
                   <Icon size={18} />
                 </div>
@@ -141,7 +146,8 @@ export default function Cleanup() {
                 <div className="text-[13px] font-semibold text-sparkle-text-secondary shrink-0">{size >= 1 ? `${size.toFixed(2)} GB` : `${(size * 1024).toFixed(0)} MB`}</div>
               </div>
             )
-          })}
+          })
+          )}
         </CardContent>
       </Card>
     </div>

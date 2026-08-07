@@ -41,15 +41,15 @@ export default function LargeFiles() {
     <div className="space-y-6 anim-fade-up">
       <div className="flex items-start justify-between mb-8">
         <div className="flex items-start gap-5">
-          <div className="flex items-center justify-center w-12 h-12 rounded-xl sparkle-warning/10 sparkle-warning shadow-sm">
+          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-sparkle-warning/10 text-sparkle-warning shadow-sm">
             <Search size={24} />
           </div>
           <div>
-            <div className="flex items-center gap-2 text-[10px] font-bold sparkle-primary uppercase tracking-[0.15em] mb-2">
+            <div className="flex items-center gap-2 text-[10px] font-bold text-sparkle-primary uppercase tracking-[0.15em] mb-2">
               <HardDrive size={11} /> Recoverable file management
             </div>
             <h1 className="text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em]">Large Files Explorer</h1>
-            <p className="text-[13px] sparkle-text-muted mt-1.5 leading-relaxed">Find real storage consumers in your user profile, reveal them in Explorer or move them safely to the Recycle Bin.</p>
+            <p className="text-[13px] text-sparkle-text-muted mt-1.5 leading-relaxed">Find real storage consumers in your user profile, reveal them in Explorer or move them safely to the Recycle Bin.</p>
           </div>
         </div>
         <Button variant="secondary" size="sm" onClick={() => fetchFiles(minSize)} disabled={loading}>
@@ -68,8 +68,8 @@ export default function LargeFiles() {
           <Card key={item.sub} className="p-4">
             <CardContent className="flex flex-col items-center gap-1.5 text-center">
               <item.icon size={18} style={{ color: item.color }} />
-              <strong className="text-lg font-bold sparkle-text">{item.val}</strong>
-              <span className="text-[11px] sparkle-text-muted">{item.sub}</span>
+              <strong className="text-lg font-bold text-sparkle-text">{item.val}</strong>
+              <span className="text-[11px] text-sparkle-text-muted">{item.sub}</span>
             </CardContent>
           </Card>
         ))}
@@ -77,7 +77,7 @@ export default function LargeFiles() {
 
       <Card className="p-3">
         <CardContent className="flex items-center gap-3 text-xs">
-          <span className="sparkle-text-secondary font-medium">Minimum size</span>
+          <span className="text-sparkle-text-secondary font-medium">Minimum size</span>
           {[10, 100, 500, 1000, 5000].map(size => (
             <Button
               key={size}
@@ -88,7 +88,7 @@ export default function LargeFiles() {
               {size >= 1000 ? `${size / 1000} GB` : `${size} MB`}
             </Button>
           ))}
-          <small className="sparkle-text-muted ml-auto font-mono">{meta.root}</small>
+          <small className="text-sparkle-text-muted ml-auto font-mono">{meta.root}</small>
         </CardContent>
       </Card>
 
@@ -98,10 +98,10 @@ export default function LargeFiles() {
             <div className="flex items-center gap-3">
               <Loader className="animate-spin" size={17} />
               <div className="flex-1">
-                <strong className="text-sm sparkle-text">Scanning your files</strong>
-                <small className="block text-xs sparkle-text-muted">{stage}</small>
+                <strong className="text-sm text-sparkle-text">Scanning your files</strong>
+                <small className="block text-xs text-sparkle-text-muted">{stage}</small>
               </div>
-              <b className="text-sm sparkle-text">{progress}%</b>
+              <b className="text-sm text-sparkle-text">{progress}%</b>
             </div>
             <Progress value={progress} />
           </CardContent>
@@ -109,27 +109,27 @@ export default function LargeFiles() {
       )}
 
       <Card className="overflow-hidden">
-        <div className="grid grid-cols-[2fr_1.5fr_1fr_1fr_100px] gap-4 px-5 py-3 text-[11px] font-semibold sparkle-text-muted uppercase tracking-wider border-b border-sparkle-border sparkle-accent/50">
+        <div className="grid grid-cols-[2fr_1.5fr_1fr_1fr_100px] gap-4 px-5 py-3 text-[11px] font-semibold text-sparkle-text-muted uppercase tracking-wider border-b border-sparkle-border bg-sparkle-accent/50">
           <span>File</span><span>Location</span><span>Size</span><span>Modified</span><span>Actions</span>
         </div>
         {!loading && files.length === 0 ? (
-          <div className="py-10 text-center text-sm sparkle-text-muted">No files larger than {minSize} MB were found.</div>
+          <div className="py-10 text-center text-sm text-sparkle-text-muted">No files larger than {minSize} MB were found.</div>
         ) : files.map(file => {
           const Icon = icons[file.type] || File
           return (
-            <div key={file.id} className="grid grid-cols-[2fr_1.5fr_1fr_1fr_100px] gap-4 px-5 py-3.5 items-center border-b border-sparkle-border hover:sparkle-accent transition-all duration-200">
+            <div key={file.id} className="grid grid-cols-[2fr_1.5fr_1fr_1fr_100px] gap-4 px-5 py-3.5 items-center border-b border-sparkle-border hover:bg-sparkle-accent transition-all duration-200">
               <div className="flex items-center gap-3">
-                <span className="w-8 h-8 rounded-lg flex items-center justify-center sparkle-accent sparkle-text-secondary">
+                <span className="w-8 h-8 rounded-lg flex items-center justify-center bg-sparkle-accent text-sparkle-text-secondary">
                   <Icon size={16} />
                 </span>
                 <div>
-                  <strong className="text-sm font-semibold sparkle-text block">{file.name}</strong>
-                  <small className="text-[11px] sparkle-text-muted">{file.type}</small>
+                  <strong className="text-sm font-semibold text-sparkle-text block">{file.name}</strong>
+                  <small className="text-[11px] text-sparkle-text-muted">{file.type}</small>
                 </div>
               </div>
-              <span className="truncate text-sm sparkle-text-secondary" title={file.path}>{file.path}</span>
-              <strong className="text-sm sparkle-text">{file.size >= 1 ? `${file.size.toFixed(2)} GB` : `${(file.size * 1024).toFixed(0)} MB`}</strong>
-              <span className="flex items-center gap-1.5 text-xs sparkle-text-muted"><Calendar size={11} />{file.date}</span>
+              <span className="truncate text-sm text-sparkle-text-secondary" title={file.path}>{file.path}</span>
+              <strong className="text-sm text-sparkle-text">{file.size >= 1 ? `${file.size.toFixed(2)} GB` : `${(file.size * 1024).toFixed(0)} MB`}</strong>
+              <span className="flex items-center gap-1.5 text-xs text-sparkle-text-muted"><Calendar size={11} />{file.date}</span>
               <div className="flex items-center gap-1.5">
                 <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => revealLargeFile(file.id)} title="Show in Explorer">
                   <ExternalLink size={14} />
