@@ -2,7 +2,8 @@ import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Brush, Power, HardDrive, Shield, Gauge,
   ShieldCheck, Trash2, Shredder as ShredderIcon,
-  Wrench, Search, Database, Boxes, Settings2
+  Wrench, Search, Database, Boxes, Settings2, Download,
+  Wifi, Monitor
 } from 'lucide-react'
 
 const items = [
@@ -17,7 +18,11 @@ const items = [
   { to: '/registry', icon: Database, label: 'Registry' },
   { to: '/uninstaller', icon: Trash2, label: 'Uninstaller' },
   { to: '/shredder', icon: ShredderIcon, label: 'File Shredder' },
-  { to: '/maintenance', icon: Wrench, label: 'Maintenance' },
+  { to: '/debloat', icon: Monitor, label: 'Debloat' },
+  { to: '/appinstaller', icon: Download, label: 'App Installer' },
+  { to: '/sysutils', icon: Wrench, label: 'System Utilities' },
+  { to: '/maintenance', icon: Boxes, label: 'Maintenance' },
+  { to: '/network', icon: Wifi, label: 'Network' },
   { to: '/settings', icon: Settings2, label: 'Settings' },
 ]
 
@@ -49,7 +54,7 @@ export default function Sidebar() {
       <div className="flex items-center gap-2.5 px-4 py-3.5 border-t border-white/[0.04]">
         <Boxes size={13} className="text-text-tertiary flex-shrink-0" />
         <div className="flex flex-col min-w-0">
-          <strong className="text-[10px] text-text-secondary font-semibold tracking-tight">WinBoost 3.0</strong>
+          <strong className="text-[10px] text-text-secondary font-semibold tracking-tight">WinBoost 3.1</strong>
           <span className="text-[8px] text-text-tertiary">Local system toolkit</span>
         </div>
       </div>

@@ -18,6 +18,10 @@ const RegistryCleaner = lazy(() => import('./pages/RegistryCleaner'))
 const SafetyCenter = lazy(() => import('./pages/SafetyCenter'))
 const Settings = lazy(() => import('./pages/Settings'))
 const Security = lazy(() => import('./pages/Security'))
+const Debloat = lazy(() => import('./pages/Debloat'))
+const AppInstaller = lazy(() => import('./pages/AppInstaller'))
+const SystemUtils = lazy(() => import('./pages/SystemUtils'))
+const NetworkOptimizer = lazy(() => import('./pages/NetworkOptimizer'))
 
 const LoaderFallback = () => (
   <div className="flex flex-col items-center justify-center gap-3 h-[300px] text-text-tertiary text-[13px]">
@@ -50,6 +54,10 @@ export default function App() {
           <Route path="maintenance" element={page(Maintenance)} />
           <Route path="safety" element={page(SafetyCenter)} />
           <Route path="settings" element={page(Settings)} />
+          <Route path="debloat" element={page(Debloat)} />
+          <Route path="appinstaller" element={page(AppInstaller)} />
+          <Route path="sysutils" element={page(SystemUtils)} />
+          <Route path="network" element={page(NetworkOptimizer)} />
         </Route>
       </Routes>
     </HashRouter>

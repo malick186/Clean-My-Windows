@@ -234,3 +234,84 @@ export async function scanWithClamAV(scanType, onProgress) {
   try { return await invoke('clamav:scan', scanType) }
   finally { off() }
 }
+
+export async function listDebloat() {
+  if (!hasElectron) return { success: true, items: [], total: 0, installed: 0 }
+  return invoke('debloat:list')
+}
+
+export async function removeDebloat(itemId, onProgress) {
+  if (!hasElectron) return { success: false, error: 'Preview only' }
+  const off = on('debloat:progress', data => onProgress?.(data))
+  try { return await invoke('debloat:remove', itemId) }
+  finally { off() }
+}
+
+export async function removeAllDebloat(selectedIds, onProgress) {
+  if (!hasElectron) return { success: false, error: 'Preview only' }
+  const off = on('debloat:progress', data => onProgress?.(data))
+  try { return await invoke('debloat:removeAll', selectedIds) }
+  finally { off() }
+}
+
+export async function listFeaturedApps() {
+  if (!hasElectron) return { success: true, apps: [] }
+  return invoke('winget:featured')
+}
+
+export async function installWingetApp(appId, onProgress) {
+  if (!hasElectron) return { success: false, error: 'Preview only' }
+  const off = on('winget:progress', data => onProgress?.(data))
+  try { return await invoke('winget:install', appId) }
+  finally { off() }
+}
+
+export async function runSFC(onProgress) {
+  if (!hasElectron) return { success: false, error: 'Preview only' }
+  const off = on('sysutils:progress', data => onProgress?.(data))
+  try { return await invoke('sysutils:sfc') }
+  finally { off() }
+}
+
+export async function runDISMCheck(onProgress) {
+  if (!hasElectron) return { success: false, error: 'Preview only' }
+  const off = on('sysutils:progress', data => onProgress?.(data))
+  try { return await invoke('sysutils:dismCheck') }
+  finally { off() }
+}
+
+export async function runDISMRestore(onProgress) {
+  if (!hasElectron) return { success: false, error: 'Preview only' }
+  const off = on('sysutils:progress', data => onProgress?.(data))
+  try { return await invoke('sysutils:dismRestore') }
+  finally { off() }
+}
+
+export async function runCHKDSK(onProgress) {
+  if (!hasElectron) return { success: false, error: 'Preview only' }
+  const off = on('sysutils:chkdsk-progress', data => onProgress?.(data))
+  try { return await invoke('sysutils:chkdsk') }
+  finally { off() }
+}
+
+export async function cleanWinUpdate() {
+  if (!hasElectron) return { success: false, error: 'Preview only' }
+  return invoke('sysutils:cleanWinUpdate')
+}
+
+export async function getNetworkStatus() {
+  if (!hasElectron) return { success: true, adapters: [], currentDns: null, currentProvider: 'none' }
+  return invoke('network:status')
+}
+
+export async function setDNS(providerId) {
+  return assertSuccess(await invoke('network:setDns', providerId), 'Failed to set DNS.')
+}
+
+export async function optimizeNetwork() {
+  return assertSuccess(await invoke('network:optimize'), 'Network optimization failed.')
+}
+
+export async function resetNetwork() {
+  return assertSuccess(await invoke('network:reset'), 'Network reset failed.')
+}

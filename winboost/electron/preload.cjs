@@ -14,6 +14,10 @@ const invokeChannels = new Set([
   'privacy:list', 'privacy:set', 'privacy:recommended',
   'performance:list', 'performance:set', 'performance:apply', 'performance:applyAll',
   'clamav:detect', 'clamav:update', 'clamav:scan',
+  'debloat:list', 'debloat:remove', 'debloat:removeAll',
+  'winget:featured', 'winget:install',
+  'sysutils:sfc', 'sysutils:dismCheck', 'sysutils:dismRestore', 'sysutils:chkdsk', 'sysutils:cleanWinUpdate',
+  'network:status', 'network:setDns', 'network:optimize', 'network:reset',
 ])
 
 const sendChannels = new Set(['window-minimize', 'window-maximize', 'window-close'])
@@ -23,6 +27,8 @@ const receiveChannels = new Set([
   'shredder:progress', 'shredder:log', 'maintenance:progress',
   'diskanalyzer:progress', 'largefiles:progress', 'registry:progress',
   'clamav:update-progress',
+  'debloat:progress', 'winget:progress',
+  'sysutils:progress', 'sysutils:chkdsk-progress',
 ])
 
 contextBridge.exposeInMainWorld('electronAPI', {
