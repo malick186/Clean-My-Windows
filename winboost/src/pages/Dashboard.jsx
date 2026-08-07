@@ -5,6 +5,10 @@ import {
   HardDrive, History, MemoryStick, Power, ScanSearch, ShieldCheck,
   Sparkles, Thermometer, Trash2, Zap,
 } from 'lucide-react'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
 import { getSystemStats, runSmartScan } from '../lib/api'
 
 function HealthRing({ score, scanning, progress }) {
@@ -76,30 +80,6 @@ function Meter({ value, color = 'cyan' }) {
   )
 }
 
-function MiniPanel({ title, icon: Icon, children }) {
-  return (
-    <div className="rounded-[12px] bg-surface border border-border p-4">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-[11px] text-text-tertiary font-semibold uppercase tracking-wider">{title}</span>
-        <Icon size={14} className="text-text-tertiary" />
-      </div>
-      {children}
-    </div>
-  )
-}
-
-function DashCard({ title, action, children, className = '' }) {
-  return (
-    <section className={`rounded-[14px] bg-surface border border-border p-5 ${className}`}>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-[13px] font-semibold text-text">{title}</h2>
-        {action}
-      </div>
-      {children}
-    </section>
-  )
-}
-
 export default function Dashboard() {
   const [scanning, setScanning] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -145,191 +125,258 @@ export default function Dashboard() {
     { to: '/disk', icon: HardDrive, label: 'Disk', meta: `${disk}% used`, color: 'green' },
   ]
 
+  const colorBgMap = {
+    teal: 'bg-teal-bg text-teal',
+    purple: 'bg-purple-bg text-purple',
+    blue: 'bg-blue-500/15 text-blue-400',
+    green: 'bg-green-bg text-green',
+  }
+
   return (
-    <div className="space-y-5 anim-fade-up">
-      {/* Intro */}
-      <div className="flex items-end justify-between gap-5">
-        <div>
-          <div className="flex items-center gap-1.5 text-[9px] font-bold text-accent uppercase tracking-[0.15em] mb-1.5">
-            <Activity size={12} /> System overview
+    <div className="space-y-6 anim-fade-up">
+      {/* Hero */}
+      <div className="flex items-start justify-between mb-8">
+        <div className="flex items-start gap-5">
+          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-accent/10 text-accent shadow-sm">
+            <Activity size={24} />
           </div>
-          <h1 className="text-[26px] font-extrabold leading-tight tracking-tight">
-            Your Windows control room.{' '}
-            <span className="text-text-secondary font-medium">
-              {scanResult ? `Health score ${scanResult.score}/100.` : 'Ready for a verified scan.'}
-            </span>
-          </h1>
+          <div>
+            <div className="flex items-center gap-2 text-[10px] font-bold text-accent uppercase tracking-[0.15em] mb-2">
+              <Activity size={11} /> System overview
+            </div>
+            <h1 className="text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em]">
+              {"Your Windows control room. "}
+              <span className="text-text-secondary font-medium">
+                {scanResult ? `Health score ${scanResult.score}/100.` : 'Ready for a verified scan.'}
+              </span>
+            </h1>
+            <p className="text-[13px] text-text-tertiary mt-1.5 leading-relaxed">Real-time monitoring, smart scanning, and one-click optimization</p>
+          </div>
         </div>
-        <div className={`flex items-center gap-2 px-3 py-2 rounded-[11px] text-xs min-w-[180px] ${
-          scanResult && !scanResult.defender?.realTimeProtection
-            ? 'bg-orange-bg border border-orange/20 text-orange'
-            : 'bg-green-bg border border-green/20 text-green'
-        }`}>
+        <Badge
+          variant={scanResult && !scanResult.defender?.realTimeProtection ? 'warning' : 'success'}
+          className="flex items-center gap-2 h-auto py-2 px-3 text-[11px] rounded-xl"
+        >
           <ShieldCheck size={15} />
-          <div className="flex flex-col">
+          <div className="flex flex-col items-start leading-tight">
             <strong className="text-[10px]">
               {scanResult ? (scanResult.defender?.realTimeProtection ? 'Defender active' : 'Attention needed') : 'Local monitoring'}
             </strong>
-            <span className="text-[8px] opacity-70">{scanResult ? 'Verified by smart scan' : 'No cloud connection used'}</span>
+            <span className="text-[9px] opacity-70">{scanResult ? 'Verified by smart scan' : 'No cloud connection used'}</span>
           </div>
-        </div>
+        </Badge>
       </div>
 
       {/* Main grid */}
-      <div className="grid gap-4" style={{ gridTemplateColumns: '240px 1fr' }}>
+      <div className="grid gap-5" style={{ gridTemplateColumns: '240px 1fr' }}>
         {/* Left column */}
-        <aside className="flex flex-col gap-3">
-          <div className="text-[10px] text-text-tertiary text-center font-semibold">
-            System status: <strong className="text-text-secondary">Excellent ({health}%)</strong>
-          </div>
-          <HealthRing score={health} scanning={scanning} progress={progress} />
-          <button
-            onClick={startScan}
-            disabled={scanning}
-            className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-[10px] bg-accent/10 border border-accent/20 text-accent text-[13px] font-semibold hover:bg-accent/15 transition-colors disabled:opacity-50"
-          >
-            <Sparkles size={16} /> {scanning ? `Scanning ${progress}%` : 'Start smart scan'}
-          </button>
-          {scanError && <div className="text-[11px] text-red px-2">{scanError}</div>}
-          {scanning && <div className="text-[11px] text-text-tertiary text-center">{scanStage}</div>}
-
-          <MiniPanel title="Performance" icon={Gauge}>
-            <div className="space-y-2">
-              <div className="flex justify-between text-[11px]">
-                <span className="text-text-tertiary">CPU usage</span>
-                <strong className="text-text-secondary">{cpu}%</strong>
-              </div>
-              <Meter value={cpu} />
-              <div className="flex justify-between text-[11px]">
-                <span className="text-text-tertiary">RAM usage</span>
-                <strong className="text-text-secondary">{usedMemory} / {totalMemory} GB</strong>
-              </div>
-              <Meter value={memory} color="purple" />
+        <aside className="flex flex-col gap-4">
+          <Card className="!p-5 flex flex-col items-center gap-3">
+            <div className="text-[10px] text-text-tertiary text-center font-semibold">
+              System status: <strong className="text-text-secondary">Excellent ({health}%)</strong>
             </div>
-          </MiniPanel>
+            <HealthRing score={health} scanning={scanning} progress={progress} />
+            <Button
+              variant="gradient"
+              size="sm"
+              onClick={startScan}
+              disabled={scanning}
+              className="w-full rounded-xl"
+            >
+              <Sparkles size={16} /> {scanning ? `Scanning ${progress}%` : 'Start smart scan'}
+            </Button>
+            {scanError && <div className="text-[11px] text-red px-2">{scanError}</div>}
+            {scanning && <div className="text-[11px] text-text-tertiary text-center">{scanStage}</div>}
+          </Card>
 
-          <MiniPanel title="Cleanup status" icon={Brush}>
-            <strong className="text-[13px] text-text block mb-1">
-              {scanResult ? `${scanResult.reclaimableGB} GB reclaimable` : 'Scan for reclaimable space'}
-            </strong>
-            <p className="text-[10px] text-text-tertiary mb-2">Verified temporary files, caches and logs</p>
-            <Link to="/cleanup" className="inline-flex items-center gap-1 text-[11px] text-accent font-semibold hover:underline">
-              Clean now <ChevronRight size={13} />
-            </Link>
-          </MiniPanel>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-[13px] text-text-secondary">
+                <Gauge size={15} /> Performance
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[11px]">
+                  <span className="text-text-tertiary">CPU usage</span>
+                  <strong className="text-text-secondary">{cpu}%</strong>
+                </div>
+                <Progress value={cpu} className="h-1" />
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[11px]">
+                  <span className="text-text-tertiary">RAM usage</span>
+                  <strong className="text-text-secondary">{usedMemory} / {totalMemory} GB</strong>
+                </div>
+                <Progress value={memory} className="h-1 [&>div]:bg-purple-500" />
+              </div>
+            </CardContent>
+          </Card>
 
-          <MiniPanel title="Startup apps" icon={Power}>
-            <strong className="text-[13px] text-text block mb-2">
-              {scanResult ? `${scanResult.startupCount} startup entries` : 'Optimize boot time'}
-            </strong>
-            <Link to="/startup" className="inline-flex items-center gap-1 text-[11px] text-accent font-semibold hover:underline">
-              Optimize <ChevronRight size={13} />
-            </Link>
-          </MiniPanel>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-[13px] text-text-secondary">
+                <Brush size={15} /> Cleanup status
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <strong className="text-[14px] text-text block mb-1">
+                {scanResult ? `${scanResult.reclaimableGB} GB reclaimable` : 'Scan for reclaimable space'}
+              </strong>
+              <p className="text-[11px] text-text-tertiary mb-3">Verified temporary files, caches and logs</p>
+              <Link to="/cleanup" className="inline-flex items-center gap-1.5 text-[12px] text-accent font-semibold hover:underline">
+                Clean now <ChevronRight size={14} />
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-[13px] text-text-secondary">
+                <Power size={15} /> Startup apps
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <strong className="text-[14px] text-text block mb-3">
+                {scanResult ? `${scanResult.startupCount} startup entries` : 'Optimize boot time'}
+              </strong>
+              <Link to="/startup" className="inline-flex items-center gap-1.5 text-[12px] text-accent font-semibold hover:underline">
+                Optimize <ChevronRight size={14} />
+              </Link>
+            </CardContent>
+          </Card>
         </aside>
 
         {/* Right column */}
-        <div className="flex flex-col gap-4">
-          <DashCard
-            title="Quick access"
-            action={<Link to="/performance" className="flex items-center gap-1 text-[11px] text-accent font-semibold hover:underline">Optimize <ArrowUpRight size={13} /></Link>}
-          >
-            <div className="flex gap-6 text-[10px] text-text-tertiary mb-3">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full" style={{ background: 'var(--accent-grad-start)' }} /> CPU
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full" style={{ background: 'var(--accent-grad-end)' }} /> Memory
-              </span>
-            </div>
-            <div className="h-[100px] rounded-lg overflow-hidden bg-surface-secondary">
-              <TrendChart />
-            </div>
-          </DashCard>
+        <div className="flex flex-col gap-5">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Activity size={18} /> Quick access
+                </CardTitle>
+                <Link to="/performance" className="flex items-center gap-1 text-[12px] text-accent font-semibold hover:underline">
+                  Optimize <ArrowUpRight size={14} />
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-6 text-[10px] text-text-tertiary mb-3">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full" style={{ background: 'var(--accent-grad-start)' }} /> CPU
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full" style={{ background: 'var(--accent-grad-end)' }} /> Memory
+                </span>
+              </div>
+              <div className="h-[100px] rounded-xl overflow-hidden bg-surface-secondary">
+                <TrendChart />
+              </div>
+            </CardContent>
+          </Card>
 
-          <DashCard title="Quick tools">
-            <div className="grid grid-cols-2 gap-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Zap size={18} /> Quick tools
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-2">
               {quickLinks.map(({ to, icon: Icon, label, meta, color }) => (
                 <Link
                   key={label}
                   to={to}
-                  className="flex items-center gap-3 p-3 rounded-[10px] hover:bg-surface-secondary transition-colors group"
+                  className="flex items-center gap-4 p-4 rounded-2xl bg-surface-secondary/50 hover:bg-surface-hover transition-all duration-200 border border-white/[0.03] group"
                 >
-                  <span className={`flex items-center justify-center w-9 h-9 rounded-lg bg-${color}-bg module-${color}`}>
-                    <Icon size={17} />
+                  <span className={`flex items-center justify-center w-10 h-10 rounded-xl ${colorBgMap[color] || 'bg-surface text-text-secondary'} shadow-sm`}>
+                    <Icon size={18} />
                   </span>
-                  <span className="flex flex-col flex-1">
-                    <strong className="text-[12px] text-text group-hover:text-accent transition-colors">{label}</strong>
-                    <small className="text-[10px] text-text-tertiary">{meta}</small>
+                  <span className="flex flex-col flex-1 min-w-0">
+                    <strong className="text-[13px] text-text group-hover:text-accent transition-colors">{label}</strong>
+                    <small className="text-[11px] text-text-tertiary">{meta}</small>
                   </span>
-                  <ChevronRight size={14} className="text-text-tertiary" />
+                  <ChevronRight size={15} className="text-text-tertiary group-hover:text-accent transition-colors" />
                 </Link>
               ))}
-            </div>
-          </DashCard>
+            </CardContent>
+          </Card>
 
-          <DashCard title="System health">
-            <div className="flex gap-4 mb-3">
-              <div className="flex items-center gap-3 flex-1 p-3 rounded-[10px] bg-surface-secondary">
-                <Thermometer size={17} className={cpu < 55 ? 'text-green' : 'text-orange'} />
-                <div className="flex flex-col flex-1">
-                  <small className="text-[10px] text-text-tertiary">System load</small>
-                  <strong className="text-[11px] text-text">{cpu < 55 ? 'Normal' : 'Elevated'}</strong>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ShieldCheck size={18} /> System health
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-3 mb-4">
+                <div className="flex items-center gap-3 flex-1 p-4 rounded-2xl bg-surface-secondary/50 hover:bg-surface-hover transition-all duration-200 border border-white/[0.03]">
+                  <Thermometer size={18} className={cpu < 55 ? 'text-green' : 'text-orange'} />
+                  <div className="flex flex-col flex-1">
+                    <small className="text-[10px] text-text-tertiary">System load</small>
+                    <strong className="text-[12px] text-text">{cpu < 55 ? 'Normal' : 'Elevated'}</strong>
+                  </div>
+                  <b className="text-sm text-text-secondary">{cpu}%</b>
                 </div>
-                <b className="text-sm text-text-secondary">{cpu}%</b>
-              </div>
-              <div className="flex items-center gap-3 flex-1 p-3 rounded-[10px] bg-surface-secondary">
-                <HardDrive size={17} className={disk < 80 ? 'text-green' : 'text-orange'} />
-                <div className="flex flex-col flex-1">
-                  <small className="text-[10px] text-text-tertiary">Disk usage</small>
-                  <strong className="text-[11px] text-text">{disk < 80 ? 'Healthy' : 'Review'}</strong>
+                <div className="flex items-center gap-3 flex-1 p-4 rounded-2xl bg-surface-secondary/50 hover:bg-surface-hover transition-all duration-200 border border-white/[0.03]">
+                  <HardDrive size={18} className={disk < 80 ? 'text-green' : 'text-orange'} />
+                  <div className="flex flex-col flex-1">
+                    <small className="text-[10px] text-text-tertiary">Disk usage</small>
+                    <strong className="text-[12px] text-text">{disk < 80 ? 'Healthy' : 'Review'}</strong>
+                  </div>
+                  <b className="text-sm text-text-secondary">{disk}%</b>
                 </div>
-                <b className="text-sm text-text-secondary">{disk}%</b>
               </div>
-            </div>
-            <div className="h-[60px] rounded-lg overflow-hidden bg-surface-secondary">
-              <TrendChart compact />
-            </div>
-          </DashCard>
+              <div className="h-[60px] rounded-xl overflow-hidden bg-surface-secondary">
+                <TrendChart compact />
+              </div>
+            </CardContent>
+          </Card>
 
-          <DashCard title="Recent activity" action={<History size={14} className="text-text-tertiary" />}>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-secondary transition-colors">
-                <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-teal-bg text-teal flex-shrink-0">
-                  <Zap size={14} />
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <History size={18} /> Recent activity
+                </CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-1">
+              <div className="flex items-center gap-4 p-3 rounded-2xl bg-surface-secondary/50 hover:bg-surface-hover transition-all duration-200 border border-white/[0.03]">
+                <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-teal-bg text-teal flex-shrink-0">
+                  <Zap size={15} />
                 </span>
                 <div className="flex-1 min-w-0">
-                  <strong className="text-[12px] text-text block">Live system monitoring</strong>
-                  <small className="text-[10px] text-text-tertiary">Real CPU, memory and disk metrics refresh automatically</small>
+                  <strong className="text-[13px] text-text block">Live system monitoring</strong>
+                  <small className="text-[11px] text-text-tertiary">Real CPU, memory and disk metrics refresh automatically</small>
                 </div>
-                <time className="text-[10px] text-text-tertiary flex-shrink-0">Now</time>
+                <time className="text-[11px] text-text-tertiary flex-shrink-0">Now</time>
               </div>
-              <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-secondary transition-colors">
-                <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-purple-bg text-purple flex-shrink-0">
-                  <ShieldCheck size={14} />
+              <div className="flex items-center gap-4 p-3 rounded-2xl bg-surface-secondary/50 hover:bg-surface-hover transition-all duration-200 border border-white/[0.03]">
+                <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-purple-bg text-purple flex-shrink-0">
+                  <ShieldCheck size={15} />
                 </span>
                 <div className="flex-1 min-w-0">
-                  <strong className="text-[12px] text-text block">{scanResult ? 'Smart scan verified' : 'Protection awaiting scan'}</strong>
-                  <small className="text-[10px] text-text-tertiary">
+                  <strong className="text-[13px] text-text block">{scanResult ? 'Smart scan verified' : 'Protection awaiting scan'}</strong>
+                  <small className="text-[11px] text-text-tertiary">
                     {scanResult
                       ? `${scanResult.checks?.filter(item => item.ok).length || 0} of ${scanResult.checks?.length || 0} checks healthy`
                       : 'Run Smart Scan for Microsoft Defender status'}
                   </small>
                 </div>
-                <time className="text-[10px] text-text-tertiary flex-shrink-0">{scanResult ? 'Now' : 'Ready'}</time>
+                <time className="text-[11px] text-text-tertiary flex-shrink-0">{scanResult ? 'Now' : 'Ready'}</time>
               </div>
-              <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-secondary transition-colors">
-                <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-green-bg text-green flex-shrink-0">
-                  <Cpu size={14} />
+              <div className="flex items-center gap-4 p-3 rounded-2xl bg-surface-secondary/50 hover:bg-surface-hover transition-all duration-200 border border-white/[0.03]">
+                <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-green-bg text-green flex-shrink-0">
+                  <Cpu size={15} />
                 </span>
                 <div className="flex-1 min-w-0">
-                  <strong className="text-[12px] text-text block">System health calculated</strong>
-                  <small className="text-[10px] text-text-tertiary">CPU, memory and disk analyzed</small>
+                  <strong className="text-[13px] text-text block">System health calculated</strong>
+                  <small className="text-[11px] text-text-tertiary">CPU, memory and disk analyzed</small>
                 </div>
-                <time className="text-[10px] text-text-tertiary flex-shrink-0">Today</time>
+                <time className="text-[11px] text-text-tertiary flex-shrink-0">Today</time>
               </div>
-            </div>
-          </DashCard>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { Database, Search, AlertTriangle, CheckCircle, Loader, FileText, Trash2, RefreshCw, FolderOpen } from 'lucide-react'
 import { scanRegistry, fixRegistry, openRegistryBackups } from '../lib/api'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
 
 export default function RegistryCleaner() {
   const [scanning, setScanning] = useState(false)
@@ -36,18 +40,18 @@ export default function RegistryCleaner() {
   const sevCls = { High: 'bg-red-bg text-red', Medium: 'bg-orange-bg text-orange', Low: 'bg-teal-bg text-teal' }
 
   return (
-    <div className="space-y-5 anim-fade-up">
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-4">
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-purple-bg text-purple">
-            <Database size={23} />
+    <div className="space-y-6 anim-fade-up">
+      <div className="flex items-start justify-between mb-8">
+        <div className="flex items-start gap-5">
+          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-purple-bg text-purple shadow-sm">
+            <Database size={24} />
           </div>
           <div>
-            <div className="flex items-center gap-1.5 text-[9px] font-bold text-accent uppercase tracking-[0.15em] mb-1.5">
-              <Search size={12} /> System Maintenance
+            <div className="flex items-center gap-2 text-[10px] font-bold text-accent uppercase tracking-[0.15em] mb-2">
+              <Search size={11} /> System Maintenance
             </div>
-            <h1 className="text-[22px] font-extrabold leading-tight tracking-tight">Registry Cleaner</h1>
-            <p className="text-[12px] text-text-tertiary mt-1">Scan and fix Windows registry issues for a smoother system</p>
+            <h1 className="text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em]">Registry Cleaner</h1>
+            <p className="text-[13px] text-text-tertiary mt-1.5 leading-relaxed">Scan and fix Windows registry issues for a smoother system</p>
           </div>
         </div>
       </div>
@@ -63,44 +67,46 @@ export default function RegistryCleaner() {
       </div>
 
       {(scanning || (sd && !cd)) && (
-        <div className="rounded-[14px] bg-surface border border-border p-5 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {scanning ? <Loader size={18} className="animate-spin text-purple" /> : <CheckCircle size={18} className="text-green" />}
-              <div>
-                <div className="font-semibold text-sm">{scanning ? 'Scanning registry...' : 'Scan complete'}</div>
-                <div className="text-xs text-text-tertiary">Checking entries, keys, and values</div>
+        <Card>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {scanning ? <Loader size={18} className="animate-spin text-purple" /> : <CheckCircle size={18} className="text-green" />}
+                <div>
+                  <div className="font-semibold text-sm">{scanning ? 'Scanning registry...' : 'Scan complete'}</div>
+                  <div className="text-xs text-text-tertiary">Checking entries, keys, and values</div>
+                </div>
               </div>
+              <span className="text-lg font-bold text-gradient">{sp}%</span>
             </div>
-            <span className="text-lg font-bold text-gradient">{sp}%</span>
-          </div>
-          <div className="scan-progress"><div className="scan-progress-fill" style={{ width: `${sp}%` }} /></div>
-          <div className="text-xs text-text-tertiary">
-            {scanning && `Checking registry hive...`}
-            {sd && `${found.length} issues found`}
-          </div>
-        </div>
+            <Progress value={sp} />
+            <div className="text-xs text-text-tertiary">
+              {scanning && `Checking registry hive...`}
+              {sd && `${found.length} issues found`}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {sd && found.length > 0 && (
-        <div className="rounded-[14px] bg-surface border border-border overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-surface-secondary/50">
+        <Card className="overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-3 border-b border-white/[0.05] bg-surface-secondary/50">
             <div className="flex items-center gap-2 text-sm font-semibold text-orange">
               <AlertTriangle size={16} /> {found.length} issues found
             </div>
-            <button onClick={clean} disabled={cleaning} className="flex items-center gap-2 py-2 px-5 rounded-[10px] bg-accent text-black font-semibold text-[13px] hover:opacity-90 disabled:opacity-50">
+            <Button onClick={clean} disabled={cleaning}>
               {cleaning ? <Loader size={13} className="animate-spin" /> : <Trash2 size={13} />}
               Fix All Issues
-            </button>
+            </Button>
           </div>
           {found.map(issue => (
-            <div key={issue.key} className="flex items-center gap-4 px-5 py-3.5 border-b border-border hover:bg-surface-hover transition-colors">
+            <div key={issue.key} className="flex items-center gap-4 px-6 py-3.5 hover:bg-surface-hover transition-all duration-200 border-b border-white/[0.03] last:border-b-0">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-surface-secondary">
                 <FileText size={15} className="text-text-tertiary" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold flex items-center gap-2 flex-wrap">
-                  {issue.name} <span className={`px-2 py-0.5 rounded-[10px] text-[10px] font-bold ${sevCls[issue.severity] || 'bg-teal-bg text-teal'}`}>{issue.severity}</span>
+                  {issue.name} <Badge variant={issue.severity === 'High' ? 'danger' : issue.severity === 'Medium' ? 'warning' : 'teal'}>{issue.severity}</Badge>
                   <span className="text-[11px] text-text-tertiary">{issue.cat}</span>
                 </div>
                 <div className="text-xs text-text-tertiary mt-0.5">{issue.desc}</div>
@@ -108,65 +114,71 @@ export default function RegistryCleaner() {
               </div>
             </div>
           ))}
-        </div>
+        </Card>
       )}
 
       {sd && found.length === 0 && !cd && (
-        <div className="rounded-[14px] bg-surface border border-border p-8 text-center">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 bg-green-bg">
-            <CheckCircle size={28} className="text-green" />
-          </div>
-          <div className="text-xl font-bold mb-1">No Issues Found</div>
-          <div className="text-sm text-text-secondary mb-4">Your registry looks clean</div>
-          <button onClick={scan} className="flex items-center gap-2 mx-auto py-2 px-5 rounded-[10px] bg-surface-secondary hover:bg-surface-hover border border-border text-text-secondary text-[13px] font-semibold disabled:opacity-50">
-            <RefreshCw size={14} /> Scan Again
-          </button>
-        </div>
+        <Card className="p-8 text-center">
+          <CardContent>
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 bg-green-bg">
+              <CheckCircle size={28} className="text-green" />
+            </div>
+            <div className="text-xl font-bold mb-1">No Issues Found</div>
+            <div className="text-sm text-text-secondary mb-4">Your registry looks clean</div>
+            <Button variant="secondary" onClick={scan} className="mx-auto">
+              <RefreshCw size={14} /> Scan Again
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
       {(cleaning || cd) && (
-        <div className="rounded-[14px] bg-surface border border-border p-5 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {cleaning ? <Loader size={18} className="animate-spin text-purple" /> : <CheckCircle size={18} className="text-green" />}
-              <div>
-                <div className="font-semibold text-sm">{cleaning ? 'Fixing issues...' : 'Registry cleaned'}</div>
-                <div className="text-xs text-text-tertiary">{cleaning ? 'Backing up and removing verified entries' : `${fixedCount} issue${fixedCount === 1 ? '' : 's'} resolved`}</div>
+        <Card>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {cleaning ? <Loader size={18} className="animate-spin text-purple" /> : <CheckCircle size={18} className="text-green" />}
+                <div>
+                  <div className="font-semibold text-sm">{cleaning ? 'Fixing issues...' : 'Registry cleaned'}</div>
+                  <div className="text-xs text-text-tertiary">{cleaning ? 'Backing up and removing verified entries' : `${fixedCount} issue${fixedCount === 1 ? '' : 's'} resolved`}</div>
+                </div>
               </div>
+              {cleaning && <span className="text-lg font-bold text-gradient">{cp}%</span>}
             </div>
-            {cleaning && <span className="text-lg font-bold text-gradient">{cp}%</span>}
-          </div>
-          {cleaning && <div className="scan-progress"><div className="scan-progress-fill" style={{ width: `${cp}%` }} /></div>}
-          {cd && (
-            <div className="flex items-center gap-2 text-sm font-medium text-green">
-              <CheckCircle size={16} /> Issues fixed successfully
-            </div>
-          )}
-        </div>
+            {cleaning && <Progress value={cp} />}
+            {cd && (
+              <div className="flex items-center gap-2 text-sm font-medium text-green">
+                <CheckCircle size={16} /> Issues fixed successfully
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {cd && (
         <div className="flex justify-center gap-2">
-          <button onClick={openRegistryBackups} className="flex items-center gap-2 py-2 px-5 rounded-[10px] bg-surface-secondary hover:bg-surface-hover border border-border text-text-secondary text-[13px] font-semibold disabled:opacity-50"><FolderOpen size={15} /> Open Backups</button>
-          <button onClick={() => { setSd(false); setCd(false); scan() }} className="flex items-center gap-2 py-2 px-5 rounded-[10px] bg-accent text-black font-semibold text-[13px] hover:opacity-90 disabled:opacity-50">
+          <Button variant="secondary" onClick={openRegistryBackups}><FolderOpen size={15} /> Open Backups</Button>
+          <Button onClick={() => { setSd(false); setCd(false); scan() }}>
             <RefreshCw size={15} /> Scan Again
-          </button>
+          </Button>
         </div>
       )}
 
       {!scanning && !sd && !cd && (
-        <div className="rounded-[14px] bg-surface border border-border p-10 text-center">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 bg-purple-bg">
-            <Database size={28} className="text-purple" />
-          </div>
-          <div className="text-xl font-bold mb-1">Registry Scan</div>
-          <div className="text-sm text-text-secondary max-w-sm mx-auto">
-            Performs a narrow scan for verifiably missing startup and uninstall targets. No guessed or fabricated issues are shown.
-          </div>
-          <button onClick={scan} className="flex items-center gap-2 mx-auto mt-5 py-2.5 px-6 rounded-[10px] bg-accent text-black font-semibold text-[14px] hover:opacity-90 disabled:opacity-50">
-            <Search size={16} /> Start Scan
-          </button>
-        </div>
+        <Card className="p-10 text-center">
+          <CardContent>
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 bg-purple-bg">
+              <Database size={28} className="text-purple" />
+            </div>
+            <div className="text-xl font-bold mb-1">Registry Scan</div>
+            <div className="text-sm text-text-secondary max-w-sm mx-auto">
+              Performs a narrow scan for verifiably missing startup and uninstall targets. No guessed or fabricated issues are shown.
+            </div>
+            <Button onClick={scan} className="mx-auto mt-5">
+              <Search size={16} /> Start Scan
+            </Button>
+          </CardContent>
+        </Card>
       )}
     </div>
   )

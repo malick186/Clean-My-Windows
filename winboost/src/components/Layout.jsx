@@ -13,8 +13,8 @@ export default function Layout() {
       <TitleBar />
       <div className="flex flex-1 min-h-0 relative z-10">
         <Sidebar />
-        <main className="flex-1 overflow-y-auto p-0">
-          <div className="max-w-[1240px] mx-auto px-6 py-7" key={location.pathname}>
+        <main className="flex-1 overflow-y-auto">
+          <div className="max-w-[1160px] mx-auto px-8 py-8" key={location.pathname}>
             <div className="anim-fade-up">
               <Outlet />
             </div>

@@ -4,6 +4,10 @@ import {
   FileClock, FolderArchive, Loader, LockKeyhole, RefreshCw, ScanSearch,
   ShieldCheck, ShieldOff, ShieldAlert, Trash2, X, Info, Database, Play, Square,
 } from 'lucide-react'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
 import {
   createRestorePoint, getSafetyStatus, openWindowsSettings,
   detectClamAV, updateClamAV, scanWithClamAV,
@@ -152,31 +156,38 @@ export default function Security() {
   const history = safetyStatus?.history || []
   const scanThreatsList = scanResult?.threats || []
 
-  const cardClass = "rounded-[14px] bg-surface border border-border p-5"
-  const sectionTitleClass = "flex items-center gap-2 text-[14px] font-semibold mb-3.5 pb-2.5 border-b border-border"
+  const severityVariant = {
+    critical: 'danger',
+    high: 'danger',
+    medium: 'warning',
+    low: 'teal',
+  }
 
   return (
-    <div className="space-y-5 anim-fade-up">
+    <div className="space-y-6 anim-fade-up">
       {/* Hero */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-4">
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-purple-bg text-purple flex-shrink-0">
-            <ShieldCheck size={23} />
+      <div className="flex items-start justify-between mb-8">
+        <div className="flex items-start gap-5">
+          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-purple-bg text-purple shadow-sm">
+            <ShieldCheck size={24} />
           </div>
           <div>
-            <div className="flex items-center gap-1.5 text-[9px] font-bold text-accent uppercase tracking-[0.15em] mb-1.5">
-              <LockKeyhole size={12} /> Security Center
+            <div className="flex items-center gap-2 text-[10px] font-bold text-accent uppercase tracking-[0.15em] mb-2">
+              <LockKeyhole size={11} /> Security Center
             </div>
-            <h1 className="text-[22px] font-extrabold leading-tight tracking-tight">Security &amp; Protection</h1>
-            <p className="text-[12px] text-text-tertiary mt-1">Malware scanning, system restore, and real-time security monitoring</p>
+            <h1 className="text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em]">Security &amp; Protection</h1>
+            <p className="text-[13px] text-text-tertiary mt-1.5 leading-relaxed">Malware scanning, system restore, and real-time security monitoring</p>
           </div>
         </div>
-        <button
-          onClick={refreshAll} disabled={loading}
-          className="flex items-center gap-1.5 py-2 px-3 rounded-[10px] bg-surface hover:bg-surface-hover border border-border text-[12px] text-text-secondary transition-colors"
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={refreshAll}
+          disabled={loading}
+          className="rounded-xl"
         >
-          <RefreshCw size={13} className={`${loading ? 'animate-spin' : ''}`} /> Refresh
-        </button>
+          <RefreshCw size={14} className={`${loading ? 'animate-spin' : ''} mr-1.5`} /> Refresh
+        </Button>
       </div>
 
       {notice && (
@@ -191,195 +202,244 @@ export default function Security() {
       ) : (
         <>
           {/* Scan card */}
-          <div className={`${cardClass} !p-7`}>
-            <div className="flex items-center gap-10">
-              <HealthRing score={score} scanning={scanning} progress={scanProgress} />
-              <div className="flex-1 min-w-0">
-                <h2 className="text-lg font-bold mb-1">System Scan</h2>
-                <p className="text-[12px] text-text-tertiary mb-4">
-                  {clamav?.found
-                    ? `ClamAV ${clamav.version || 'detected'} — open-source antivirus engine`
-                    : 'ClamAV not detected — Defender fallback available'}
-                </p>
+          <Card>
+            <CardContent className="!p-7">
+              <div className="flex items-center gap-10">
+                <HealthRing score={score} scanning={scanning} progress={scanProgress} />
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="text-lg mb-1">System Scan</CardTitle>
+                  <CardDescription className="text-[12px] mb-4">
+                    {clamav?.found
+                      ? `ClamAV ${clamav.version || 'detected'} — open-source antivirus engine`
+                      : 'ClamAV not detected — Defender fallback available'}
+                  </CardDescription>
 
-                <div className="flex gap-2 flex-wrap mb-3">
-                  <button
-                    onClick={() => startScan('quick')} disabled={scanning}
-                    className="flex items-center gap-2 py-2 px-5 rounded-[10px] bg-accent text-black font-semibold text-[13px] hover:opacity-90 transition-opacity disabled:opacity-50"
-                  >
-                    {scanning ? <Loader size={16} className="animate-spin" /> : <ScanSearch size={16} />}
-                    Quick Scan
-                  </button>
-                  <button
-                    onClick={() => startScan('deep')} disabled={scanning}
-                    className="flex items-center gap-2 py-2 px-5 rounded-[10px] bg-surface-secondary hover:bg-surface-hover border border-border text-text-secondary text-[13px] font-semibold transition-colors disabled:opacity-50"
-                  >
-                    <ShieldAlert size={16} /> Deep Scan
-                  </button>
-                  {scanning && (
-                    <button
-                      onClick={() => setScanning(false)}
-                      className="flex items-center gap-2 py-2 px-5 rounded-[10px] bg-red/15 border border-red/25 text-red text-[13px] font-semibold"
+                  <div className="flex gap-2 flex-wrap mb-3">
+                    <Button
+                      variant="gradient"
+                      size="sm"
+                      onClick={() => startScan('quick')}
+                      disabled={scanning}
+                      className="rounded-xl"
                     >
-                      <Square size={14} /> Stop
-                    </button>
+                      {scanning ? <Loader size={16} className="animate-spin mr-1.5" /> : <ScanSearch size={16} className="mr-1.5" />}
+                      Quick Scan
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => startScan('deep')}
+                      disabled={scanning}
+                      className="rounded-xl"
+                    >
+                      <ShieldAlert size={16} className="mr-1.5" /> Deep Scan
+                    </Button>
+                    {scanning && (
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => setScanning(false)}
+                        className="rounded-xl"
+                      >
+                        <Square size={14} className="mr-1.5" /> Stop
+                      </Button>
+                    )}
+                  </div>
+
+                  {scanning && (
+                    <div className="scan-progress mb-2">
+                      <div className="scan-progress-fill" style={{ width: `${scanProgress}%` }} />
+                    </div>
+                  )}
+                  {scanning && (
+                    <p className="flex items-center gap-2 text-[11px] text-text-secondary">
+                      {scanStage || 'Scanning...'}
+                      {scanFiles > 0 && <span>({scanFiles.toLocaleString()} files)</span>}
+                      {scanThreats > 0 && <Badge variant="danger" className="text-[10px]">{scanThreats} threat{scanThreats !== 1 ? 's' : ''}</Badge>}
+                    </p>
+                  )}
+
+                  {scanResult && !scanning && (
+                    <Badge
+                      variant={scanThreatsList.length > 0 ? 'danger' : 'success'}
+                      className="flex items-center gap-2 mt-2 py-2 px-3 text-[13px] h-auto rounded-lg"
+                    >
+                      {scanThreatsList.length === 0
+                        ? <><CheckCircle2 size={18} /> No threats found in {scanResult.filesScanned?.toLocaleString() || '0'} files</>
+                        : <><AlertTriangle size={18} /> {scanThreatsList.length} threat{scanThreatsList.length !== 1 ? 's' : ''} detected</>
+                      }
+                      <small className="ml-auto text-[10px] opacity-70">Engine: {scanResult.engine || 'unknown'}</small>
+                    </Badge>
+                  )}
+                  {scanError && !scanning && (
+                    <div className="flex items-center gap-2 mt-2 py-2 px-3 rounded-lg bg-orange/8 text-orange text-[13px]">
+                      <X size={16} /> {scanError}
+                    </div>
                   )}
                 </div>
-
-                {scanning && (
-                  <div className="scan-progress mb-2">
-                    <div className="scan-progress-fill" style={{ width: `${scanProgress}%` }} />
-                  </div>
-                )}
-                {scanning && (
-                  <p className="flex items-center gap-2 text-[11px] text-text-secondary">
-                    {scanStage || 'Scanning...'}
-                    {scanFiles > 0 && <span>({scanFiles.toLocaleString()} files)</span>}
-                    {scanThreats > 0 && <span className="bg-red/15 text-red px-1.5 py-0.5 rounded-full text-[10px] font-bold">{scanThreats} threat{scanThreats !== 1 ? 's' : ''}</span>}
-                  </p>
-                )}
-
-                {scanResult && !scanning && (
-                  <div className={`flex items-center gap-2 mt-2 py-2 px-3 rounded-lg text-[13px] ${
-                    scanThreatsList.length > 0 ? 'bg-red/8 text-red' : 'bg-green/8 text-green'
-                  }`}>
-                    {scanThreatsList.length === 0
-                      ? <><CheckCircle2 size={18} /> No threats found in {scanResult.filesScanned?.toLocaleString() || '0'} files</>
-                      : <><AlertTriangle size={18} /> {scanThreatsList.length} threat{scanThreatsList.length !== 1 ? 's' : ''} detected</>
-                    }
-                    <small className="ml-auto text-[10px] text-text-tertiary">Engine: {scanResult.engine || 'unknown'}</small>
-                  </div>
-                )}
-                {scanError && !scanning && (
-                  <div className="flex items-center gap-2 mt-2 py-2 px-3 rounded-lg bg-orange/8 text-orange text-[13px]">
-                    <X size={16} /> {scanError}
-                  </div>
-                )}
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Threats table */}
           {scanThreatsList.length > 0 && (
-            <div className={cardClass}>
-              <h3 className={sectionTitleClass}><ShieldAlert size={17} /> Detected Threats</h3>
-              <div className="grid gap-1 text-[12px]" style={{ gridTemplateColumns: '1fr 100px 1fr' }}>
-                <div className="text-[10px] text-text-tertiary uppercase tracking-wider px-2 pb-2">Threat</div>
-                <div className="text-[10px] text-text-tertiary uppercase tracking-wider px-2 pb-2">Severity</div>
-                <div className="text-[10px] text-text-tertiary uppercase tracking-wider px-2 pb-2">Path</div>
-                {scanThreatsList.map((t, i) => (
-                  <div key={i} className="contents">
-                    <span className="px-2 py-2 font-semibold text-red-400 rounded-l-lg hover:bg-surface-secondary">{t.name}</span>
-                    <span className={`severity-${(t.severity || 'high').toLowerCase()} px-2 py-2 hover:bg-surface-secondary`}>{t.severity || 'High'}</span>
-                    <span className="px-2 py-2 text-text-tertiary font-mono text-[11px] truncate rounded-r-lg hover:bg-surface-secondary">{t.path}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <ShieldAlert size={18} /> Detected Threats
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-1 text-[12px]" style={{ gridTemplateColumns: '1fr 100px 1fr' }}>
+                  <div className="text-[10px] text-text-tertiary uppercase tracking-wider px-2 pb-2">Threat</div>
+                  <div className="text-[10px] text-text-tertiary uppercase tracking-wider px-2 pb-2">Severity</div>
+                  <div className="text-[10px] text-text-tertiary uppercase tracking-wider px-2 pb-2">Path</div>
+                  {scanThreatsList.map((t, i) => (
+                    <div key={i} className="contents">
+                      <span className="px-2 py-2 font-semibold text-red-400 rounded-l-lg hover:bg-surface-secondary">{t.name}</span>
+                      <span className={`severity-${(t.severity || 'high').toLowerCase()} px-2 py-2 hover:bg-surface-secondary`}>{t.severity || 'High'}</span>
+                      <span className="px-2 py-2 text-text-tertiary font-mono text-[11px] truncate rounded-r-lg hover:bg-surface-secondary">{t.path}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* AV Engine Status */}
-          <div className={cardClass}>
-            <h3 className={sectionTitleClass}><Database size={17} /> Antivirus Engine</h3>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="flex flex-col gap-1.5 p-3 rounded-[10px] bg-surface-secondary border border-border">
-                <span className="text-[10px] text-text-tertiary uppercase tracking-wider">ClamAV</span>
-                <span className={`text-[13px] font-semibold ${clamav?.found ? 'text-green' : 'text-text-tertiary'}`}>
-                  {clamav?.found ? (clamav.version ? `v${clamav.version}` : 'Installed') : 'Not installed'}
-                </span>
-                {!clamav?.found && (
-                  <a href={clamav?.installUrl || 'https://www.clamav.net/downloads'} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-accent hover:underline mt-1">
-                    <Download size={12} /> Download ClamAV
-                  </a>
-                )}
-              </div>
-              <div className="flex flex-col gap-1.5 p-3 rounded-[10px] bg-surface-secondary border border-border">
-                <span className="text-[10px] text-text-tertiary uppercase tracking-wider">Definitions</span>
-                <span className={`text-[13px] font-semibold ${clamav?.definitionsVersion ? 'text-green' : 'text-text-tertiary'}`}>
-                  {clamav?.definitionsVersion ? `${clamav.definitionsVersion} (${clamav.definitionsDate || 'N/A'})` : 'N/A'}
-                </span>
-                {clamav?.found && (
-                  <button onClick={handleUpdateDefs} disabled={updatingDefs} className="inline-flex items-center gap-1 text-[11px] text-accent hover:underline mt-1 disabled:opacity-50">
-                    {updatingDefs ? <Loader size={12} className="animate-spin" /> : <RefreshCw size={12} />}
-                    {updatingDefs ? `Updating... ${defUpdateProgress}%` : 'Update Definitions'}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Database size={18} /> Antivirus Engine
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="flex flex-col gap-2 p-4 rounded-2xl bg-surface-secondary/50 border border-white/[0.03]">
+                  <span className="text-[10px] text-text-tertiary uppercase tracking-wider">ClamAV</span>
+                  <span className={`text-[14px] font-semibold ${clamav?.found ? 'text-green' : 'text-text-tertiary'}`}>
+                    {clamav?.found ? (clamav.version ? `v${clamav.version}` : 'Installed') : 'Not installed'}
+                  </span>
+                  {!clamav?.found && (
+                    <a href={clamav?.installUrl || 'https://www.clamav.net/downloads'} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-accent hover:underline mt-1">
+                      <Download size={12} /> Download ClamAV
+                    </a>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2 p-4 rounded-2xl bg-surface-secondary/50 border border-white/[0.03]">
+                  <span className="text-[10px] text-text-tertiary uppercase tracking-wider">Definitions</span>
+                  <span className={`text-[14px] font-semibold ${clamav?.definitionsVersion ? 'text-green' : 'text-text-tertiary'}`}>
+                    {clamav?.definitionsVersion ? `${clamav.definitionsVersion} (${clamav.definitionsDate || 'N/A'})` : 'N/A'}
+                  </span>
+                  {clamav?.found && (
+                    <button onClick={handleUpdateDefs} disabled={updatingDefs} className="inline-flex items-center gap-1 text-[11px] text-accent hover:underline mt-1 disabled:opacity-50">
+                      {updatingDefs ? <Loader size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                      {updatingDefs ? `Updating... ${defUpdateProgress}%` : 'Update Definitions'}
+                    </button>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2 p-4 rounded-2xl bg-surface-secondary/50 border border-white/[0.03]">
+                  <span className="text-[10px] text-text-tertiary uppercase tracking-wider">Windows Defender</span>
+                  <span className={`text-[14px] font-semibold ${defender.available ? 'text-green' : 'text-text-tertiary'}`}>
+                    {defender.available ? 'Active' : 'Unavailable'}
+                  </span>
+                  <button onClick={() => openWindowsSettings('security')} className="inline-flex items-center gap-1 text-[11px] text-accent hover:underline mt-1">
+                    <ExternalLink size={12} /> Open Windows Security
                   </button>
-                )}
+                </div>
               </div>
-              <div className="flex flex-col gap-1.5 p-3 rounded-[10px] bg-surface-secondary border border-border">
-                <span className="text-[10px] text-text-tertiary uppercase tracking-wider">Windows Defender</span>
-                <span className={`text-[13px] font-semibold ${defender.available ? 'text-green' : 'text-text-tertiary'}`}>
-                  {defender.available ? 'Active' : 'Unavailable'}
-                </span>
-                <button onClick={() => openWindowsSettings('security')} className="inline-flex items-center gap-1 text-[11px] text-accent hover:underline mt-1">
-                  <ExternalLink size={12} /> Open Windows Security
-                </button>
-              </div>
-            </div>
-            {updatingDefs && defUpdateProgress > 0 && (
-              <div className="mt-3 p-3 rounded-lg bg-surface-secondary">
-                <div className="scan-progress max-w-[300px]"><div className="scan-progress-fill" style={{ width: `${defUpdateProgress}%` }} /></div>
-                <p className="text-[11px] text-text-tertiary mt-1.5">{defUpdateOutput || 'Updating definitions...'}</p>
-              </div>
-            )}
-          </div>
+              {updatingDefs && defUpdateProgress > 0 && (
+                <div className="mt-4 p-4 rounded-2xl bg-surface-secondary/50">
+                  <Progress value={defUpdateProgress} className="max-w-[300px] h-1.5" />
+                  <p className="text-[11px] text-text-tertiary mt-2">{defUpdateOutput || 'Updating definitions...'}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Safety & Recovery */}
-          <div className={cardClass}>
-            <h3 className={sectionTitleClass}><FolderArchive size={17} /> Safety &amp; Recovery</h3>
-            <div className="flex flex-col gap-2.5">
-              <div className="flex items-center gap-3 p-3 rounded-[10px] bg-surface-secondary border border-border">
-                <div className="flex items-center justify-center w-[38px] h-[38px] rounded-lg bg-purple-bg text-purple flex-shrink-0">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <FolderArchive size={18} /> Safety &amp; Recovery
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              <div className="flex items-center gap-4 p-4 rounded-2xl bg-surface-secondary/50 hover:bg-surface-hover transition-all duration-200 border border-white/[0.03]">
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-purple-bg text-purple flex-shrink-0">
                   <FolderArchive size={20} />
                 </div>
-                <div className="flex-1">
-                  <strong className="text-[12px] text-text block">System Restore</strong>
+                <div className="flex-1 min-w-0">
+                  <strong className="text-[13px] text-text block">System Restore</strong>
                   <p className="text-[11px] text-text-tertiary">
                     {safetyStatus?.restore?.enabled ? `${safetyStatus.restore.count} point${safetyStatus.restore.count !== 1 ? 's' : ''} available` : 'Not configured'}
                   </p>
                   {safetyStatus?.restore?.lastCreated && <small className="text-[10px] text-text-tertiary">Last: {timeAgo(safetyStatus.restore.lastCreated)}</small>}
                 </div>
-                <div className="flex gap-1.5">
-                  <button onClick={createPoint} disabled={creatingRP} className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg bg-surface hover:bg-surface-hover border border-border text-[12px] text-text-secondary transition-colors disabled:opacity-50">
-                    {creatingRP ? <Loader size={13} className="animate-spin" /> : <BadgeCheck size={13} />}
+                <div className="flex gap-2 flex-shrink-0">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={createPoint}
+                    disabled={creatingRP}
+                    className="rounded-lg"
+                  >
+                    {creatingRP ? <Loader size={14} className="animate-spin mr-1.5" /> : <BadgeCheck size={14} className="mr-1.5" />}
                     {creatingRP ? 'Creating...' : 'Create Point'}
-                  </button>
-                  <button onClick={() => openWindowsSettings('restore')} className="flex items-center gap-1 py-1.5 px-3 rounded-lg text-[12px] text-accent hover:bg-accent/5 transition-colors">
-                    <ExternalLink size={12} /> Configure
-                  </button>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => openWindowsSettings('restore')}
+                    className="rounded-lg"
+                  >
+                    <ExternalLink size={13} className="mr-1" /> Configure
+                  </Button>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-3 rounded-[10px] bg-surface-secondary border border-border">
-                <div className="flex items-center justify-center w-[38px] h-[38px] rounded-lg bg-green-bg text-green flex-shrink-0">
+              <div className="flex items-center gap-4 p-4 rounded-2xl bg-surface-secondary/50 hover:bg-surface-hover transition-all duration-200 border border-white/[0.03]">
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-green-bg text-green flex-shrink-0">
                   <ShieldCheck size={20} />
                 </div>
-                <div className="flex-1">
-                  <strong className="text-[12px] text-text block">Windows Security</strong>
+                <div className="flex-1 min-w-0">
+                  <strong className="text-[13px] text-text block">Windows Security</strong>
                   <p className="text-[11px] text-text-tertiary">{defender.available ? 'Defender is active' : 'Check Windows Security'}</p>
                 </div>
-                <button onClick={() => openWindowsSettings('security')} className="flex items-center gap-1 py-1.5 px-3 rounded-lg text-[12px] text-accent hover:bg-accent/5 transition-colors">
-                  <ExternalLink size={12} /> Open
-                </button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => openWindowsSettings('security')}
+                  className="rounded-lg flex-shrink-0"
+                >
+                  <ExternalLink size={13} className="mr-1" /> Open
+                </Button>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Activity History */}
           {history.length > 0 && (
-            <div className={cardClass}>
-              <h3 className={sectionTitleClass}><FileClock size={17} /> Recent Activity</h3>
-              <div className="flex flex-col gap-1 max-h-[260px] overflow-y-auto">
-                {history.slice(0, 10).map((entry, i) => (
-                  <div key={entry.id || i} className="flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-surface-secondary text-[12px]">
-                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${entry.status === 'error' ? 'bg-red' : 'bg-green'}`} />
-                    <span className="text-text-secondary font-semibold w-[90px] flex-shrink-0">{entry.action}</span>
-                    <span className="text-text-tertiary flex-1 truncate">{entry.detail}</span>
-                    <span className="text-text-tertiary text-[10px] flex items-center gap-1 flex-shrink-0">
-                      <Clock3 size={11} /> {timeAgo(entry.at)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <FileClock size={18} /> Recent Activity
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col gap-1 max-h-[260px] overflow-y-auto">
+                  {history.slice(0, 10).map((entry, i) => (
+                    <div key={entry.id || i} className="flex items-center gap-4 px-3 py-2 rounded-xl hover:bg-surface-secondary text-[12px] transition-colors">
+                      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${entry.status === 'error' ? 'bg-red' : 'bg-green'}`} />
+                      <span className="text-text-secondary font-semibold w-[90px] flex-shrink-0">{entry.action}</span>
+                      <span className="text-text-tertiary flex-1 truncate">{entry.detail}</span>
+                      <span className="text-text-tertiary text-[11px] flex items-center gap-1 flex-shrink-0">
+                        <Clock3 size={11} /> {timeAgo(entry.at)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           )}
         </>
       )}

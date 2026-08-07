@@ -23,34 +23,34 @@ const items = [
 
 export default function Sidebar() {
   return (
-    <aside className="flex flex-col w-[200px] flex-shrink-0 bg-sidebar border-r border-border overflow-y-auto">
-      <nav className="flex-1 flex flex-col gap-0.5 py-4">
+    <aside className="flex flex-col w-[210px] flex-shrink-0 bg-sidebar/90 backdrop-blur-2xl border-r border-white/[0.04] overflow-y-auto">
+      <nav className="flex-1 flex flex-col gap-0.5 py-5 px-2.5">
         {items.map(({ to, icon: Icon, label }) => (
           <NavLink key={to} to={to} end={to === '/'}>
             {({ isActive }) => (
               <div
-                className={`flex items-center gap-3 px-3 py-[10px] mx-2 rounded-[10px] text-[13px] font-medium transition-all ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-2xl text-[13px] font-medium transition-all duration-200 ${
                   isActive
-                    ? 'text-text bg-accent/10 border-l-[3px] border-l-accent shadow-[inset_0_0_12px_rgba(34,211,238,0.06)]'
-                    : 'text-text-secondary hover:text-text hover:bg-surface-secondary border-l-[3px] border-l-transparent'
+                    ? 'bg-accent/10 text-text shadow-sm'
+                    : 'text-text-secondary hover:text-text hover:bg-surface-secondary'
                 }`}
               >
-                <span className={`flex items-center justify-center w-8 h-8 rounded-lg ${
-                  isActive ? 'bg-accent/20 text-accent' : 'text-text-tertiary'
+                <span className={`flex items-center justify-center w-8 h-8 rounded-xl transition-colors ${
+                  isActive ? 'bg-accent/15 text-accent' : 'text-text-tertiary'
                 }`}>
-                  <Icon size={19} strokeWidth={1.8} />
+                  <Icon size={18} strokeWidth={1.8} />
                 </span>
-                <span>{label}</span>
+                <span className="truncate">{label}</span>
               </div>
             )}
           </NavLink>
         ))}
       </nav>
-      <div className="flex items-center gap-2 px-3 py-3 border-t border-border text-text-tertiary text-[10px]">
-        <Boxes size={14} />
-        <div className="flex flex-col">
-          <strong className="text-text-secondary">WinBoost 3.0</strong>
-          <span>Local system toolkit</span>
+      <div className="flex items-center gap-2.5 px-4 py-3.5 border-t border-white/[0.04]">
+        <Boxes size={13} className="text-text-tertiary flex-shrink-0" />
+        <div className="flex flex-col min-w-0">
+          <strong className="text-[10px] text-text-secondary font-semibold tracking-tight">WinBoost 3.0</strong>
+          <span className="text-[8px] text-text-tertiary">Local system toolkit</span>
         </div>
       </div>
     </aside>

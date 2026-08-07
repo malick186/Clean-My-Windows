@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Shield, Eye, EyeOff, Radio, Wifi, Monitor, MapPin, Video, AlertTriangle, Loader, LockKeyhole, CheckCircle } from 'lucide-react'
 import { listPrivacy, setPrivacy, applyRecommendedPrivacy } from '../lib/api'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 export default function PrivacyTools() {
   const [groups, setGroups] = useState([])
@@ -42,16 +44,19 @@ export default function PrivacyTools() {
 
   if (loading) {
     return (
-      <div className="space-y-5 anim-fade-up">
-        <div className="flex items-start gap-4">
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-purple-bg text-purple">
-            <Shield size={23} />
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5 text-[9px] font-bold text-accent uppercase tracking-[0.15em] mb-1.5">
-              <Shield size={12} /> Privacy controls
+      <div className="space-y-6 anim-fade-up">
+        <div className="flex items-start justify-between mb-8">
+          <div className="flex items-start gap-5">
+            <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-purple-bg text-purple shadow-sm">
+              <Shield size={24} />
             </div>
-            <h1 className="text-[22px] font-extrabold leading-tight tracking-tight">Privacy Tools</h1>
+            <div>
+              <div className="flex items-center gap-2 text-[10px] font-bold text-accent uppercase tracking-[0.15em] mb-2">
+                <Shield size={11} /> Privacy controls
+              </div>
+              <h1 className="text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em]">Privacy Tools</h1>
+              <p className="text-[13px] text-text-tertiary mt-1.5 leading-relaxed">Control your Windows privacy settings and manage data sharing</p>
+            </div>
           </div>
         </div>
         <div className="rounded-[14px] bg-surface border border-border p-10 text-center text-[13px] text-text-tertiary">Loading privacy settings...</div>
@@ -62,17 +67,19 @@ export default function PrivacyTools() {
   const groupIcons = { 'Telemetry & Data Collection': Radio, 'Location & Sensors': MapPin, 'Camera & Microphone': Video, 'Network & Sync': Wifi, 'Activity & Input': Monitor, Recommendations: Shield }
 
   return (
-    <div className="space-y-5 anim-fade-up">
-      <div className="flex items-start gap-4">
-        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-purple-bg text-purple">
-          <Shield size={23} />
-        </div>
-        <div>
-          <div className="flex items-center gap-1.5 text-[9px] font-bold text-accent uppercase tracking-[0.15em] mb-1.5">
-            <Shield size={12} /> Privacy controls
+    <div className="space-y-6 anim-fade-up">
+      <div className="flex items-start justify-between mb-8">
+        <div className="flex items-start gap-5">
+          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-purple-bg text-purple shadow-sm">
+            <Shield size={24} />
           </div>
-          <h1 className="text-[22px] font-extrabold leading-tight tracking-tight">Privacy Tools</h1>
-          <p className="text-[12px] text-text-tertiary mt-1">Control your Windows privacy settings and manage data sharing</p>
+          <div>
+            <div className="flex items-center gap-2 text-[10px] font-bold text-accent uppercase tracking-[0.15em] mb-2">
+              <Shield size={11} /> Privacy controls
+            </div>
+            <h1 className="text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em]">Privacy Tools</h1>
+            <p className="text-[13px] text-text-tertiary mt-1.5 leading-relaxed">Control your Windows privacy settings and manage data sharing</p>
+          </div>
         </div>
       </div>
 
@@ -84,24 +91,28 @@ export default function PrivacyTools() {
           { icon: Eye, val: onCount, sub: 'Active sharing points', color: '#ff9500' },
           { icon: Shield, val: offCount, sub: 'Settings secured', color: '#34c759' },
         ].map(s => (
-          <div key={s.sub} className="rounded-[14px] bg-surface border border-border p-4">
-            <s.icon size={18} style={{ color: s.color }} className="mb-2" />
-            <div className="text-xl font-bold">{s.val}</div>
-            <div className="text-xs text-text-tertiary">{s.sub}</div>
-          </div>
+          <Card key={s.sub} className="p-4">
+            <CardContent>
+              <s.icon size={18} style={{ color: s.color }} className="mb-2" />
+              <div className="text-xl font-bold">{s.val}</div>
+              <div className="text-xs text-text-tertiary">{s.sub}</div>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
       {groups.map(({ category, items }, gi) => {
         const Icon = groupIcons[category] || Shield
         return (
-          <div key={category} className="rounded-[14px] bg-surface border border-border overflow-hidden">
-            <div className="flex items-center gap-3 px-5 py-3.5 border-b border-border bg-surface-secondary">
-              <Icon size={17} className="text-purple" />
-              <h3 className="text-[14px] font-semibold">{category}</h3>
-            </div>
+          <Card key={category} className="overflow-hidden">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Icon size={18} className="text-purple" />
+                {category}
+              </CardTitle>
+            </CardHeader>
             {items.map((item, ii) => (
-              <div key={item.name} className="flex items-center justify-between px-5 py-3.5 hover:bg-surface-hover transition-colors border-b border-border last:border-b-0">
+              <div key={item.name} className="flex items-center justify-between px-6 py-3.5 hover:bg-surface-hover transition-all duration-200 border-b border-white/[0.03] last:border-b-0">
                 <div className="flex items-center gap-3">
                   {item.enabled ? <Eye size={15} className="text-orange" /> : <EyeOff size={15} className="text-green" />}
                   <div>
@@ -112,15 +123,15 @@ export default function PrivacyTools() {
                 {busy === item.name ? <Loader size={15} className="animate-spin" /> : <button onClick={() => toggle(gi, ii)} className="toggle-switch" data-on={item.enabled} aria-label={`Toggle ${item.name}`} />}
               </div>
             ))}
-          </div>
+          </Card>
         )
       })}
 
       <div className="flex gap-3">
-        <button onClick={applyRecommended} disabled={Boolean(busy)} className="flex items-center gap-2 py-2 px-5 rounded-[10px] bg-accent text-black font-semibold text-[13px] hover:opacity-90 disabled:opacity-50 flex-1 justify-center">
+        <Button onClick={applyRecommended} disabled={Boolean(busy)} className="flex-1">
           {busy === 'recommended' && <Loader size={14} className="animate-spin" />}Apply Recommended Settings
-        </button>
-        <button onClick={() => listPrivacy().then(setGroups)} className="flex items-center gap-2 py-2 px-5 rounded-[10px] bg-surface-secondary hover:bg-surface-hover border border-border text-text-secondary text-[13px] font-semibold disabled:opacity-50">Refresh</button>
+        </Button>
+        <Button variant="secondary" onClick={() => listPrivacy().then(setGroups)}>Refresh</Button>
       </div>
     </div>
   )

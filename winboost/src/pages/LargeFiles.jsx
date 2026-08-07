@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { AlertTriangle, Calendar, ExternalLink, File, FileArchive, FileImage, FileVideo, HardDrive, Loader, RotateCcw, Search, Trash2 } from 'lucide-react'
 import { revealLargeFile, scanLargeFiles, trashLargeFile } from '../lib/api'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
 
 const icons = { videos: FileVideo, images: FileImage, archives: FileArchive, disk: HardDrive, other: File, music: File }
 
@@ -35,23 +38,23 @@ export default function LargeFiles() {
   const total = files.reduce((sum, file) => sum + file.size, 0)
 
   return (
-    <div className="space-y-5 anim-fade-up">
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-4">
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-orange-bg text-orange">
-            <Search size={23} />
+    <div className="space-y-6 anim-fade-up">
+      <div className="flex items-start justify-between mb-8">
+        <div className="flex items-start gap-5">
+          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-orange-bg text-orange shadow-sm">
+            <Search size={24} />
           </div>
           <div>
-            <div className="flex items-center gap-1.5 text-[9px] font-bold text-accent uppercase tracking-[0.15em] mb-1.5">
-              <HardDrive size={12} /> Recoverable file management
+            <div className="flex items-center gap-2 text-[10px] font-bold text-accent uppercase tracking-[0.15em] mb-2">
+              <HardDrive size={11} /> Recoverable file management
             </div>
-            <h1 className="text-[22px] font-extrabold leading-tight tracking-tight">Large Files Explorer</h1>
-            <p className="text-[12px] text-text-tertiary mt-1">Find real storage consumers in your user profile, reveal them in Explorer or move them safely to the Recycle Bin.</p>
+            <h1 className="text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em]">Large Files Explorer</h1>
+            <p className="text-[13px] text-text-tertiary mt-1.5 leading-relaxed">Find real storage consumers in your user profile, reveal them in Explorer or move them safely to the Recycle Bin.</p>
           </div>
         </div>
-        <button className="flex items-center gap-2 py-2 px-5 rounded-[10px] bg-surface-secondary hover:bg-surface-hover border border-border text-text-secondary text-[13px] font-semibold disabled:opacity-50" onClick={() => fetchFiles(minSize)} disabled={loading}>
+        <Button variant="secondary" size="sm" onClick={() => fetchFiles(minSize)} disabled={loading}>
           <RotateCcw size={13} className={loading ? 'animate-spin' : ''} /> Rescan
-        </button>
+        </Button>
       </div>
 
       {error && <div className="notice-banner error"><AlertTriangle size={17} />{error}</div>}
@@ -62,40 +65,51 @@ export default function LargeFiles() {
           { icon: Search, val: `${total.toFixed(2)} GB`, sub: 'Visible space', color: '#bd6cff' },
           { icon: FileArchive, val: `${(meta.scannedItems || 0).toLocaleString()}`, sub: 'Items inspected', color: '#ffb45b' },
         ].map(item => (
-          <div key={item.sub} className="rounded-[14px] bg-surface border border-border p-4 flex flex-col items-center gap-1.5 text-center">
-            <item.icon size={18} style={{ color: item.color }} />
-            <strong className="text-lg font-bold text-text">{item.val}</strong>
-            <span className="text-[11px] text-text-tertiary">{item.sub}</span>
-          </div>
+          <Card key={item.sub} className="p-4">
+            <CardContent className="flex flex-col items-center gap-1.5 text-center">
+              <item.icon size={18} style={{ color: item.color }} />
+              <strong className="text-lg font-bold text-text">{item.val}</strong>
+              <span className="text-[11px] text-text-tertiary">{item.sub}</span>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
-      <div className="rounded-[14px] bg-surface border border-border p-3 flex items-center gap-3 text-xs">
-        <span className="text-text-secondary font-medium">Minimum size</span>
-        {[10, 100, 500, 1000, 5000].map(size => (
-          <button key={size} onClick={() => { setMinSize(size); fetchFiles(size) }} className={minSize === size ? 'py-1.5 px-3.5 rounded-[8px] bg-accent text-black text-[11px] font-semibold' : 'py-1.5 px-3.5 rounded-[8px] bg-surface-secondary hover:bg-surface-hover text-text-secondary text-[11px] font-medium transition-colors'}>
-            {size >= 1000 ? `${size / 1000} GB` : `${size} MB`}
-          </button>
-        ))}
-        <small className="text-text-tertiary ml-auto font-mono">{meta.root}</small>
-      </div>
+      <Card className="p-3">
+        <CardContent className="flex items-center gap-3 text-xs">
+          <span className="text-text-secondary font-medium">Minimum size</span>
+          {[10, 100, 500, 1000, 5000].map(size => (
+            <Button
+              key={size}
+              variant={minSize === size ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => { setMinSize(size); fetchFiles(size) }}
+            >
+              {size >= 1000 ? `${size / 1000} GB` : `${size} MB`}
+            </Button>
+          ))}
+          <small className="text-text-tertiary ml-auto font-mono">{meta.root}</small>
+        </CardContent>
+      </Card>
 
       {loading && (
-        <div className="rounded-[14px] bg-surface border border-border p-4 space-y-3">
-          <div className="flex items-center gap-3">
-            <Loader className="animate-spin" size={17} />
-            <div className="flex-1">
-              <strong className="text-sm text-text">Scanning your files</strong>
-              <small className="block text-xs text-text-tertiary">{stage}</small>
+        <Card>
+          <CardContent className="space-y-3">
+            <div className="flex items-center gap-3">
+              <Loader className="animate-spin" size={17} />
+              <div className="flex-1">
+                <strong className="text-sm text-text">Scanning your files</strong>
+                <small className="block text-xs text-text-tertiary">{stage}</small>
+              </div>
+              <b className="text-sm text-text">{progress}%</b>
             </div>
-            <b className="text-sm text-text">{progress}%</b>
-          </div>
-          <div className="scan-progress"><div className="scan-progress-fill" style={{ width: `${progress}%` }} /></div>
-        </div>
+            <Progress value={progress} />
+          </CardContent>
+        </Card>
       )}
 
-      <div className="rounded-[14px] bg-surface border border-border overflow-hidden">
-        <div className="grid grid-cols-[2fr_1.5fr_1fr_1fr_100px] gap-4 px-5 py-3 text-[11px] font-semibold text-text-tertiary uppercase tracking-wider border-b border-border bg-surface-secondary/50">
+      <Card className="overflow-hidden">
+        <div className="grid grid-cols-[2fr_1.5fr_1fr_1fr_100px] gap-4 px-5 py-3 text-[11px] font-semibold text-text-tertiary uppercase tracking-wider border-b border-white/[0.05] bg-surface-secondary/50">
           <span>File</span><span>Location</span><span>Size</span><span>Modified</span><span>Actions</span>
         </div>
         {!loading && files.length === 0 ? (
@@ -103,7 +117,7 @@ export default function LargeFiles() {
         ) : files.map(file => {
           const Icon = icons[file.type] || File
           return (
-            <div key={file.id} className="grid grid-cols-[2fr_1.5fr_1fr_1fr_100px] gap-4 px-5 py-3.5 items-center border-b border-border hover:bg-surface-hover transition-colors">
+            <div key={file.id} className="grid grid-cols-[2fr_1.5fr_1fr_1fr_100px] gap-4 px-5 py-3.5 items-center border-b border-white/[0.03] hover:bg-surface-hover transition-all duration-200">
               <div className="flex items-center gap-3">
                 <span className="w-8 h-8 rounded-lg flex items-center justify-center bg-surface-secondary text-text-secondary">
                   <Icon size={16} />
@@ -117,17 +131,17 @@ export default function LargeFiles() {
               <strong className="text-sm text-text">{file.size >= 1 ? `${file.size.toFixed(2)} GB` : `${(file.size * 1024).toFixed(0)} MB`}</strong>
               <span className="flex items-center gap-1.5 text-xs text-text-tertiary"><Calendar size={11} />{file.date}</span>
               <div className="flex items-center gap-1.5">
-                <button onClick={() => revealLargeFile(file.id)} title="Show in Explorer" className="w-8 h-8 rounded-lg flex items-center justify-center bg-surface-secondary hover:bg-surface-hover text-text-secondary hover:text-text transition-colors">
+                <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => revealLargeFile(file.id)} title="Show in Explorer">
                   <ExternalLink size={14} />
-                </button>
-                <button className="w-8 h-8 rounded-lg flex items-center justify-center bg-red-bg hover:bg-red-bg text-red transition-colors disabled:opacity-40" onClick={() => trash(file)} disabled={busy === file.id} title="Move to Recycle Bin">
+                </Button>
+                <Button variant="danger" size="icon" className="w-8 h-8" onClick={() => trash(file)} disabled={busy === file.id} title="Move to Recycle Bin">
                   {busy === file.id ? <Loader size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                </button>
+                </Button>
               </div>
             </div>
           )
         })}
-      </div>
+      </Card>
       {meta.limited && <div className="notice-banner warning"><AlertTriangle size={16} />The scan reached its safety limit. Results show the largest files discovered so far.</div>}
     </div>
   )
