@@ -1399,6 +1399,340 @@ async function runDefenderScan(scanType) {
   }
 }
 
+/* ═══════════════════════════ V3.1: Sparkle Features ═══════════════════════════ */
+
+/* ─────────────── Debloat Windows ─────────────── */
+const DEBLOAT_ITEMS = [
+  { id: 'onedrive', name: 'OneDrive', desc: 'Microsoft cloud storage integration', category: 'Cloud', risk: 'Medium', cmd: 'winget uninstall --id Microsoft.OneDrive --silent' },
+  { id: 'cortana', name: 'Cortana', desc: 'Microsoft virtual assistant', category: 'Assistant', risk: 'Medium', cmd: 'winget uninstall --id Microsoft.Cortana --silent' },
+  { id: 'xbox', name: 'Xbox Apps', desc: 'Xbox Game Bar, Console Companion, Identity Provider', category: 'Gaming', risk: 'Low', cmd: 'powershell -NoProfile -Command "Get-AppxPackage *xbox* | Remove-AppxPackage -ErrorAction SilentlyContinue"' },
+  { id: 'skype', name: 'Skype', desc: 'Pre-installed Skype app', category: 'Communication', risk: 'Low', cmd: 'winget uninstall --id Microsoft.Skype --silent' },
+  { id: 'onenote', name: 'OneNote', desc: 'Microsoft note-taking app', category: 'Office', risk: 'Low', cmd: 'winget uninstall --id Microsoft.OneNote --silent' },
+  { id: 'solitaire', name: 'Solitaire & Games', desc: 'Microsoft Solitaire Collection and casual games', category: 'Gaming', risk: 'Low', cmd: 'powershell -NoProfile -Command "Get-AppxPackage *solitaire* | Remove-AppxPackage -ErrorAction SilentlyContinue"' },
+  { id: 'bing', name: 'Bing Apps', desc: 'Bing Weather, News, Finance, Sports', category: 'Bloat', risk: 'Low', cmd: 'powershell -NoProfile -Command "Get-AppxPackage *bing* | Remove-AppxPackage -ErrorAction SilentlyContinue"' },
+  { id: 'officehub', name: 'Microsoft Office Hub', desc: 'Pre-installed Office advertisement app', category: 'Office', risk: 'Low', cmd: 'powershell -NoProfile -Command "Get-AppxPackage *officehub* | Remove-AppxPackage -ErrorAction SilentlyContinue"' },
+  { id: 'mixedreality', name: 'Mixed Reality Portal', desc: 'Windows Mixed Reality components', category: 'Bloat', risk: 'Low', cmd: 'powershell -NoProfile -Command "Get-AppxPackage *mixedreality* | Remove-AppxPackage -ErrorAction SilentlyContinue"' },
+  { id: 'telemetry', name: 'Telemetry Services', desc: 'Disable diagnostic tracking and telemetry', category: 'Privacy', risk: 'Medium', cmd: 'powershell -NoProfile -Command "Set-ItemProperty -Path HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection -Name AllowTelemetry -Value 0 -Type DWord -Force; Set-ItemProperty -Path HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\DataCollection -Name AllowTelemetry -Value 0 -Type DWord -Force"' },
+  { id: 'suggestions', name: 'Suggested Apps & Tips', desc: 'Disable Start menu suggestions, tips, and ads', category: 'Privacy', risk: 'Low', cmd: 'powershell -NoProfile -Command "New-Item -Path HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\CloudContent -Force | Out-Null; Set-ItemProperty -Path HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\CloudContent -Name DisableWindowsConsumerFeatures -Value 1 -Type DWord -Force"' },
+  { id: 'maps', name: 'Windows Maps', desc: 'Pre-installed Maps application', category: 'Bloat', risk: 'Low', cmd: 'powershell -NoProfile -Command "Get-AppxPackage *windowsmaps* | Remove-AppxPackage -ErrorAction SilentlyContinue"' },
+  { id: 'zune', name: 'Zune / Media Player', desc: 'Legacy Groove Music, Movies & TV, Zune', category: 'Media', risk: 'Low', cmd: 'powershell -NoProfile -Command "Get-AppxPackage *zune* | Remove-AppxPackage -ErrorAction SilentlyContinue"' },
+]
+
+ipcMain.handle('debloat:list', async () => {
+  try {
+    const appsOut = execFileSync('powershell.exe', [
+      '-NoProfile', '-Command',
+      'Get-AppxPackage | Select-Object Name -ExpandProperty Name | Where-Object { $_ -match "xbox|bing|skype|solitaire|officehub|mixedreality|windowsmaps|zune|people|camera|alarms|sticky|feedback|getstarted|3dbuilder|communications" } | ConvertTo-Json -Compress'
+    ], { encoding: 'utf8', timeout: 30000, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
+
+    const installedNames = new Set()
+    try {
+      const names = JSON.parse(appsOut || '[]')
+      ;(Array.isArray(names) ? names : [names]).forEach(n => installedNames.add(n.toLowerCase()))
+    } catch {}
+
+    const items = DEBLOAT_ITEMS.map(item => {
+      const idLower = item.id.toLowerCase()
+      const nameWords = item.name.toLowerCase().split(/\s+/)
+      const installed = Array.from(installedNames).some(n => nameWords.some(w => n.includes(w)))
+      return { ...item, installed, status: installed ? 'detected' : 'not-found' }
+    })
+
+    const installedCount = items.filter(i => i.installed).length
+    return { success: true, items, total: items.length, installed: installedCount }
+  } catch (error) {
+    return { success: false, error: errorMessage(error), items: DEBLOAT_ITEMS.map(i => ({ ...i, installed: false, status: 'unknown' })) }
+  }
+})
+
+ipcMain.handle('debloat:remove', async (_, itemId) => {
+  const item = DEBLOAT_ITEMS.find(i => i.id === itemId)
+  if (!item) return { success: false, error: 'Unknown debloat item.' }
+
+  return new Promise((resolve) => {
+    const child = spawn('powershell.exe', [
+      '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', item.cmd
+    ], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], timeout: 120000 })
+
+    let output = ''
+    child.stdout.on('data', d => { output += d.toString() })
+    child.stderr.on('data', d => { output += d.toString() })
+
+    child.on('close', (code) => {
+      mainWindow?.webContents.send('debloat:progress', { id: itemId, done: true, code })
+      addHistory('Debloat', `Removed ${item.name}`, code === 0 ? 'success' : 'error').catch(() => {})
+      resolve({ success: code === 0, item: itemId, output: output.slice(-200) })
+    })
+
+    child.on('error', (err) => {
+      resolve({ success: false, error: err.message, item: itemId })
+    })
+  })
+})
+
+ipcMain.handle('debloat:removeAll', async (_, selectedIds) => {
+  const ids = selectedIds || DEBLOAT_ITEMS.map(i => i.id)
+  const results = []
+  for (const id of ids) {
+    mainWindow?.webContents.send('debloat:progress', { id, done: false })
+    const result = await ipcMain.emit('debloat:remove', null, id) || { success: false, error: 'Failed' }
+    results.push({ id, success: result.success || false })
+  }
+  return { success: results.every(r => r.success), results }
+})
+
+/* ─────────────── App Installer (winget) ─────────────── */
+const FEATURED_APPS = [
+  { id: 'Google.Chrome', name: 'Google Chrome', desc: 'Popular web browser', category: 'Browsers', icon: 'Globe', size: '~120 MB' },
+  { id: 'Mozilla.Firefox', name: 'Firefox', desc: 'Privacy-focused browser', category: 'Browsers', icon: 'Globe', size: '~90 MB' },
+  { id: 'Brave.Brave', name: 'Brave', desc: 'Privacy browser with ad-blocking', category: 'Browsers', icon: 'Globe', size: '~110 MB' },
+  { id: 'VideoLAN.VLC', name: 'VLC Media Player', desc: 'Universal media player', category: 'Media', icon: 'Play', size: '~80 MB' },
+  { id: 'Spotify.Spotify', name: 'Spotify', desc: 'Music streaming', category: 'Media', icon: 'Music', size: '~150 MB' },
+  { id: 'Notepad++.Notepad++', name: 'Notepad++', desc: 'Advanced text/code editor', category: 'Dev Tools', icon: 'Code', size: '~15 MB' },
+  { id: 'Microsoft.VisualStudioCode', name: 'VS Code', desc: 'Code editor by Microsoft', category: 'Dev Tools', icon: 'Code', size: '~200 MB' },
+  { id: '7zip.7zip', name: '7-Zip', desc: 'File archiver with high compression', category: 'Utilities', icon: 'Archive', size: '~5 MB' },
+  { id: 'Discord.Discord', name: 'Discord', desc: 'Chat and voice communication', category: 'Communication', icon: 'MessageCircle', size: '~120 MB' },
+  { id: 'OBSProject.OBSStudio', name: 'OBS Studio', desc: 'Live streaming and recording', category: 'Media', icon: 'Video', size: '~200 MB' },
+  { id: 'GIMP.GIMP', name: 'GIMP', desc: 'Open-source image editor', category: 'Creative', icon: 'Image', size: '~250 MB' },
+  { id: 'LibreOffice.LibreOffice', name: 'LibreOffice', desc: 'Free office suite', category: 'Office', icon: 'FileText', size: '~400 MB' },
+  { id: 'qBittorrent.qBittorrent', name: 'qBittorrent', desc: 'Lightweight torrent client', category: 'Utilities', icon: 'Download', size: '~50 MB' },
+  { id: 'Valve.Steam', name: 'Steam', desc: 'Game platform and store', category: 'Gaming', icon: 'Gamepad2', size: '~300 MB' },
+  { id: 'Git.Git', name: 'Git', desc: 'Version control system', category: 'Dev Tools', icon: 'GitBranch', size: '~50 MB' },
+  { id: 'Python.Python.3.12', name: 'Python 3.12', desc: 'Programming language', category: 'Dev Tools', icon: 'Terminal', size: '~120 MB' },
+]
+
+ipcMain.handle('winget:featured', async () => {
+  try {
+    const installed = new Set()
+    try {
+      const out = execFileSync('winget', ['list', '--accept-source-agreements'], {
+        encoding: 'utf8', timeout: 30000, windowsHide: true,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      })
+      out.split('\n').forEach(line => {
+        FEATURED_APPS.forEach(app => {
+          if (line.toLowerCase().includes(app.id.toLowerCase())) installed.add(app.id)
+        })
+      })
+    } catch {}
+
+    return {
+      success: true,
+      apps: FEATURED_APPS.map(app => ({ ...app, installed: installed.has(app.id) })),
+    }
+  } catch (error) {
+    return { success: false, error: errorMessage(error), apps: [] }
+  }
+})
+
+ipcMain.handle('winget:install', async (_, appId) => {
+  return new Promise((resolve) => {
+    const child = spawn('winget', ['install', '--id', appId, '--silent', '--accept-source-agreements', '--accept-package-agreements'], {
+      windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], timeout: 300000,
+    })
+
+    let output = ''
+    child.stdout.on('data', d => {
+      const text = d.toString()
+      output += text
+      const progressMatch = text.match(/(\d+)%/)
+      if (progressMatch) {
+        mainWindow?.webContents.send('winget:progress', { id: appId, percent: parseInt(progressMatch[1]) })
+      }
+    })
+    child.stderr.on('data', d => { output += d.toString() })
+
+    child.on('close', (code) => {
+      mainWindow?.webContents.send('winget:progress', { id: appId, percent: 100, done: true })
+      addHistory('App Installer', `Installed ${appId}`, code === 0 ? 'success' : 'error').catch(() => {})
+      resolve({ success: code === 0, appId, output: output.slice(-300) })
+    })
+
+    child.on('error', (err) => resolve({ success: false, error: err.message, appId }))
+  })
+})
+
+/* ─────────────── System Utilities ─────────────── */
+async function runSystemTool(name, exe, args, progressChannel) {
+  return new Promise((resolve) => {
+    try {
+      const child = spawn(exe, args, {
+        windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
+      })
+
+      let output = ''
+      child.stdout.on('data', d => {
+        const text = d.toString()
+        output += text
+        mainWindow?.webContents.send(progressChannel, { output: text.trim().slice(0, 200) })
+      })
+      child.stderr.on('data', d => {
+        const text = d.toString()
+        output += text
+        mainWindow?.webContents.send(progressChannel, { output: text.trim().slice(0, 200) })
+      })
+
+      child.on('close', (code) => {
+        addHistory('System Utility', `${name} completed`, code === 0 ? 'success' : 'error').catch(() => {})
+        resolve({ success: code === 0, name, output: output.slice(-500) })
+      })
+
+      child.on('error', (err) => resolve({ success: false, error: err.message, name }))
+    } catch (err) {
+      resolve({ success: false, error: err.message, name })
+    }
+  })
+}
+
+ipcMain.handle('sysutils:sfc', async () => {
+  return runSystemTool('SFC /scannow', 'sfc.exe', ['/scannow'], 'sysutils:progress')
+})
+
+ipcMain.handle('sysutils:dismCheck', async () => {
+  return runSystemTool('DISM CheckHealth', 'dism.exe', ['/Online', '/Cleanup-Image', '/CheckHealth'], 'sysutils:progress')
+})
+
+ipcMain.handle('sysutils:dismRestore', async () => {
+  return runSystemTool('DISM RestoreHealth', 'dism.exe', ['/Online', '/Cleanup-Image', '/RestoreHealth'], 'sysutils:progress')
+})
+
+ipcMain.handle('sysutils:chkdsk', async () => {
+  return runSystemTool('CHKDSK', 'chkdsk.exe', ['C:', '/f', '/r'], 'sysutils:chkdsk-progress')
+})
+
+ipcMain.handle('sysutils:cleanWinUpdate', async () => {
+  return new Promise((resolve) => {
+    const child = spawn('powershell.exe', [
+      '-NoProfile', '-Command',
+      'Stop-Service wuauserv -Force; Remove-Item -Path "$env:windir\\SoftwareDistribution\\Download\\*" -Recurse -Force -ErrorAction SilentlyContinue; Start-Service wuauserv; Write-Output "Windows Update cache cleaned."'
+    ], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
+
+    let output = ''
+    child.stdout.on('data', d => { output += d.toString() })
+    child.stderr.on('data', d => { output += d.toString() })
+
+    child.on('close', (code) => {
+      addHistory('System Utility', 'Windows Update cache cleaned', code === 0 ? 'success' : 'error').catch(() => {})
+      resolve({ success: code === 0, name: 'Windows Update Cleanup', output: output.slice(-300) })
+    })
+
+    child.on('error', (err) => resolve({ success: false, error: err.message }))
+  })
+})
+
+/* ─────────────── Network Optimizer ─────────────── */
+const DNS_SERVERS = [
+  { id: 'cloudflare', name: 'Cloudflare', primary: '1.1.1.1', secondary: '1.0.0.1', desc: 'Fast, privacy-respecting DNS' },
+  { id: 'google', name: 'Google DNS', primary: '8.8.8.8', secondary: '8.8.4.4', desc: 'Reliable global DNS service' },
+  { id: 'quad9', name: 'Quad9', primary: '9.9.9.9', secondary: '149.112.112.112', desc: 'Security-focused DNS with threat blocking' },
+  { id: 'opendns', name: 'OpenDNS', primary: '208.67.222.222', secondary: '208.67.220.220', desc: 'Cisco DNS with content filtering' },
+  { id: 'adguard', name: 'AdGuard DNS', primary: '94.140.14.14', secondary: '94.140.15.15', desc: 'Blocks ads and trackers at DNS level' },
+]
+
+const NETWORK_INTERFACES_SCRIPT = `Get-NetAdapter | Where-Object Status -eq 'Up' | ForEach-Object {
+  $adapter = $_
+  $dns = Get-DnsClientServerAddress -InterfaceIndex $adapter.ifIndex -AddressFamily IPv4 -ErrorAction SilentlyContinue
+  [PSCustomObject]@{
+    name = [string]$adapter.Name
+    ifIndex = [int]$adapter.ifIndex
+    description = [string]$adapter.InterfaceDescription
+    speed = [long]$adapter.LinkSpeed
+    dnsServers = if ($dns) { @($dns.ServerAddresses -ne '127.0.0.1' | Where-Object { $_ }) } else { @() }
+  }
+} | ConvertTo-Json -Compress`
+
+ipcMain.handle('network:status', async () => {
+  try {
+    const out = execFileSync('powershell.exe', [
+      '-NoProfile', '-Command', NETWORK_INTERFACES_SCRIPT
+    ], { encoding: 'utf8', timeout: 15000, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
+
+    const adapters = JSON.parse(out || '[]')
+    const list = Array.isArray(adapters) ? adapters : [adapters]
+    const currentDns = list.length > 0 && list[0].dnsServers?.length > 0
+      ? list[0].dnsServers[0]
+      : null
+
+    let currentProvider = 'custom'
+    if (currentDns) {
+      for (const s of DNS_SERVERS) {
+        if (currentDns === s.primary) { currentProvider = s.id; break }
+      }
+    }
+
+    return { success: true, adapters: list, currentDns, currentProvider }
+  } catch (error) {
+    return { success: false, error: errorMessage(error), adapters: [], currentDns: null }
+  }
+})
+
+ipcMain.handle('network:setDns', async (_, providerId) => {
+  const provider = DNS_SERVERS.find(s => s.id === providerId)
+  if (!provider) return { success: false, error: 'Unknown DNS provider.' }
+
+  try {
+    const script = `
+      $adapters = Get-NetAdapter | Where-Object Status -eq 'Up'
+      foreach ($a in $adapters) {
+        Set-DnsClientServerAddress -InterfaceIndex $a.ifIndex -ServerAddresses @('${provider.primary}', '${provider.secondary}')
+      }
+      Write-Output "DNS set to ${provider.name}"
+    `
+    execFileSync('powershell.exe', ['-NoProfile', '-Command', script], {
+      encoding: 'utf8', timeout: 30000, windowsHide: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+
+    await addHistory('Network', `DNS set to ${provider.name}`, 'success')
+    return { success: true, provider: providerId, message: `DNS set to ${provider.name}` }
+  } catch (error) {
+    return { success: false, error: errorMessage(error) }
+  }
+})
+
+ipcMain.handle('network:optimize', async () => {
+  const script = `
+    # TCP Auto-Tuning
+    netsh int tcp set global autotuninglevel=normal
+    # Enable RSS
+    netsh int tcp set global rss=enabled
+    # Disable Nagle
+    Set-ItemProperty -Path "HKLM:\\SOFTWARE\\Microsoft\\MSMQ\\Parameters" -Name "TCPNoDelay" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+    # Network throttling index
+    Set-ItemProperty -Path "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile" -Name "NetworkThrottlingIndex" -Value 0xffffffff -Type DWord -Force -ErrorAction SilentlyContinue
+    # System responsiveness
+    Set-ItemProperty -Path "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile" -Name "SystemResponsiveness" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+    Write-Output "Network optimizations applied: TCP auto-tuning, RSS enabled, Nagle disabled, throttling removed."
+  `
+  try {
+    const out = execFileSync('powershell.exe', ['-NoProfile', '-Command', script], {
+      encoding: 'utf8', timeout: 30000, windowsHide: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+    await addHistory('Network', 'TCP and network optimizations applied', 'success')
+    return { success: true, message: out.trim() }
+  } catch (error) {
+    return { success: false, error: errorMessage(error) }
+  }
+})
+
+ipcMain.handle('network:reset', async () => {
+  try {
+    execFileSync('netsh', ['int', 'ip', 'reset'], {
+      timeout: 30000, windowsHide: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+    execFileSync('netsh', ['winsock', 'reset'], {
+      timeout: 15000, windowsHide: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+    await addHistory('Network', 'Network settings reset to default', 'success')
+    return { success: true, message: 'Network settings reset. A restart is recommended.' }
+  } catch (error) {
+    return { success: false, error: errorMessage(error) }
+  }
+})
+
 ipcMain.on('window-minimize', () => mainWindow?.minimize())
 ipcMain.on('window-maximize', () => {
   if (mainWindow?.isMaximized()) mainWindow.unmaximize()
