@@ -8,14 +8,14 @@ import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
 
 const COLORS = {
-  purple: { hero: 'bg-purple-bg text-purple', border: 'ring-purple/25 bg-purple/[0.04]', badge: 'purple' },
+  purple: { hero: 'bg-sparkle-purple/10 text-sparkle-purple', border: 'ring-sparkle-purple/25 bg-sparkle-purple/10', badge: 'purple' },
 }
 
 function OutputArea({ output }) {
   if (!output) return null
   return (
-    <div className="mt-3 p-3 rounded-xl bg-surface-secondary/60 border border-white/[0.04] max-h-40 overflow-y-auto">
-      <pre className="text-[11px] text-text-tertiary font-mono whitespace-pre-wrap leading-relaxed">{output}</pre>
+    <div className="mt-3 p-3 rounded-xl bg-sparkle-accent/60 border border-sparkle-border max-h-40 overflow-y-auto">
+      <pre className="text-[11px] text-sparkle-text-muted font-mono whitespace-pre-wrap leading-relaxed">{output}</pre>
     </div>
   )
 }
@@ -101,15 +101,15 @@ export default function SystemUtils() {
     <div className="space-y-6 anim-fade-up">
       <div className="flex items-start justify-between mb-8">
         <div className="flex items-start gap-5">
-          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-purple-bg text-purple shadow-sm">
+          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-sparkle-purple/10 text-sparkle-purple shadow-sm">
             <Wrench size={24} />
           </div>
           <div>
-            <div className="flex items-center gap-2 text-[10px] font-bold text-accent uppercase tracking-[0.15em] mb-2">
+            <div className="flex items-center gap-2 text-[10px] font-bold text-sparkle-primary uppercase tracking-[0.15em] mb-2">
               <Shield size={11} /> System Repair
             </div>
             <h1 className="text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em]">System Utilities</h1>
-            <p className="text-[13px] text-text-tertiary mt-1.5 leading-relaxed">Repair and optimize Windows system files and components</p>
+            <p className="text-[13px] text-sparkle-text-muted mt-1.5 leading-relaxed">Repair and optimize Windows system files and components</p>
           </div>
         </div>
       </div>
@@ -118,7 +118,7 @@ export default function SystemUtils() {
         {/* SFC Scan */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-purple-bg text-purple shrink-0">
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-sparkle-purple/10 text-sparkle-purple shrink-0">
               <Shield size={18} />
             </div>
             <div className="flex-1">
@@ -138,16 +138,16 @@ export default function SystemUtils() {
             )}
             {(sfcLoading || sfcProgress > 0) && sfcLoading && (
               <div className="mb-4 space-y-2">
-                <div className="flex items-center justify-between text-xs text-text-secondary">
-                  <span className="flex items-center gap-1.5"><Loader size={12} className="animate-spin text-accent" /> Scanning system files...</span>
+                <div className="flex items-center justify-between text-xs text-sparkle-text-secondary">
+                  <span className="flex items-center gap-1.5"><Loader size={12} className="animate-spin text-sparkle-primary" /> Scanning system files...</span>
                   <span className="font-semibold">{sfcProgress}%</span>
                 </div>
                 <Progress value={sfcProgress} />
               </div>
             )}
             {(sfcResult?.output || sfcResult?.status) && (
-              <div className="p-3 rounded-xl bg-surface-secondary/60 border border-white/[0.04] max-h-32 overflow-y-auto mb-4">
-                <pre className="text-[11px] text-text-tertiary font-mono whitespace-pre-wrap leading-relaxed">{sfcResult.output || sfcResult.status}</pre>
+              <div className="p-3 rounded-xl bg-sparkle-accent/60 border border-sparkle-border max-h-32 overflow-y-auto mb-4">
+                <pre className="text-[11px] text-sparkle-text-muted font-mono whitespace-pre-wrap leading-relaxed">{sfcResult.output || sfcResult.status}</pre>
               </div>
             )}
           </CardContent>
@@ -162,7 +162,7 @@ export default function SystemUtils() {
         {/* DISM Cleanup */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-purple-bg text-purple shrink-0">
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-sparkle-purple/10 text-sparkle-purple shrink-0">
               <Server size={18} />
             </div>
             <div className="flex-1">
@@ -182,16 +182,16 @@ export default function SystemUtils() {
             )}
             {(dismLoading || dismProgress > 0) && dismLoading && (
               <div className="mb-4 space-y-2">
-                <div className="flex items-center justify-between text-xs text-text-secondary">
-                  <span className="flex items-center gap-1.5"><Loader size={12} className="animate-spin text-accent" />{dismMode === 'check' ? 'Checking health...' : 'Restoring health...'}</span>
+                <div className="flex items-center justify-between text-xs text-sparkle-text-secondary">
+                  <span className="flex items-center gap-1.5"><Loader size={12} className="animate-spin text-sparkle-primary" />{dismMode === 'check' ? 'Checking health...' : 'Restoring health...'}</span>
                   <span className="font-semibold">{dismProgress}%</span>
                 </div>
                 <Progress value={dismProgress} />
               </div>
             )}
             {(dismResult?.output || dismResult?.status) && (
-              <div className="p-3 rounded-xl bg-surface-secondary/60 border border-white/[0.04] max-h-32 overflow-y-auto mb-4">
-                <pre className="text-[11px] text-text-tertiary font-mono whitespace-pre-wrap leading-relaxed">{dismResult.output || dismResult.status}</pre>
+              <div className="p-3 rounded-xl bg-sparkle-accent/60 border border-sparkle-border max-h-32 overflow-y-auto mb-4">
+                <pre className="text-[11px] text-sparkle-text-muted font-mono whitespace-pre-wrap leading-relaxed">{dismResult.output || dismResult.status}</pre>
               </div>
             )}
           </CardContent>
@@ -201,7 +201,7 @@ export default function SystemUtils() {
                 {dismLoading && dismMode === 'check' ? <Loader size={14} className="animate-spin" /> : <Play size={14} />}
                 Check Health
               </Button>
-              <Button variant="gradient" className="flex-1" onClick={handleDISMRestore} disabled={dismLoading}>
+              <Button variant="primary" className="flex-1" onClick={handleDISMRestore} disabled={dismLoading}>
                 {dismLoading && dismMode === 'restore' ? <Loader size={14} className="animate-spin" /> : <RefreshCw size={14} />}
                 Restore Health
               </Button>
@@ -212,7 +212,7 @@ export default function SystemUtils() {
         {/* Check Disk */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-purple-bg text-purple shrink-0">
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-sparkle-purple/10 text-sparkle-purple shrink-0">
               <HardDrive size={18} />
             </div>
             <div className="flex-1">
@@ -232,25 +232,25 @@ export default function SystemUtils() {
             )}
             {(chkdskLoading || chkdskProgress > 0) && chkdskLoading && (
               <div className="mb-4 space-y-2">
-                <div className="flex items-center justify-between text-xs text-text-secondary">
-                  <span className="flex items-center gap-1.5"><Loader size={12} className="animate-spin text-accent" /> Checking {selectedDrive}...</span>
+                <div className="flex items-center justify-between text-xs text-sparkle-text-secondary">
+                  <span className="flex items-center gap-1.5"><Loader size={12} className="animate-spin text-sparkle-primary" /> Checking {selectedDrive}...</span>
                   <span className="font-semibold">{chkdskProgress}%</span>
                 </div>
                 <Progress value={chkdskProgress} />
               </div>
             )}
             {(chkdskResult?.output || chkdskResult?.status) && (
-              <div className="p-3 rounded-xl bg-surface-secondary/60 border border-white/[0.04] max-h-32 overflow-y-auto mb-4">
-                <pre className="text-[11px] text-text-tertiary font-mono whitespace-pre-wrap leading-relaxed">{chkdskResult.output || chkdskResult.status}</pre>
+              <div className="p-3 rounded-xl bg-sparkle-accent/60 border border-sparkle-border max-h-32 overflow-y-auto mb-4">
+                <pre className="text-[11px] text-sparkle-text-muted font-mono whitespace-pre-wrap leading-relaxed">{chkdskResult.output || chkdskResult.status}</pre>
               </div>
             )}
             {drives.length > 0 && (
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-xs text-text-tertiary">Drive:</span>
+                <span className="text-xs text-sparkle-text-muted">Drive:</span>
                 <select
                   value={selectedDrive}
                   onChange={e => setSelectedDrive(e.target.value)}
-                  className="px-3 py-1.5 rounded-xl bg-surface-secondary border border-white/[0.06] text-xs text-text-secondary focus:outline-none focus:ring-1 focus:ring-purple/30"
+                  className="px-3 py-1.5 rounded-xl bg-sparkle-accent border border-sparkle-border text-xs text-sparkle-text-secondary focus:outline-none focus:ring-1 focus:ring-sparkle-purple/30"
                 >
                   {drives.map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
@@ -269,7 +269,7 @@ export default function SystemUtils() {
         {/* Clean Windows Update */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-purple-bg text-purple shrink-0">
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-sparkle-purple/10 text-sparkle-purple shrink-0">
               <RefreshCw size={18} />
             </div>
             <div className="flex-1">

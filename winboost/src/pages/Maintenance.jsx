@@ -57,15 +57,15 @@ export default function Maintenance() {
     <div className="space-y-6 anim-fade-up">
       <div className="flex items-start justify-between mb-8">
         <div className="flex items-start gap-5">
-          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-orange-bg text-orange shadow-sm">
+          <div className="flex items-center justify-center w-12 h-12 rounded-xl sparkle-warning/10 sparkle-warning shadow-sm">
             <Wrench size={24} />
           </div>
           <div>
-            <div className="flex items-center gap-2 text-[10px] font-bold text-accent uppercase tracking-[0.15em] mb-2">
+            <div className="flex items-center gap-2 text-[10px] font-bold sparkle-primary uppercase tracking-[0.15em] mb-2">
               <ShieldCheck size={11} /> Microsoft system tools
             </div>
             <h1 className="text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em]">Maintenance Lab</h1>
-            <p className="text-[13px] text-text-tertiary mt-1.5 leading-relaxed">Run genuine Windows diagnostics and repairs with clear elevation, restart and result states.</p>
+            <p className="text-[13px] sparkle-text-muted mt-1.5 leading-relaxed">Run genuine Windows diagnostics and repairs with clear elevation, restart and result states.</p>
           </div>
         </div>
         <Button variant="secondary" size="sm" onClick={() => setResults(new Map())}>
@@ -79,7 +79,7 @@ export default function Maintenance() {
         <CardContent className="flex items-center justify-between gap-4">
           <div>
             <strong className="text-[14px] font-semibold">{selected.size} selected</strong>
-            <span className="text-[12px] text-text-tertiary ml-2">Recommended cache tools are selected by default. Advanced repairs stay opt-in.</span>
+            <span className="text-[12px] sparkle-text-muted ml-2">Recommended cache tools are selected by default. Advanced repairs stay opt-in.</span>
           </div>
           <Button onClick={runSelected} disabled={batch || !selected.size}>
             {batch ? <Loader size={14} className="animate-spin" /> : <Play size={14} />}Run Selected
@@ -91,12 +91,12 @@ export default function Maintenance() {
         <Card>
           <CardContent>
             <div className="flex items-center gap-3 mb-3">
-              <Loader size={17} className="animate-spin text-accent" />
+              <Loader size={17} className="animate-spin sparkle-primary" />
               <span className="flex-1">
                 <strong className="text-[13px] font-semibold">{tasks.find(item => item.id === running)?.label}</strong>
-                <small className="text-[11px] text-text-tertiary ml-2">{stage}</small>
+                <small className="text-[11px] sparkle-text-muted ml-2">{stage}</small>
               </span>
-              <b className="text-[14px] text-accent">{progress}%</b>
+              <b className="text-[14px] sparkle-primary">{progress}%</b>
             </div>
             <Progress value={progress} />
           </CardContent>
@@ -108,17 +108,17 @@ export default function Maintenance() {
           const Icon = icons[task.cat] || Wrench
           const result = results.get(task.id)
           return (
-            <Card key={task.id} className={result?.success ? 'border-green' : result ? 'border-red' : ''}>
+            <Card key={task.id} className={result?.success ? 'border-sparkle-success' : result ? 'border-sparkle-danger' : ''}>
               <CardContent>
                 <div className="flex items-center justify-between mb-3">
                   <button
-                    className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${selected.has(task.id) ? 'border-accent bg-accent text-black' : 'border-border bg-surface-secondary'}`}
+                    className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${selected.has(task.id) ? 'border-sparkle-primary sparkle-primary text-black' : 'border-border sparkle-accent'}`}
                     onClick={() => toggle(task.id)}
                     aria-label={`Select ${task.label}`}
                   >
                     {selected.has(task.id) && <CheckCircle size={15} />}
                   </button>
-                  <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-orange-bg text-orange">
+                  <span className="flex items-center justify-center w-8 h-8 rounded-lg sparkle-warning/10 sparkle-warning">
                     <Icon size={19} />
                   </span>
                   <div className="flex items-center gap-1.5">
@@ -127,14 +127,14 @@ export default function Maintenance() {
                   </div>
                 </div>
                 <h3 className="text-[14px] font-semibold mb-1">{task.label}</h3>
-                <p className="text-[12px] text-text-tertiary mb-3">{task.desc}</p>
+                <p className="text-[12px] sparkle-text-muted mb-3">{task.desc}</p>
                 {task.restart && (
-                  <small className="flex items-center gap-1 text-[11px] text-orange mb-3">
+                  <small className="flex items-center gap-1 text-[11px] sparkle-warning mb-3">
                     <RotateCcw size={11} /> Restart required
                   </small>
                 )}
                 {result && (
-                  <div className={`flex items-start gap-2 p-3 rounded-[8px] text-[12px] mb-3 ${result.success ? 'bg-green-bg text-green border border-green/20' : 'bg-red-bg text-red border border-red/20'}`}>
+                  <div className={`flex items-start gap-2 p-3 rounded-[8px] text-[12px] mb-3 ${result.success ? 'sparkle-success/10 sparkle-success border border-sparkle-success/20' : 'sparkle-danger/10 sparkle-danger border border-sparkle-danger/20'}`}>
                     {result.success ? <CheckCircle size={13} className="flex-shrink-0 mt-0.5" /> : <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" />}
                     <span>{result.success ? (result.output || 'Completed').slice(0, 120) : result.error}</span>
                   </div>

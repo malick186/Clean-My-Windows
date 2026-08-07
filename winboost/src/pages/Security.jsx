@@ -34,12 +34,12 @@ function HealthRing({ score, scanning, progress }) {
       <svg viewBox="0 0 180 180" role="img">
         <defs>
           <linearGradient id="secRing" x1="15%" y1="0%" x2="85%" y2="100%">
-            <stop offset="0%" stopColor={score >= 80 ? 'var(--accent-grad-start)' : score >= 50 ? '#f59e0b' : '#ef4444'} />
-            <stop offset="50%" stopColor={score >= 80 ? 'var(--accent-grad-mid)' : score >= 50 ? '#f97316' : '#dc2626'} />
-            <stop offset="100%" stopColor={score >= 80 ? 'var(--accent-grad-end)' : score >= 50 ? '#ef4444' : '#991b1b'} />
+            <stop offset="0%" stopColor={score >= 80 ? '#6366f1' : score >= 50 ? '#f59e0b' : 'var(--sparkle-danger)'} />
+            <stop offset="50%" stopColor={score >= 80 ? '#7c3aed' : score >= 50 ? '#f97316' : '#dc2626'} />
+            <stop offset="100%" stopColor={score >= 80 ? 'var(--sparkle-purple)' : score >= 50 ? '#ef4444' : '#991b1b'} />
           </linearGradient>
         </defs>
-        <circle cx="90" cy="90" r={radius} fill="none" stroke="var(--surface-secondary)" strokeWidth="7" />
+        <circle cx="90" cy="90" r={radius} fill="none" stroke="var(--sparkle-accent)" strokeWidth="7" />
         <circle
           cx="90" cy="90" r={radius} fill="none" stroke="url(#secRing)" strokeWidth="7"
           strokeLinecap="round" strokeDasharray={circumference}
@@ -48,7 +48,7 @@ function HealthRing({ score, scanning, progress }) {
         />
       </svg>
       <div className="health-ring-lg-center">
-        {scanning ? <ScanSearch size={36} style={{ animation: 'scanPulse 1.5s ease-in-out infinite', color: 'var(--accent)' }} /> : <ShieldCheck size={40} />}
+        {scanning ? <ScanSearch size={36} style={{ animation: 'scanPulse 1.5s ease-in-out infinite', color: 'var(--sparkle-primary)' }} /> : <ShieldCheck size={40} />}
         <strong>{value}%</strong>
         <span>{scanning ? 'Scanning...' : score >= 80 ? 'Protected' : score >= 50 ? 'At Risk' : 'Vulnerable'}</span>
       </div>
@@ -168,15 +168,15 @@ export default function Security() {
       {/* Hero */}
       <div className="flex items-start justify-between mb-8">
         <div className="flex items-start gap-5">
-          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-purple-bg text-purple shadow-sm">
+          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-sparkle-purple/10 text-sparkle-purple">
             <ShieldCheck size={24} />
           </div>
           <div>
-            <div className="flex items-center gap-2 text-[10px] font-bold text-accent uppercase tracking-[0.15em] mb-2">
+            <div className="flex items-center gap-2 text-[10px] font-bold text-sparkle-primary uppercase tracking-[0.15em] mb-2">
               <LockKeyhole size={11} /> Security Center
             </div>
-            <h1 className="text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em]">Security &amp; Protection</h1>
-            <p className="text-[13px] text-text-tertiary mt-1.5 leading-relaxed">Malware scanning, system restore, and real-time security monitoring</p>
+            <h1 className="text-[28px] font-bold leading-[1.1] tracking-tight">Security &amp; Protection</h1>
+            <p className="text-[13px] text-sparkle-muted mt-1.5 leading-relaxed">Malware scanning, system restore, and real-time security monitoring</p>
           </div>
         </div>
         <Button
@@ -216,7 +216,7 @@ export default function Security() {
 
                   <div className="flex gap-2 flex-wrap mb-3">
                     <Button
-                      variant="gradient"
+                      variant="primary"
                       size="sm"
                       onClick={() => startScan('quick')}
                       disabled={scanning}
@@ -252,7 +252,7 @@ export default function Security() {
                     </div>
                   )}
                   {scanning && (
-                    <p className="flex items-center gap-2 text-[11px] text-text-secondary">
+                    <p className="flex items-center gap-2 text-[11px] text-sparkle-text-secondary">
                       {scanStage || 'Scanning...'}
                       {scanFiles > 0 && <span>({scanFiles.toLocaleString()} files)</span>}
                       {scanThreats > 0 && <Badge variant="danger" className="text-[10px]">{scanThreats} threat{scanThreats !== 1 ? 's' : ''}</Badge>}
@@ -272,7 +272,7 @@ export default function Security() {
                     </Badge>
                   )}
                   {scanError && !scanning && (
-                    <div className="flex items-center gap-2 mt-2 py-2 px-3 rounded-lg bg-orange/8 text-orange text-[13px]">
+                    <div className="flex items-center gap-2 mt-2 py-2 px-3 rounded-lg bg-sparkle-warning/10 text-sparkle-warning text-[13px]">
                       <X size={16} /> {scanError}
                     </div>
                   )}
@@ -291,14 +291,14 @@ export default function Security() {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-1 text-[12px]" style={{ gridTemplateColumns: '1fr 100px 1fr' }}>
-                  <div className="text-[10px] text-text-tertiary uppercase tracking-wider px-2 pb-2">Threat</div>
-                  <div className="text-[10px] text-text-tertiary uppercase tracking-wider px-2 pb-2">Severity</div>
-                  <div className="text-[10px] text-text-tertiary uppercase tracking-wider px-2 pb-2">Path</div>
+                  <div className="text-[10px] text-sparkle-muted uppercase tracking-wider px-2 pb-2">Threat</div>
+                  <div className="text-[10px] text-sparkle-muted uppercase tracking-wider px-2 pb-2">Severity</div>
+                  <div className="text-[10px] text-sparkle-muted uppercase tracking-wider px-2 pb-2">Path</div>
                   {scanThreatsList.map((t, i) => (
                     <div key={i} className="contents">
-                      <span className="px-2 py-2 font-semibold text-red-400 rounded-l-lg hover:bg-surface-secondary">{t.name}</span>
-                      <span className={`severity-${(t.severity || 'high').toLowerCase()} px-2 py-2 hover:bg-surface-secondary`}>{t.severity || 'High'}</span>
-                      <span className="px-2 py-2 text-text-tertiary font-mono text-[11px] truncate rounded-r-lg hover:bg-surface-secondary">{t.path}</span>
+                      <span className="px-2 py-2 font-semibold text-sparkle-danger rounded-l-lg hover:bg-sparkle-accent">{t.name}</span>
+                      <span className={`severity-${(t.severity || 'high').toLowerCase()} px-2 py-2 hover:bg-sparkle-accent`}>{t.severity || 'High'}</span>
+                      <span className="px-2 py-2 text-sparkle-muted font-mono text-[11px] truncate rounded-r-lg hover:bg-sparkle-accent">{t.path}</span>
                     </div>
                   ))}
                 </div>
@@ -315,43 +315,43 @@ export default function Security() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-3 gap-4">
-                <div className="flex flex-col gap-2 p-4 rounded-2xl bg-surface-secondary/50 border border-white/[0.03]">
-                  <span className="text-[10px] text-text-tertiary uppercase tracking-wider">ClamAV</span>
-                  <span className={`text-[14px] font-semibold ${clamav?.found ? 'text-green' : 'text-text-tertiary'}`}>
+                <div className="flex flex-col gap-2 p-4 rounded-xl bg-sparkle-accent/50 border border-sparkle-border">
+                  <span className="text-[10px] text-sparkle-muted uppercase tracking-wider">ClamAV</span>
+                  <span className={`text-[14px] font-semibold ${clamav?.found ? 'text-sparkle-success' : 'text-sparkle-muted'}`}>
                     {clamav?.found ? (clamav.version ? `v${clamav.version}` : 'Installed') : 'Not installed'}
                   </span>
                   {!clamav?.found && (
-                    <a href={clamav?.installUrl || 'https://www.clamav.net/downloads'} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-accent hover:underline mt-1">
+                    <a href={clamav?.installUrl || 'https://www.clamav.net/downloads'} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-sparkle-primary hover:underline mt-1">
                       <Download size={12} /> Download ClamAV
                     </a>
                   )}
                 </div>
-                <div className="flex flex-col gap-2 p-4 rounded-2xl bg-surface-secondary/50 border border-white/[0.03]">
-                  <span className="text-[10px] text-text-tertiary uppercase tracking-wider">Definitions</span>
-                  <span className={`text-[14px] font-semibold ${clamav?.definitionsVersion ? 'text-green' : 'text-text-tertiary'}`}>
+                <div className="flex flex-col gap-2 p-4 rounded-xl bg-sparkle-accent/50 border border-sparkle-border">
+                  <span className="text-[10px] text-sparkle-muted uppercase tracking-wider">Definitions</span>
+                  <span className={`text-[14px] font-semibold ${clamav?.definitionsVersion ? 'text-sparkle-success' : 'text-sparkle-muted'}`}>
                     {clamav?.definitionsVersion ? `${clamav.definitionsVersion} (${clamav.definitionsDate || 'N/A'})` : 'N/A'}
                   </span>
                   {clamav?.found && (
-                    <button onClick={handleUpdateDefs} disabled={updatingDefs} className="inline-flex items-center gap-1 text-[11px] text-accent hover:underline mt-1 disabled:opacity-50">
+                    <button onClick={handleUpdateDefs} disabled={updatingDefs} className="inline-flex items-center gap-1 text-[11px] text-sparkle-primary hover:underline mt-1 disabled:opacity-50">
                       {updatingDefs ? <Loader size={12} className="animate-spin" /> : <RefreshCw size={12} />}
                       {updatingDefs ? `Updating... ${defUpdateProgress}%` : 'Update Definitions'}
                     </button>
                   )}
                 </div>
-                <div className="flex flex-col gap-2 p-4 rounded-2xl bg-surface-secondary/50 border border-white/[0.03]">
-                  <span className="text-[10px] text-text-tertiary uppercase tracking-wider">Windows Defender</span>
-                  <span className={`text-[14px] font-semibold ${defender.available ? 'text-green' : 'text-text-tertiary'}`}>
+                <div className="flex flex-col gap-2 p-4 rounded-xl bg-sparkle-accent/50 border border-sparkle-border">
+                  <span className="text-[10px] text-sparkle-muted uppercase tracking-wider">Windows Defender</span>
+                  <span className={`text-[14px] font-semibold ${defender.available ? 'text-sparkle-success' : 'text-sparkle-muted'}`}>
                     {defender.available ? 'Active' : 'Unavailable'}
                   </span>
-                  <button onClick={() => openWindowsSettings('security')} className="inline-flex items-center gap-1 text-[11px] text-accent hover:underline mt-1">
+                  <button onClick={() => openWindowsSettings('security')} className="inline-flex items-center gap-1 text-[11px] text-sparkle-primary hover:underline mt-1">
                     <ExternalLink size={12} /> Open Windows Security
                   </button>
                 </div>
               </div>
               {updatingDefs && defUpdateProgress > 0 && (
-                <div className="mt-4 p-4 rounded-2xl bg-surface-secondary/50">
+                <div className="mt-4 p-4 rounded-xl bg-sparkle-accent/50">
                   <Progress value={defUpdateProgress} className="max-w-[300px] h-1.5" />
-                  <p className="text-[11px] text-text-tertiary mt-2">{defUpdateOutput || 'Updating definitions...'}</p>
+                  <p className="text-[11px] text-sparkle-muted mt-2">{defUpdateOutput || 'Updating definitions...'}</p>
                 </div>
               )}
             </CardContent>
@@ -365,16 +365,16 @@ export default function Security() {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
-              <div className="flex items-center gap-4 p-4 rounded-2xl bg-surface-secondary/50 hover:bg-surface-hover transition-all duration-200 border border-white/[0.03]">
-                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-purple-bg text-purple flex-shrink-0">
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-sparkle-accent/50 hover:bg-sparkle-accent transition-all duration-200 border border-sparkle-border">
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-sparkle-purple/10 text-sparkle-purple flex-shrink-0">
                   <FolderArchive size={20} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <strong className="text-[13px] text-text block">System Restore</strong>
-                  <p className="text-[11px] text-text-tertiary">
+                  <strong className="text-[13px] text-sparkle-text block">System Restore</strong>
+                  <p className="text-[11px] text-sparkle-muted">
                     {safetyStatus?.restore?.enabled ? `${safetyStatus.restore.count} point${safetyStatus.restore.count !== 1 ? 's' : ''} available` : 'Not configured'}
                   </p>
-                  {safetyStatus?.restore?.lastCreated && <small className="text-[10px] text-text-tertiary">Last: {timeAgo(safetyStatus.restore.lastCreated)}</small>}
+                  {safetyStatus?.restore?.lastCreated && <small className="text-[10px] text-sparkle-muted">Last: {timeAgo(safetyStatus.restore.lastCreated)}</small>}
                 </div>
                 <div className="flex gap-2 flex-shrink-0">
                   <Button
@@ -397,13 +397,13 @@ export default function Security() {
                   </Button>
                 </div>
               </div>
-              <div className="flex items-center gap-4 p-4 rounded-2xl bg-surface-secondary/50 hover:bg-surface-hover transition-all duration-200 border border-white/[0.03]">
-                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-green-bg text-green flex-shrink-0">
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-sparkle-accent/50 hover:bg-sparkle-accent transition-all duration-200 border border-sparkle-border">
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-sparkle-success/10 text-sparkle-success flex-shrink-0">
                   <ShieldCheck size={20} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <strong className="text-[13px] text-text block">Windows Security</strong>
-                  <p className="text-[11px] text-text-tertiary">{defender.available ? 'Defender is active' : 'Check Windows Security'}</p>
+                  <strong className="text-[13px] text-sparkle-text block">Windows Security</strong>
+                  <p className="text-[11px] text-sparkle-muted">{defender.available ? 'Defender is active' : 'Check Windows Security'}</p>
                 </div>
                 <Button
                   variant="ghost"
@@ -428,11 +428,11 @@ export default function Security() {
               <CardContent>
                 <div className="flex flex-col gap-1 max-h-[260px] overflow-y-auto">
                   {history.slice(0, 10).map((entry, i) => (
-                    <div key={entry.id || i} className="flex items-center gap-4 px-3 py-2 rounded-xl hover:bg-surface-secondary text-[12px] transition-colors">
-                      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${entry.status === 'error' ? 'bg-red' : 'bg-green'}`} />
-                      <span className="text-text-secondary font-semibold w-[90px] flex-shrink-0">{entry.action}</span>
-                      <span className="text-text-tertiary flex-1 truncate">{entry.detail}</span>
-                      <span className="text-text-tertiary text-[11px] flex items-center gap-1 flex-shrink-0">
+                    <div key={entry.id || i} className="flex items-center gap-4 px-3 py-2 rounded-xl hover:bg-sparkle-accent text-[12px] transition-colors">
+                      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${entry.status === 'error' ? 'bg-sparkle-danger' : 'bg-sparkle-success'}`} />
+                      <span className="text-sparkle-text-secondary font-semibold w-[90px] flex-shrink-0">{entry.action}</span>
+                      <span className="text-sparkle-muted flex-1 truncate">{entry.detail}</span>
+                      <span className="text-sparkle-muted text-[11px] flex items-center gap-1 flex-shrink-0">
                         <Clock3 size={11} /> {timeAgo(entry.at)}
                       </span>
                     </div>

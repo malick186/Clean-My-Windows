@@ -33,19 +33,19 @@ export default function DiskAnalyzer() {
       <div className="space-y-6 anim-fade-up">
         <div className="flex items-start justify-between mb-8">
           <div className="flex items-start gap-5">
-            <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-teal-bg text-teal shadow-sm">
+            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-sparkle-teal/10 text-sparkle-teal shadow-sm">
               <HardDrive size={24} />
             </div>
             <div>
-              <div className="flex items-center gap-2 text-[10px] font-bold text-accent uppercase tracking-[0.15em] mb-2">
+              <div className="flex items-center gap-2 text-[10px] font-bold text-sparkle-primary uppercase tracking-[0.15em] mb-2">
                 <HardDrive size={11} /> Storage Analysis
               </div>
               <h1 className="text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em]">Disk Analyzer</h1>
-              <p className="text-[13px] text-text-tertiary mt-1.5 leading-relaxed">Analyze disk usage and find what's consuming your storage</p>
+              <p className="text-[13px] text-sparkle-text-muted mt-1.5 leading-relaxed">Analyze disk usage and find what's consuming your storage</p>
             </div>
           </div>
         </div>
-        <Card className="p-10 text-center text-sm text-text-tertiary space-y-3">
+        <Card className="p-10 text-center text-sm text-sparkle-text-muted space-y-3">
           <CardContent>
             <Loader size={22} className="animate-spin mx-auto" />
             <div className="mt-3">{stage}</div>
@@ -60,26 +60,26 @@ export default function DiskAnalyzer() {
     <div className="space-y-6 anim-fade-up">
       <div className="flex items-start justify-between mb-8">
         <div className="flex items-start gap-5">
-          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-teal-bg text-teal shadow-sm">
+          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-sparkle-teal/10 text-sparkle-teal shadow-sm">
             <HardDrive size={24} />
           </div>
           <div>
-            <div className="flex items-center gap-2 text-[10px] font-bold text-accent uppercase tracking-[0.15em] mb-2">
+            <div className="flex items-center gap-2 text-[10px] font-bold text-sparkle-primary uppercase tracking-[0.15em] mb-2">
               <HardDrive size={11} /> Storage Analysis
             </div>
             <h1 className="text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em]">Disk Analyzer</h1>
-            <p className="text-[13px] text-text-tertiary mt-1.5 leading-relaxed">Analyze disk usage and find what's consuming your storage</p>
+            <p className="text-[13px] text-sparkle-text-muted mt-1.5 leading-relaxed">Analyze disk usage and find what's consuming your storage</p>
           </div>
         </div>
       </div>
 
       {error && <div className="notice-banner error"><AlertTriangle size={17} />{error}</div>}
       {meta && (
-        <div className="flex items-center gap-4 text-[11px] text-text-tertiary px-4 py-2 rounded-[10px] bg-surface-secondary">
-          <span>Analyzed <strong className="text-text font-semibold">{meta.root}</strong></span>
+        <div className="flex items-center gap-4 text-[11px] text-sparkle-text-muted px-4 py-2 rounded-[10px] bg-sparkle-accent">
+          <span>Analyzed <strong className="text-sparkle-text font-semibold">{meta.root}</strong></span>
           <span>{meta.scannedItems?.toLocaleString()} items</span>
           <span>{meta.totalSize?.toFixed(2)} GB visible</span>
-          {meta.limited && <span className="text-orange font-semibold">Safety limit reached</span>}
+          {meta.limited && <span className="text-sparkle-warning font-semibold">Safety limit reached</span>}
         </div>
       )}
 
@@ -87,7 +87,7 @@ export default function DiskAnalyzer() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <HardDrive size={18} className="text-teal" />
+              <HardDrive size={18} className="text-sparkle-teal" />
               Folder Usage Breakdown
             </CardTitle>
           </CardHeader>
@@ -107,24 +107,24 @@ export default function DiskAnalyzer() {
 
       {folders.length > 0 && (
         <Card className="overflow-hidden">
-          <div className="grid grid-cols-12 gap-4 px-5 py-3 text-[11px] font-semibold text-text-tertiary uppercase tracking-wider border-b border-white/[0.05] bg-surface-secondary/50">
+          <div className="grid grid-cols-12 gap-4 px-5 py-3 text-[11px] font-semibold text-sparkle-text-muted uppercase tracking-wider border-b border-sparkle-border bg-sparkle-accent/50">
             <div className="col-span-5">Folder</div>
             <div className="col-span-3">Size</div>
             <div className="col-span-2">Items</div>
             <div className="col-span-2">Usage</div>
           </div>
           {folders.map((f, i) => (
-            <div key={f.name} className="grid grid-cols-12 gap-4 px-5 py-3.5 items-center hover:bg-surface-hover transition-all duration-200 border-b border-white/[0.03]">
+            <div key={f.name} className="grid grid-cols-12 gap-4 px-5 py-3.5 items-center hover:bg-sparkle-accent transition-all duration-200 border-b border-sparkle-border">
               <div className="col-span-5 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${folderColors[i % folderColors.length]}15` }}>
                   <Folder size={15} style={{ color: folderColors[i % folderColors.length] }} />
                 </div>
                 <span className="text-sm font-medium truncate">{f.name}</span>
               </div>
-              <div className="col-span-3 text-sm text-text-secondary">{f.size.toFixed(1)} GB</div>
-              <div className="col-span-2 text-xs text-text-tertiary">{f.items.toLocaleString()}</div>
+              <div className="col-span-3 text-sm text-sparkle-text-secondary">{f.size.toFixed(1)} GB</div>
+              <div className="col-span-2 text-xs text-sparkle-text-muted">{f.items.toLocaleString()}</div>
               <div className="col-span-2">
-                <div className="h-1.5 rounded-full bg-surface-secondary overflow-hidden">
+                <div className="h-1.5 rounded-full bg-sparkle-accent overflow-hidden">
                   <div className="h-full rounded-full" style={{ width: `${Math.min(100, (f.size / (folders[0]?.size || 1)) * 100)}%`, background: folderColors[i % folderColors.length] }} />
                 </div>
               </div>
@@ -137,7 +137,7 @@ export default function DiskAnalyzer() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <File size={18} className="text-teal" />
+              <File size={18} className="text-sparkle-teal" />
               File Types
             </CardTitle>
           </CardHeader>
@@ -148,10 +148,10 @@ export default function DiskAnalyzer() {
                 const color = iconColors[type] || '#8e8e93'
                 const Icon = type === 'Videos' ? Film : type === 'Images' ? Image : type === 'Archives' ? Archive : type === 'Music' ? Music : File
                 return (
-                  <div key={type} className="bg-surface-secondary rounded-xl p-3.5">
+                  <div key={type} className="bg-sparkle-accent rounded-xl p-3.5">
                     <Icon size={17} style={{ color }} className="mb-2" />
                     <div className="text-sm font-semibold">{type}</div>
-                    <div className="text-[11px] text-text-tertiary">{size.toFixed(1)} GB &middot; {count.toLocaleString()} files</div>
+                    <div className="text-[11px] text-sparkle-text-muted">{size.toFixed(1)} GB &middot; {count.toLocaleString()} files</div>
                   </div>
                 )
               })}

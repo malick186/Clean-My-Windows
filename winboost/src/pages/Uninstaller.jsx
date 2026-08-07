@@ -45,15 +45,15 @@ export default function Uninstaller() {
     <div className="space-y-6 anim-fade-up">
       <div className="flex items-start justify-between mb-8">
         <div className="flex items-start gap-5">
-          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-orange-bg text-orange shadow-sm">
+          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-sparkle-warning/10 text-sparkle-warning shadow-sm">
             <Trash2 size={24} />
           </div>
           <div>
-            <div className="flex items-center gap-2 text-[10px] font-bold text-accent uppercase tracking-[0.15em] mb-2">
+            <div className="flex items-center gap-2 text-[10px] font-bold text-sparkle-primary uppercase tracking-[0.15em] mb-2">
               <Package size={11} /> App Uninstaller
             </div>
             <h1 className="text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em]">App Uninstaller</h1>
-            <p className="text-[13px] text-text-tertiary mt-1.5 leading-relaxed">Completely remove applications and their leftover files</p>
+            <p className="text-[13px] text-sparkle-text-muted mt-1.5 leading-relaxed">Completely remove applications and their leftover files</p>
           </div>
         </div>
       </div>
@@ -68,8 +68,8 @@ export default function Uninstaller() {
         ].map((s, idx) => (
           <Card key={s.sub} className="p-4">
             <s.icon size={18} className="mb-2" style={{ color: ['#fdba74', '#8b9cf7', '#c4b5fd'][idx] }} />
-            <div className="text-xl font-bold text-text">{s.val}</div>
-            <div className="text-xs text-text-tertiary">{s.sub}</div>
+            <div className="text-xl font-bold text-sparkle-text">{s.val}</div>
+            <div className="text-xs text-sparkle-text-muted">{s.sub}</div>
           </Card>
         ))}
       </div>
@@ -83,9 +83,9 @@ export default function Uninstaller() {
               </div>
               <div className="flex-1">
                 <div className="font-semibold text-sm">Uninstalling {selected.name}</div>
-                <div className="text-xs text-text-tertiary">Please wait...</div>
+                <div className="text-xs text-sparkle-text-muted">Please wait...</div>
               </div>
-              <Loader size={18} className="animate-spin text-accent" />
+              <Loader size={18} className="animate-spin text-sparkle-primary" />
             </div>
             <Progress value={progress} />
           </CardContent>
@@ -93,11 +93,11 @@ export default function Uninstaller() {
       )}
 
       {done && selected && (
-        <div className="flex items-start gap-3 p-5 rounded-2xl bg-green-bg border border-green/15">
-          <CheckCircle size={18} className="text-green shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 p-5 rounded-xl bg-sparkle-success/10 border border-sparkle-success/15">
+          <CheckCircle size={18} className="text-sparkle-success shrink-0 mt-0.5" />
           <div className="min-w-0">
-            <div className="font-semibold text-sm text-text">{selected.name} removed</div>
-            <div className="text-xs text-green mt-0.5">{message || 'Complete the vendor uninstall wizard, then refresh the list.'}</div>
+            <div className="font-semibold text-sm text-sparkle-text">{selected.name} removed</div>
+            <div className="text-xs text-sparkle-success mt-0.5">{message || 'Complete the vendor uninstall wizard, then refresh the list.'}</div>
           </div>
         </div>
       )}
@@ -105,12 +105,12 @@ export default function Uninstaller() {
       <Card className="p-0 overflow-hidden">
         <CardHeader className="mb-0 pb-0 flex-row flex-wrap gap-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Package size={18} className="text-orange" /> Installed Apps
+            <Package size={18} className="text-sparkle-warning" /> Installed Apps
           </CardTitle>
           <div className="flex items-center gap-2 ml-auto flex-1 justify-end">
             <div className="relative flex-1 max-w-[240px]">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
-              <input type="text" className="w-full bg-input border border-border rounded-xl pl-9 pr-3 py-2 text-sm text-text placeholder:text-text-tertiary outline-none focus:border-accent/40 transition-colors" placeholder="Search applications..." value={search} onChange={e => setSearch(e.target.value)} />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-sparkle-text-muted" />
+              <input type="text" className="w-full bg-sparkle-card border border-border rounded-xl pl-9 pr-3 py-2 text-sm text-sparkle-text placeholder:text-sparkle-text-muted outline-none focus:border-sparkle-primary/40 transition-colors" placeholder="Search applications..." value={search} onChange={e => setSearch(e.target.value)} />
             </div>
             <Button variant="secondary" size="sm" onClick={refresh} disabled={loading}>
               <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> Refresh
@@ -121,16 +121,16 @@ export default function Uninstaller() {
         <Separator />
         <div className="divide-y divide-border">
           {filtered.map((app, i) => (
-            <div key={app.name} className="flex items-center gap-4 p-4 rounded-2xl mx-2 my-1 bg-surface-secondary/50 hover:bg-surface-hover transition-all duration-200 border border-white/[0.03]">
+            <div key={app.name} className="flex items-center gap-4 p-4 rounded-xl mx-2 my-1 bg-sparkle-accent/50 hover:bg-sparkle-accent transition-all duration-200 border border-sparkle-border">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0" style={{ background: COLORS[i % COLORS.length] }}>
                 {app.name[0]}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-text">{app.name}</div>
-                <div className="text-xs text-text-tertiary mt-0.5">{app.pub} &middot; {(app.size || 0).toFixed(1)} GB</div>
+                <div className="text-sm font-semibold text-sparkle-text">{app.name}</div>
+                <div className="text-xs text-sparkle-text-muted mt-0.5">{app.pub} &middot; {(app.size || 0).toFixed(1)} GB</div>
                 {app.date && (
                   <div className="flex items-center gap-3 mt-1">
-                    <span className="text-[11px] text-text-tertiary flex items-center gap-1"><Calendar size={10} />{app.date}</span>
+                    <span className="text-[11px] text-sparkle-text-muted flex items-center gap-1"><Calendar size={10} />{app.date}</span>
                     {app.version && <Badge variant="danger" className="text-[10px] py-0">v{app.version}</Badge>}
                   </div>
                 )}
@@ -141,7 +141,7 @@ export default function Uninstaller() {
             </div>
           ))}
           {filtered.length === 0 && (
-            <div className="text-center py-12 text-sm text-text-tertiary">
+            <div className="text-center py-12 text-sm text-sparkle-text-muted">
               {loading ? 'Scanning registered applications...' : apps.length === 0 ? 'No registered applications found' : 'No apps match your search'}
             </div>
           )}

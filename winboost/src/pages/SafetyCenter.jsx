@@ -50,15 +50,15 @@ export default function SafetyCenter() {
     <div className="space-y-6 anim-fade-up">
       <div className="flex items-start justify-between mb-8">
         <div className="flex items-start gap-5">
-          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-purple-bg text-purple shadow-sm">
+          <div className="flex items-center justify-center w-12 h-12 rounded-xl sparkle-purple/10 sparkle-purple shadow-sm">
             <BadgeCheck size={24} />
           </div>
           <div>
-            <div className="flex items-center gap-2 text-[10px] font-bold text-accent uppercase tracking-[0.15em] mb-2">
+            <div className="flex items-center gap-2 text-[10px] font-bold sparkle-primary uppercase tracking-[0.15em] mb-2">
               <LockKeyhole size={11} /> Recovery &amp; Verification
             </div>
             <h1 className="text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em]">Safety Center</h1>
-            <p className="text-[13px] text-text-tertiary mt-1.5 leading-relaxed">Protection status, restore points and an honest audit trail for every WinBoost action.</p>
+            <p className="text-[13px] sparkle-text-muted mt-1.5 leading-relaxed">Protection status, restore points and an honest audit trail for every WinBoost action.</p>
           </div>
         </div>
         <Button variant="secondary" size="sm" onClick={refresh} disabled={loading}>
@@ -74,13 +74,13 @@ export default function SafetyCenter() {
         <>
           <div className="grid grid-cols-3 gap-4">
             <Card className="col-span-2 flex flex-row items-center gap-4">
-              <div className={`flex items-center justify-center w-12 h-12 rounded-xl shrink-0 ${defender.realTimeProtection ? 'bg-green-bg text-green' : 'bg-red-bg text-red'}`}>
+              <div className={`flex items-center justify-center w-12 h-12 rounded-xl shrink-0 ${defender.realTimeProtection ? 'sparkle-success/10 sparkle-success' : 'sparkle-danger/10 sparkle-danger'}`}>
                 {defender.realTimeProtection ? <ShieldCheck size={24} /> : <ShieldOff size={24} />}
               </div>
               <div className="flex-1">
-                <div className="text-[11px] text-text-tertiary font-semibold uppercase tracking-wider mb-0.5">Microsoft Defender</div>
+                <div className="text-[11px] sparkle-text-muted font-semibold uppercase tracking-wider mb-0.5">Microsoft Defender</div>
                 <div className="text-sm font-bold">{defender.realTimeProtection ? 'Real-time protection active' : 'Protection needs attention'}</div>
-                <div className="text-xs text-text-tertiary mt-0.5">{defender.signatureUpdated ? `Signatures updated ${timeAgo(defender.signatureUpdated)}` : defender.error || 'Status could not be confirmed'}</div>
+                <div className="text-xs sparkle-text-muted mt-0.5">{defender.signatureUpdated ? `Signatures updated ${timeAgo(defender.signatureUpdated)}` : defender.error || 'Status could not be confirmed'}</div>
               </div>
               <Button variant="secondary" size="sm" onClick={() => openWindowsSettings('security')} className="shrink-0">
                 <ExternalLink size={14} /> Windows Security
@@ -88,22 +88,22 @@ export default function SafetyCenter() {
             </Card>
             <Card>
               <CardContent>
-                <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-teal-bg text-teal mb-3">
+                <div className="flex items-center justify-center w-11 h-11 rounded-xl sparkle-teal/10 sparkle-teal mb-3">
                   <UserRoundCog size={22} />
                 </div>
-                <div className="text-[11px] text-text-tertiary font-semibold uppercase tracking-wider mb-0.5">Execution level</div>
+                <div className="text-[11px] sparkle-text-muted font-semibold uppercase tracking-wider mb-0.5">Execution level</div>
                 <div className="text-sm font-bold">{status?.admin ? 'Administrator' : 'Standard user'}</div>
-                <div className="text-xs text-text-tertiary mt-0.5">{status?.admin ? 'Elevated tools are available' : 'UAC appears only when a protected task needs it'}</div>
+                <div className="text-xs sparkle-text-muted mt-0.5">{status?.admin ? 'Elevated tools are available' : 'UAC appears only when a protected task needs it'}</div>
               </CardContent>
             </Card>
             <Card className="col-start-3">
               <CardContent>
-                <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-purple-bg text-purple mb-3">
+                <div className="flex items-center justify-center w-11 h-11 rounded-xl sparkle-purple/10 sparkle-purple mb-3">
                   <FileClock size={22} />
                 </div>
-                <div className="text-[11px] text-text-tertiary font-semibold uppercase tracking-wider mb-0.5">System Restore</div>
+                <div className="text-[11px] sparkle-text-muted font-semibold uppercase tracking-wider mb-0.5">System Restore</div>
                 <div className="text-sm font-bold">{status?.restore?.enabled ? `${status.restore.count} restore point${status.restore.count === 1 ? '' : 's'}` : 'Protection status unavailable'}</div>
-                <div className="text-xs text-text-tertiary mt-0.5">{status?.restore?.lastCreated ? `Latest ${timeAgo(status.restore.lastCreated)}` : 'Create one before advanced changes'}</div>
+                <div className="text-xs sparkle-text-muted mt-0.5">{status?.restore?.lastCreated ? `Latest ${timeAgo(status.restore.lastCreated)}` : 'Create one before advanced changes'}</div>
               </CardContent>
             </Card>
           </div>
@@ -112,13 +112,13 @@ export default function SafetyCenter() {
             <Card>
               <CardHeader>
                 <div>
-                  <span className="block text-[10px] text-text-tertiary font-normal tracking-wider uppercase mb-0.5">Recovery guard</span>
+                  <span className="block text-[10px] sparkle-text-muted font-normal tracking-wider uppercase mb-0.5">Recovery guard</span>
                   <CardTitle>Create a safety point</CardTitle>
                 </div>
-                <FolderArchive size={21} className="text-text-tertiary ml-auto" />
+                <FolderArchive size={21} className="sparkle-text-muted ml-auto" />
               </CardHeader>
               <CardContent>
-                <p className="text-xs text-text-secondary mb-4">Windows can roll system settings back if an advanced maintenance or registry change causes a problem. Windows normally permits one checkpoint per day.</p>
+                <p className="text-xs sparkle-text-secondary mb-4">Windows can roll system settings back if an advanced maintenance or registry change causes a problem. Windows normally permits one checkpoint per day.</p>
                 <Button onClick={createPoint} disabled={creating}>
                   {creating ? <Loader size={15} className="animate-spin" /> : <ShieldCheck size={15} />}
                   {creating ? 'Waiting for administrator approval...' : 'Create Restore Point'}
@@ -129,21 +129,21 @@ export default function SafetyCenter() {
             <Card>
               <CardHeader>
                 <div>
-                  <span className="block text-[10px] text-text-tertiary font-normal tracking-wider uppercase mb-0.5">Local audit trail</span>
+                  <span className="block text-[10px] sparkle-text-muted font-normal tracking-wider uppercase mb-0.5">Local audit trail</span>
                   <CardTitle>Recent operations</CardTitle>
                 </div>
-                <Clock3 size={20} className="text-text-tertiary ml-auto" />
+                <Clock3 size={20} className="sparkle-text-muted ml-auto" />
               </CardHeader>
               <CardContent>
                 <div className="space-y-1">
-                  {history.length === 0 ? <div className="text-center py-6 text-xs text-text-tertiary">No operations recorded yet.</div> : history.slice(0, 6).map(item => (
-                    <div key={item.id} className="flex items-center gap-4 p-4 rounded-2xl bg-surface-secondary/50 hover:bg-surface-hover transition-all duration-200 border border-white/[0.03]">
-                      <span className={`w-2 h-2 rounded-full shrink-0 ${item.status === 'success' ? 'bg-green' : item.status === 'error' ? 'bg-red' : item.status === 'info' ? 'bg-accent' : 'bg-text-tertiary'}`} />
+                  {history.length === 0 ? <div className="text-center py-6 text-xs sparkle-text-muted">No operations recorded yet.</div> : history.slice(0, 6).map(item => (
+                    <div key={item.id} className="flex items-center gap-4 p-4 rounded-xl sparkle-accent/50 hover:sparkle-accent transition-all duration-200 border border-sparkle-border">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${item.status === 'success' ? 'bg-sparkle-success' : item.status === 'error' ? 'bg-sparkle-danger' : item.status === 'info' ? 'sparkle-primary' : 'bg-sparkle-text-muted'}`} />
                       <div className="flex-1 min-w-0">
-                        <strong className="text-[12px] text-text block">{item.action}</strong>
-                        <span className="text-[11px] text-text-tertiary">{item.detail}</span>
+                        <strong className="text-[12px] sparkle-text block">{item.action}</strong>
+                        <span className="text-[11px] sparkle-text-muted">{item.detail}</span>
                       </div>
-                      <time className="text-[10px] text-text-tertiary shrink-0">{timeAgo(item.at)}</time>
+                      <time className="text-[10px] sparkle-text-muted shrink-0">{timeAgo(item.at)}</time>
                     </div>
                   ))}
                 </div>

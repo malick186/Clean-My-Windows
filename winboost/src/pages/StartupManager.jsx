@@ -42,14 +42,14 @@ export default function StartupManager() {
       <div className="space-y-6 anim-fade-up">
         <div className="flex items-start justify-between mb-8">
           <div className="flex items-start gap-5">
-            <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-green-bg text-green shadow-sm">
+            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-sparkle-success/10 text-sparkle-success">
               <Power size={24} />
             </div>
             <div>
-              <div className="flex items-center gap-2 text-[10px] font-bold text-accent uppercase tracking-[0.15em] mb-2">
+              <div className="flex items-center gap-2 text-[10px] font-bold text-sparkle-primary uppercase tracking-[0.15em] mb-2">
                 <Timer size={11} /> Boot Optimization
               </div>
-              <h1 className="text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em]">Startup Manager</h1>
+              <h1 className="text-[28px] font-bold leading-[1.1] tracking-tight">Startup Manager</h1>
             </div>
           </div>
         </div>
@@ -62,15 +62,15 @@ export default function StartupManager() {
     <div className="space-y-6 anim-fade-up">
       <div className="flex items-start justify-between mb-8">
         <div className="flex items-start gap-5">
-          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-green-bg text-green shadow-sm">
+          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-sparkle-success/10 text-sparkle-success">
             <Power size={24} />
           </div>
           <div>
-            <div className="flex items-center gap-2 text-[10px] font-bold text-accent uppercase tracking-[0.15em] mb-2">
+            <div className="flex items-center gap-2 text-[10px] font-bold text-sparkle-primary uppercase tracking-[0.15em] mb-2">
               <Timer size={11} /> Startup Manager
             </div>
-            <h1 className="text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em]">Startup Manager</h1>
-            <p className="text-[13px] text-text-tertiary mt-1.5 leading-relaxed">Control which programs launch at startup to reduce boot time</p>
+            <h1 className="text-[28px] font-bold leading-[1.1] tracking-tight">Startup Manager</h1>
+            <p className="text-[13px] text-sparkle-muted mt-1.5 leading-relaxed">Control which programs launch at startup to reduce boot time</p>
           </div>
         </div>
         <Button variant="ghost" size="sm"><Info size={14} /></Button>
@@ -86,8 +86,8 @@ export default function StartupManager() {
         ].map(s => (
           <Card key={s.sub} className="p-4">
             <s.icon size={18} style={{ color: s.color }} className="mb-2" />
-            <div className="text-xl font-bold text-text">{s.val}</div>
-            <div className="text-xs text-text-tertiary">{s.sub}</div>
+            <div className="text-xl font-bold text-sparkle-text">{s.val}</div>
+            <div className="text-xs text-sparkle-muted">{s.sub}</div>
           </Card>
         ))}
       </div>
@@ -95,11 +95,11 @@ export default function StartupManager() {
       <Card className="p-0 overflow-hidden">
         <CardHeader className="mb-0 pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Power size={18} className="text-green" /> Startup Programs
+            <Power size={18} className="text-sparkle-success" /> Startup Programs
           </CardTitle>
           <Badge variant="teal" className="ml-auto">{progs.length} entries</Badge>
         </CardHeader>
-        <div className="grid grid-cols-12 gap-4 px-6 py-2.5 text-[11px] font-semibold text-text-tertiary uppercase tracking-wider bg-surface-secondary/50">
+        <div className="grid grid-cols-12 gap-4 px-6 py-2.5 text-[11px] font-semibold text-sparkle-muted uppercase tracking-wider bg-sparkle-accent/50">
           <div className="col-span-5">Program</div>
           <div className="col-span-3">Publisher</div>
           <div className="col-span-2">Impact</div>
@@ -107,22 +107,22 @@ export default function StartupManager() {
         </div>
         <Separator />
         {progs.length === 0 ? (
-          <div className="text-center py-10 text-sm text-text-tertiary">No startup entries found</div>
+          <div className="text-center py-10 text-sm text-sparkle-muted">No startup entries found</div>
         ) : (
           progs.map((p, i) => (
             <div key={p.name}>
-              <div className="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-surface-secondary/50 transition-all duration-200">
-                <div className={`col-span-5 text-sm font-medium ${p.enabled ? 'text-text' : 'text-text-tertiary'}`}>
+              <div className="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-sparkle-accent/50 transition-all duration-200">
+                <div className={`col-span-5 text-sm font-medium ${p.enabled ? 'text-sparkle-text' : 'text-sparkle-muted'}`}>
                   <div className="truncate max-w-[200px] flex items-center gap-1.5">{p.name}{p.requiresAdmin && <LockKeyhole size={11} title="Machine-wide entry" />}</div>
-                  {p.path && <div className="text-[11px] text-text-tertiary truncate max-w-[200px] mt-0.5">{p.path}</div>}
+                  {p.path && <div className="text-[11px] text-sparkle-muted truncate max-w-[200px] mt-0.5">{p.path}</div>}
                 </div>
-                <div className="col-span-3 text-xs text-text-tertiary">{p.pub}</div>
+                <div className="col-span-3 text-xs text-sparkle-muted">{p.pub}</div>
                 <div className="col-span-2">
                   <Badge variant={impactVariant[p.impact] || 'teal'}>{p.impact}</Badge>
                 </div>
                 <div className="col-span-2 flex items-center">
                   {busy === p.id ? (
-                    <Loader size={15} className="animate-spin text-accent" />
+                    <Loader size={15} className="animate-spin text-sparkle-primary" />
                   ) : (
                     <Switch checked={p.enabled} onCheckedChange={() => toggle(i)} />
                   )}
@@ -134,11 +134,11 @@ export default function StartupManager() {
         )}
       </Card>
 
-      <div className="flex items-start gap-3 p-5 rounded-2xl bg-green-bg border border-green/15">
-        <Info size={17} className="text-green shrink-0 mt-0.5" />
+      <div className="flex items-start gap-3 p-5 rounded-xl bg-sparkle-success/10 border border-sparkle-success/15">
+        <Info size={17} className="text-sparkle-success shrink-0 mt-0.5" />
         <div className="min-w-0">
-          <div className="font-semibold text-sm text-text">Pro Tip</div>
-          <div className="text-xs text-text-secondary mt-0.5 leading-relaxed">Disabling unnecessary startup programs can reduce boot time by 30-60%. Low impact items are usually safe to disable.</div>
+          <div className="font-semibold text-sm text-sparkle-text">Pro Tip</div>
+          <div className="text-xs text-sparkle-text-secondary mt-0.5 leading-relaxed">Disabling unnecessary startup programs can reduce boot time by 30-60%. Low impact items are usually safe to disable.</div>
         </div>
       </div>
     </div>

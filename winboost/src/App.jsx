@@ -1,7 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { HashRouter, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
-import { Loader } from 'lucide-react'
 
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Cleanup = lazy(() => import('./pages/Cleanup'))
@@ -24,8 +23,8 @@ const SystemUtils = lazy(() => import('./pages/SystemUtils'))
 const NetworkOptimizer = lazy(() => import('./pages/NetworkOptimizer'))
 
 const LoaderFallback = () => (
-  <div className="flex flex-col items-center justify-center gap-3 h-[300px] text-text-tertiary text-[13px]">
-    <Loader size={22} className="animate-spin" />
+  <div className="loading-state">
+    <div className="loading-spinner" />
     <span>Loading module...</span>
   </div>
 )

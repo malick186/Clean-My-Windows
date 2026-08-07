@@ -3,27 +3,24 @@ import { cva } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-2xl text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sparkle-primary/40 disabled:pointer-events-none disabled:opacity-40 disabled:cursor-not-allowed active:scale-90 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-accent text-white shadow-sm hover:brightness-110 active:scale-[0.98]",
-        secondary: "bg-surface-secondary text-text-secondary border border-border hover:bg-surface-hover hover:text-text active:scale-[0.98]",
-        ghost: "text-text-secondary hover:bg-surface-secondary hover:text-text",
-        danger: "bg-red/12 text-red hover:bg-red/18 active:scale-[0.98]",
-        outline: "border border-border text-text-secondary hover:bg-surface-secondary hover:text-text active:scale-[0.98]",
-        link: "text-accent underline-offset-4 hover:underline",
-        gradient: "bg-gradient-to-r from-accent via-purple to-accent bg-[length:200%] text-white shadow-md hover:shadow-lg hover:bg-right active:scale-[0.98] transition-all duration-300",
+        primary: "bg-sparkle-primary text-white shadow-sm hover:brightness-110",
+        secondary: "bg-sparkle-accent/50 text-sparkle-text hover:bg-sparkle-accent/70",
+        outline: "border border-sparkle-border text-sparkle-text-secondary hover:bg-sparkle-accent/30",
+        danger: "bg-sparkle-danger/10 text-sparkle-danger hover:bg-sparkle-danger/20",
+        ghost: "text-sparkle-text-secondary hover:bg-sparkle-accent/50 hover:text-sparkle-text",
       },
       size: {
-        sm: "h-8 px-3.5 text-xs rounded-xl",
-        default: "h-10 px-5 text-sm",
-        lg: "h-12 px-7 text-base rounded-2xl",
-        icon: "h-10 w-10",
+        sm: "h-7 px-3 text-xs",
+        default: "h-9 px-4 text-sm",
+        lg: "h-11 px-6 text-base rounded-xl",
       },
     },
     defaultVariants: {
-      variant: "default",
+      variant: "primary",
       size: "default",
     },
   }

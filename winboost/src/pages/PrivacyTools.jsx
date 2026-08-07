@@ -47,19 +47,19 @@ export default function PrivacyTools() {
       <div className="space-y-6 anim-fade-up">
         <div className="flex items-start justify-between mb-8">
           <div className="flex items-start gap-5">
-            <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-purple-bg text-purple shadow-sm">
+            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-sparkle-purple/10 text-sparkle-purple">
               <Shield size={24} />
             </div>
             <div>
-              <div className="flex items-center gap-2 text-[10px] font-bold text-accent uppercase tracking-[0.15em] mb-2">
+              <div className="flex items-center gap-2 text-[10px] font-bold text-sparkle-primary uppercase tracking-[0.15em] mb-2">
                 <Shield size={11} /> Privacy controls
               </div>
-              <h1 className="text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em]">Privacy Tools</h1>
-              <p className="text-[13px] text-text-tertiary mt-1.5 leading-relaxed">Control your Windows privacy settings and manage data sharing</p>
+              <h1 className="text-[28px] font-bold leading-[1.1] tracking-tight">Privacy Tools</h1>
+              <p className="text-[13px] text-sparkle-muted mt-1.5 leading-relaxed">Control your Windows privacy settings and manage data sharing</p>
             </div>
           </div>
         </div>
-        <div className="rounded-[14px] bg-surface border border-border p-10 text-center text-[13px] text-text-tertiary">Loading privacy settings...</div>
+        <div className="rounded-xl bg-sparkle-card border border-sparkle-border p-10 text-center text-[13px] text-sparkle-muted">Loading privacy settings...</div>
       </div>
     )
   }
@@ -70,15 +70,15 @@ export default function PrivacyTools() {
     <div className="space-y-6 anim-fade-up">
       <div className="flex items-start justify-between mb-8">
         <div className="flex items-start gap-5">
-          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-purple-bg text-purple shadow-sm">
+          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-sparkle-purple/10 text-sparkle-purple">
             <Shield size={24} />
           </div>
           <div>
-            <div className="flex items-center gap-2 text-[10px] font-bold text-accent uppercase tracking-[0.15em] mb-2">
+            <div className="flex items-center gap-2 text-[10px] font-bold text-sparkle-primary uppercase tracking-[0.15em] mb-2">
               <Shield size={11} /> Privacy controls
             </div>
-            <h1 className="text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em]">Privacy Tools</h1>
-            <p className="text-[13px] text-text-tertiary mt-1.5 leading-relaxed">Control your Windows privacy settings and manage data sharing</p>
+            <h1 className="text-[28px] font-bold leading-[1.1] tracking-tight">Privacy Tools</h1>
+            <p className="text-[13px] text-sparkle-muted mt-1.5 leading-relaxed">Control your Windows privacy settings and manage data sharing</p>
           </div>
         </div>
       </div>
@@ -95,7 +95,7 @@ export default function PrivacyTools() {
             <CardContent>
               <s.icon size={18} style={{ color: s.color }} className="mb-2" />
               <div className="text-xl font-bold">{s.val}</div>
-              <div className="text-xs text-text-tertiary">{s.sub}</div>
+              <div className="text-xs text-sparkle-muted">{s.sub}</div>
             </CardContent>
           </Card>
         ))}
@@ -107,17 +107,17 @@ export default function PrivacyTools() {
           <Card key={category} className="overflow-hidden">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <Icon size={18} className="text-purple" />
+                <Icon size={18} className="text-sparkle-purple" />
                 {category}
               </CardTitle>
             </CardHeader>
             {items.map((item, ii) => (
-              <div key={item.name} className="flex items-center justify-between px-6 py-3.5 hover:bg-surface-hover transition-all duration-200 border-b border-white/[0.03] last:border-b-0">
+              <div key={item.name} className="flex items-center justify-between px-6 py-3.5 hover:bg-sparkle-accent transition-all duration-200 border-b border-sparkle-border last:border-b-0">
                 <div className="flex items-center gap-3">
-                  {item.enabled ? <Eye size={15} className="text-orange" /> : <EyeOff size={15} className="text-green" />}
+                  {item.enabled ? <Eye size={15} className="text-sparkle-warning" /> : <EyeOff size={15} className="text-sparkle-success" />}
                   <div>
-                    <div className="text-[13px] font-medium flex items-center gap-1.5">{item.name}{item.requiresAdmin && <LockKeyhole size={11} className="text-purple" title="Requires administrator approval" />}</div>
-                    <div className="text-[11px] text-text-tertiary">{item.desc}</div>
+                    <div className="text-[13px] font-medium flex items-center gap-1.5">{item.name}{item.requiresAdmin && <LockKeyhole size={11} className="text-sparkle-purple" title="Requires administrator approval" />}</div>
+                    <div className="text-[11px] text-sparkle-muted">{item.desc}</div>
                   </div>
                 </div>
                 {busy === item.name ? <Loader size={15} className="animate-spin" /> : <button onClick={() => toggle(gi, ii)} className="toggle-switch" data-on={item.enabled} aria-label={`Toggle ${item.name}`} />}

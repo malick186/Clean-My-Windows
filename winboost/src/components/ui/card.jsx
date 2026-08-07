@@ -5,7 +5,7 @@ function Card({ className, ...props }) {
     <div
       data-slot="card"
       className={cn(
-        "rounded-3xl bg-surface/80 backdrop-blur-xl border border-white/[0.06] shadow-sm p-6 transition-all duration-300 hover:shadow-md hover:border-white/[0.1]",
+        "bg-sparkle-card border border-sparkle-border rounded-xl p-5 hover:border-sparkle-primary/50 transition-all duration-200",
         className
       )}
       {...props}
@@ -17,7 +17,7 @@ function CardHeader({ className, ...props }) {
   return (
     <div
       data-slot="card-header"
-      className={cn("flex items-center gap-3 mb-5 pb-4 border-b border-white/[0.05]", className)}
+      className={cn("flex items-center gap-3 pb-4 mb-4 border-b border-sparkle-border", className)}
       {...props}
     />
   )
@@ -27,7 +27,7 @@ function CardTitle({ className, ...props }) {
   return (
     <h3
       data-slot="card-title"
-      className={cn("text-base font-semibold text-text leading-none tracking-tight", className)}
+      className={cn("text-lg font-semibold text-sparkle-text leading-none tracking-tight", className)}
       {...props}
     />
   )
@@ -37,7 +37,7 @@ function CardDescription({ className, ...props }) {
   return (
     <p
       data-slot="card-description"
-      className={cn("text-xs text-text-tertiary mt-1", className)}
+      className={cn("text-sm text-sparkle-text-secondary mt-1", className)}
       {...props}
     />
   )
@@ -51,7 +51,7 @@ function CardFooter({ className, ...props }) {
   return (
     <div
       data-slot="card-footer"
-      className={cn("flex items-center gap-3 mt-5 pt-4 border-t border-white/[0.05]", className)}
+      className={cn("flex items-center gap-3 pt-4 mt-4 border-t border-sparkle-border", className)}
       {...props}
     />
   )

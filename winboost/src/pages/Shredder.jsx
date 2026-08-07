@@ -49,33 +49,33 @@ export default function Shredder() {
     <div className="space-y-6 anim-fade-up">
       <div className="flex items-start justify-between mb-8">
         <div className="flex items-start gap-5">
-          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-red-bg text-red shadow-sm">
+          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-sparkle-danger/10 text-sparkle-danger shadow-sm">
             <SIcon size={24} />
           </div>
           <div>
-            <div className="flex items-center gap-2 text-[10px] font-bold text-accent uppercase tracking-[0.15em] mb-2">
+            <div className="flex items-center gap-2 text-[10px] font-bold text-sparkle-primary uppercase tracking-[0.15em] mb-2">
               <AlertTriangle size={11} /> Secure Deletion
             </div>
             <h1 className="text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em]">File Shredder</h1>
-            <p className="text-[13px] text-text-tertiary mt-1.5 leading-relaxed">Securely delete files beyond recovery using multiple overwrite passes</p>
+            <p className="text-[13px] text-sparkle-text-muted mt-1.5 leading-relaxed">Securely delete files beyond recovery using multiple overwrite passes</p>
           </div>
         </div>
       </div>
 
       {error && <div className="notice-banner error"><AlertTriangle size={17} />{error}</div>}
 
-      <div className="flex items-start gap-3 p-5 rounded-2xl bg-orange-bg border border-orange/15">
-        <AlertTriangle size={18} className="text-orange shrink-0 mt-0.5" />
+      <div className="flex items-start gap-3 p-5 rounded-xl bg-sparkle-warning/10 border border-sparkle-warning/15">
+        <AlertTriangle size={18} className="text-sparkle-warning shrink-0 mt-0.5" />
         <div className="min-w-0">
-          <div className="font-semibold text-sm text-orange">Warning</div>
-          <div className="text-xs text-text-secondary mt-0.5 leading-relaxed">Verify every selected file. Overwriting is best suited to magnetic disks; SSD wear-leveling can prevent software from guaranteeing every physical copy was overwritten.</div>
+          <div className="font-semibold text-sm text-sparkle-warning">Warning</div>
+          <div className="text-xs text-sparkle-text-secondary mt-0.5 leading-relaxed">Verify every selected file. Overwriting is best suited to magnetic disks; SSD wear-leveling can prevent software from guaranteeing every physical copy was overwritten.</div>
         </div>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Info size={18} className="text-red" /> Shredding Method
+            <Info size={18} className="text-sparkle-danger" /> Shredding Method
           </CardTitle>
           <Badge variant="danger" className="ml-auto">{nPass} passes</Badge>
         </CardHeader>
@@ -83,13 +83,13 @@ export default function Shredder() {
           <div className="grid grid-cols-4 gap-3">
             {methods.map(m => (
               <button key={m.id} onClick={() => setNPass(m.id)}
-                className={`p-4 rounded-2xl border text-left transition-all duration-200 cursor-pointer ${
-                  nPass === m.id ? 'border-accent/30 bg-accent/[0.05] ring-1 ring-accent/20' : 'border-white/[0.04] bg-surface-secondary/50 hover:bg-surface-hover hover:border-white/[0.08]'
+                className={`p-4 rounded-xl border text-left transition-all duration-200 cursor-pointer ${
+                  nPass === m.id ? 'border-sparkle-primary/30 bg-sparkle-primary/5 ring-1 ring-sparkle-primary/20' : 'border-sparkle-border bg-sparkle-accent/50 hover:bg-sparkle-accent hover:border-sparkle-border'
                 }`}>
-                <div className="font-semibold text-sm text-text">{m.label}</div>
-                <div className="text-xs text-text-tertiary mt-0.5">{m.desc}</div>
+                <div className="font-semibold text-sm text-sparkle-text">{m.label}</div>
+                <div className="text-xs text-sparkle-text-muted mt-0.5">{m.desc}</div>
                 <div className="flex items-center gap-2 mt-2">
-                  <span className="text-[11px] text-text-tertiary">{m.speed}</span>
+                  <span className="text-[11px] text-sparkle-text-muted">{m.speed}</span>
                   <Badge variant="teal">{m.sec}</Badge>
                 </div>
               </button>
@@ -101,26 +101,26 @@ export default function Shredder() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <File size={18} className="text-red" /> Files to Shred
+            <File size={18} className="text-sparkle-danger" /> Files to Shred
           </CardTitle>
           <Badge variant="outline" className="ml-auto">{files.length} {files.length === 1 ? 'item' : 'items'}</Badge>
         </CardHeader>
         <CardContent>
           {files.length === 0 ? (
-            <div className="text-center py-12 text-text-tertiary text-sm">
+            <div className="text-center py-12 text-sparkle-text-muted text-sm">
               <SIcon size={36} className="mx-auto mb-3 opacity-15" />
               Add files to securely shred
             </div>
           ) : (
             <div className="space-y-2">
               {files.map((f, i) => (
-                <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-surface-secondary/50 hover:bg-surface-hover transition-all duration-200 border border-white/[0.03]">
-                  <File size={16} className="text-text-tertiary shrink-0" />
+                <div key={i} className="flex items-center gap-4 p-4 rounded-xl bg-sparkle-accent/50 hover:bg-sparkle-accent transition-all duration-200 border border-sparkle-border">
+                  <File size={16} className="text-sparkle-text-muted shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-text truncate max-w-[400px]">{f.name}</div>
-                    <div className="text-xs text-text-tertiary">{f.size !== undefined ? `${f.size} MB` : ''}</div>
+                    <div className="text-sm font-medium text-sparkle-text truncate max-w-[400px]">{f.name}</div>
+                    <div className="text-xs text-sparkle-text-muted">{f.size !== undefined ? `${f.size} MB` : ''}</div>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => rm(f.path || f.name)} className="text-text-tertiary hover:text-red">Remove</Button>
+                  <Button variant="ghost" size="sm" onClick={() => rm(f.path || f.name)} className="text-sparkle-text-muted hover:text-sparkle-danger">Remove</Button>
                 </div>
               ))}
             </div>
@@ -132,8 +132,8 @@ export default function Shredder() {
         <Card>
           <CardContent className="py-5 space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-[13px] text-text-secondary">
-                <Loader size={16} className="animate-spin text-accent" />
+              <div className="flex items-center gap-2 text-[13px] text-sparkle-text-secondary">
+                <Loader size={16} className="animate-spin text-sparkle-primary" />
                 <span>Shredding...</span>
               </div>
               <span className="text-lg font-bold text-gradient">{progress}%</span>
@@ -141,8 +141,8 @@ export default function Shredder() {
             <Progress value={progress} />
             <div className="max-h-28 overflow-y-auto space-y-1">
               {log.slice(-5).map((l, i) => (
-                <div key={i} className="text-xs text-text-tertiary flex items-center gap-1.5">
-                  <CheckCircle size={10} className="text-green shrink-0" /> {l}
+                <div key={i} className="text-xs text-sparkle-text-muted flex items-center gap-1.5">
+                  <CheckCircle size={10} className="text-sparkle-success shrink-0" /> {l}
                 </div>
               ))}
             </div>
@@ -153,11 +153,11 @@ export default function Shredder() {
       {!shredding && completed && files.length === 0 && (
         <Card className="text-center">
           <CardContent className="py-6 flex flex-col items-center">
-            <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-green-bg text-green mb-3">
+            <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-sparkle-success/10 text-sparkle-success mb-3">
               <CheckCircle size={28} />
             </div>
-            <div className="font-semibold text-text">Files Shredded</div>
-            <div className="text-xs text-text-tertiary mt-1">File content overwritten {nPass} time{nPass === 1 ? '' : 's'} and the filesystem entry removed</div>
+            <div className="font-semibold text-sparkle-text">Files Shredded</div>
+            <div className="text-xs text-sparkle-text-muted mt-1">File content overwritten {nPass} time{nPass === 1 ? '' : 's'} and the filesystem entry removed</div>
           </CardContent>
         </Card>
       )}

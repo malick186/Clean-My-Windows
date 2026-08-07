@@ -60,22 +60,22 @@ export default function Cleanup() {
     <div className="space-y-6 anim-fade-up">
       <div className="flex items-start justify-between mb-8">
         <div className="flex items-start gap-5">
-          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-teal-bg text-teal shadow-sm">
+          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-sparkle-teal/10 text-sparkle-teal">
             <Brush size={24} />
           </div>
           <div>
-            <div className="flex items-center gap-2 text-[10px] font-bold text-accent uppercase tracking-[0.15em] mb-2">
+            <div className="flex items-center gap-2 text-[10px] font-bold text-sparkle-primary uppercase tracking-[0.15em] mb-2">
               <Sparkles size={11} /> Junk File Cleaner
             </div>
-            <h1 className="text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em]">System Cleanup</h1>
-            <p className="text-[13px] text-text-tertiary mt-1.5 leading-relaxed">Remove junk files, caches, and temporary data to free up space</p>
+            <h1 className="text-[28px] font-bold leading-[1.1] tracking-tight">System Cleanup</h1>
+            <p className="text-[13px] text-sparkle-muted mt-1.5 leading-relaxed">Remove junk files, caches, and temporary data to free up space</p>
           </div>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={scan} disabled={scanning || cleaning}>
             <Search size={14} /> Scan
           </Button>
-          <Button variant="gradient" size="sm" onClick={clean} disabled={selected.size === 0 || cleaning || scanning}>
+          <Button variant="primary" size="sm" onClick={clean} disabled={selected.size === 0 || cleaning || scanning}>
             <Sparkles size={14} /> Clean ({totalSel.toFixed(1)} GB)
           </Button>
         </div>
@@ -87,8 +87,8 @@ export default function Cleanup() {
         <Card>
           <CardContent className="py-5 space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-[13px] text-text-secondary">
-                <Loader size={16} className="animate-spin text-accent" />
+              <div className="flex items-center gap-2 text-[13px] text-sparkle-text-secondary">
+                <Loader size={16} className="animate-spin text-sparkle-primary" />
                 <span>{scanning ? stage : 'Cleaning in progress...'}</span>
               </div>
               <span className="text-lg font-bold text-gradient">{progress}%</span>
@@ -101,17 +101,17 @@ export default function Cleanup() {
       {done && (
         <div className="notice-banner success mb-5">
           <CheckCircle size={17} /> Reclaimed {freed >= 1 ? `${freed.toFixed(2)} GB` : `${(freed * 1024).toFixed(0)} MB`} from {resultInfo?.deletedFiles || 0} files
-          {resultInfo?.errors?.length > 0 && <span className="ml-2 text-orange">{resultInfo.errors.length} locked or protected items skipped</span>}
+          {resultInfo?.errors?.length > 0 && <span className="ml-2 text-sparkle-warning">{resultInfo.errors.length} locked or protected items skipped</span>}
         </div>
       )}
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Brush size={18} className="text-teal" /> Cleanup Categories
+            <Brush size={18} className="text-sparkle-teal" /> Cleanup Categories
           </CardTitle>
           <div className="flex items-center ml-auto gap-3">
-            <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-text-secondary">
+            <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-sparkle-text-secondary">
               <input type="checkbox" className="w-4 h-4 rounded accent-accent" checked={recommended.length > 0 && recommended.every(item => selected.has(item.id))} onChange={toggleAll} />
               Select recommended
             </label>
@@ -124,11 +124,11 @@ export default function Cleanup() {
             const Icon = iconFor(id)
             return (
               <div key={id} onClick={() => toggle(id)}
-                className={`flex items-center gap-4 p-4 rounded-2xl bg-surface-secondary/50 hover:bg-surface-hover transition-all duration-200 border border-white/[0.03] cursor-pointer ${
-                  sel ? 'ring-1 ring-teal/25 bg-teal/[0.04]' : ''
+                className={`flex items-center gap-4 p-4 rounded-xl bg-sparkle-accent/50 hover:bg-sparkle-accent transition-all duration-200 border border-sparkle-border cursor-pointer ${
+                  sel ? 'ring-1 ring-sparkle-teal/25 bg-sparkle-teal/[0.04]' : ''
                 }`}>
                 <input type="checkbox" className="w-4 h-4 rounded accent-accent" checked={sel} readOnly />
-                <div className={`flex items-center justify-center w-10 h-10 rounded-xl shrink-0 ${sel ? 'bg-teal-bg text-teal' : 'bg-surface-secondary text-text-tertiary'}`}>
+                <div className={`flex items-center justify-center w-10 h-10 rounded-xl shrink-0 ${sel ? 'bg-sparkle-teal/10 text-sparkle-teal' : 'bg-sparkle-accent text-sparkle-muted'}`}>
                   <Icon size={18} />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -136,9 +136,9 @@ export default function Cleanup() {
                     {label}
                     <Badge variant={isRecommended ? 'success' : 'warning'}>{isRecommended ? 'Recommended' : risk}</Badge>
                   </div>
-                  <div className="text-[11px] text-text-tertiary mt-0.5">{desc} &middot; {files} files &middot; {detail.slice(0, 60)}</div>
+                  <div className="text-[11px] text-sparkle-muted mt-0.5">{desc} &middot; {files} files &middot; {detail.slice(0, 60)}</div>
                 </div>
-                <div className="text-[13px] font-semibold text-text-secondary shrink-0">{size >= 1 ? `${size.toFixed(2)} GB` : `${(size * 1024).toFixed(0)} MB`}</div>
+                <div className="text-[13px] font-semibold text-sparkle-text-secondary shrink-0">{size >= 1 ? `${size.toFixed(2)} GB` : `${(size * 1024).toFixed(0)} MB`}</div>
               </div>
             )
           })}

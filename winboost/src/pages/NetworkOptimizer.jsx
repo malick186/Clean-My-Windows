@@ -118,15 +118,15 @@ export default function NetworkOptimizer() {
     <div className="space-y-6 anim-fade-up">
       <div className="flex items-start justify-between mb-8">
         <div className="flex items-start gap-5">
-          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-teal-bg text-teal shadow-sm">
+          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-sparkle-teal/10 text-sparkle-teal shadow-sm">
             <Wifi size={24} />
           </div>
           <div>
-            <div className="flex items-center gap-2 text-[10px] font-bold text-accent uppercase tracking-[0.15em] mb-2">
+            <div className="flex items-center gap-2 text-[10px] font-bold text-sparkle-primary uppercase tracking-[0.15em] mb-2">
               <Globe size={11} /> Internet & DNS
             </div>
             <h1 className="text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em]">Network Optimizer</h1>
-            <p className="text-[13px] text-text-tertiary mt-1.5 leading-relaxed">Improve internet speed and configure DNS settings</p>
+            <p className="text-[13px] text-sparkle-text-muted mt-1.5 leading-relaxed">Improve internet speed and configure DNS settings</p>
           </div>
         </div>
         <Button variant="secondary" size="sm" onClick={fetchStatus} disabled={statusLoading}>
@@ -138,7 +138,7 @@ export default function NetworkOptimizer() {
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-teal-bg text-teal shrink-0">
+          <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-sparkle-teal/10 text-sparkle-teal shrink-0">
             <Globe size={18} />
           </div>
           <div className="flex-1">
@@ -169,12 +169,12 @@ export default function NetworkOptimizer() {
                 <button
                   key={provider.id}
                   onClick={() => setSelectedDns(provider.id)}
-                  className={`text-left p-4 rounded-2xl transition-all duration-200 border cursor-pointer ${
+                  className={`text-left p-4 rounded-xl transition-all duration-200 border cursor-pointer ${
                     isCurrent
-                      ? 'ring-1 ring-teal/30 bg-teal/[0.04] border-teal/20'
+                      ? 'ring-1 ring-sparkle-teal/30 bg-sparkle-teal/10 border-sparkle-teal/20'
                       : isSelected
-                        ? 'ring-1 ring-accent/20 bg-surface-hover border-white/[0.08]'
-                        : 'border-white/[0.04] bg-surface-secondary/50 hover:bg-surface-hover'
+                        ? 'ring-1 ring-sparkle-primary/20 bg-sparkle-accent border-sparkle-border-secondary'
+                        : 'border-sparkle-border bg-sparkle-accent hover:bg-sparkle-accent'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-2">
@@ -183,11 +183,11 @@ export default function NetworkOptimizer() {
                       {isCurrent ? 'Active' : isSelected ? 'Selected' : ''}
                     </Badge>
                   </div>
-                  <div className="text-[11px] text-text-tertiary font-mono mb-1.5">
+                  <div className="text-[11px] text-sparkle-text-muted font-mono mb-1.5">
                     <div>{provider.primary}</div>
                     <div>{provider.secondary}</div>
                   </div>
-                  <div className="text-[10px] text-text-tertiary leading-relaxed">{provider.desc}</div>
+                  <div className="text-[10px] text-sparkle-text-muted leading-relaxed">{provider.desc}</div>
                 </button>
               )
             })}
@@ -195,7 +195,7 @@ export default function NetworkOptimizer() {
         </CardContent>
         <CardFooter>
           <Button
-            variant="gradient"
+            variant="primary"
             className="w-full"
             onClick={handleSetDns}
             disabled={dnsLoading || !selectedDns || selectedDns === status?.currentProvider}
@@ -208,7 +208,7 @@ export default function NetworkOptimizer() {
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-teal-bg text-teal shrink-0">
+          <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-sparkle-teal/10 text-sparkle-teal shrink-0">
             <Zap size={18} />
           </div>
           <div className="flex-1">
@@ -231,12 +231,12 @@ export default function NetworkOptimizer() {
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 rounded-2xl bg-surface-secondary/50 border border-white/[0.04]">
+            <div className="p-4 rounded-xl bg-sparkle-accent border border-sparkle-border">
               <div className="flex items-center gap-2 mb-2">
-                <Zap size={16} className="text-teal" />
+                <Zap size={16} className="text-sparkle-teal" />
                 <span className="text-[13px] font-semibold">Optimize Network</span>
               </div>
-              <p className="text-[11px] text-text-tertiary mb-4 leading-relaxed">
+              <p className="text-[11px] text-sparkle-text-muted mb-4 leading-relaxed">
                 Applies TCP auto-tuning, RSS, window scaling, and other performance tweaks to maximize throughput.
               </p>
               <Button
@@ -251,12 +251,12 @@ export default function NetworkOptimizer() {
               </Button>
             </div>
 
-            <div className="p-4 rounded-2xl bg-surface-secondary/50 border border-white/[0.04]">
+            <div className="p-4 rounded-xl bg-sparkle-accent border border-sparkle-border">
               <div className="flex items-center gap-2 mb-2">
-                <RefreshCw size={16} className="text-orange" />
+                <RefreshCw size={16} className="text-sparkle-warning" />
                 <span className="text-[13px] font-semibold">Reset Network</span>
               </div>
-              <p className="text-[11px] text-text-tertiary mb-4 leading-relaxed">
+              <p className="text-[11px] text-sparkle-text-muted mb-4 leading-relaxed">
                 Flushes DNS cache, resets Winsock catalog, and resets the TCP/IP stack to default settings.
               </p>
               <Button

@@ -73,15 +73,15 @@ export default function AppInstaller() {
     <div className="space-y-6 anim-fade-up">
       <div className="flex items-start justify-between mb-8">
         <div className="flex items-start gap-5">
-          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-green-bg text-green shadow-sm">
+          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-sparkle-success/10 text-sparkle-success shadow-sm">
             <Download size={24} />
           </div>
           <div>
-            <div className="flex items-center gap-2 text-[10px] font-bold text-accent uppercase tracking-[0.15em] mb-2">
+            <div className="flex items-center gap-2 text-[10px] font-bold text-sparkle-primary uppercase tracking-[0.15em] mb-2">
               <Package size={11} /> App Installer
             </div>
             <h1 className="text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em]">App Installer</h1>
-            <p className="text-[13px] text-text-tertiary mt-1.5 leading-relaxed">Quickly install popular apps using winget package manager</p>
+            <p className="text-[13px] text-sparkle-text-muted mt-1.5 leading-relaxed">Quickly install popular apps using winget package manager</p>
           </div>
         </div>
       </div>
@@ -90,7 +90,7 @@ export default function AppInstaller() {
         <div className="notice-banner error">
           <AlertTriangle size={17} />
           <span>{error}</span>
-          <button onClick={() => setError('')} className="ml-auto text-text-tertiary hover:text-text"><X size={14} /></button>
+          <button onClick={() => setError('')} className="ml-auto text-sparkle-text-muted hover:text-sparkle-text"><X size={14} /></button>
         </div>
       )}
 
@@ -98,14 +98,14 @@ export default function AppInstaller() {
         <Card>
           <CardContent className="py-5 space-y-3">
             <div className="flex items-center gap-3">
-              <Loader size={18} className="animate-spin text-accent shrink-0" />
+              <Loader size={18} className="animate-spin text-sparkle-primary shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-sm">
                   Installing {apps.find(a => a.id === installing)?.name || '...'}
                 </div>
-                <div className="text-xs text-text-tertiary">{progressLabel || 'Starting winget installation...'}</div>
+                <div className="text-xs text-sparkle-text-muted">{progressLabel || 'Starting winget installation...'}</div>
               </div>
-              <span className="text-sm font-semibold text-accent">{Math.round(progress)}%</span>
+              <span className="text-sm font-semibold text-sparkle-primary">{Math.round(progress)}%</span>
             </div>
             <Progress value={progress} />
           </CardContent>
@@ -126,7 +126,7 @@ export default function AppInstaller() {
       <Card className="p-0 overflow-hidden">
         <CardHeader className="mb-0 pb-0">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Package size={18} className="text-green" /> Featured Applications
+            <Package size={18} className="text-sparkle-success" /> Featured Applications
           </CardTitle>
           <CardDescription>Popular apps ready for one-click installation</CardDescription>
         </CardHeader>
@@ -137,7 +137,7 @@ export default function AppInstaller() {
             <span>Loading featured applications...</span>
           </div>
         ) : apps.length === 0 ? (
-          <div className="text-center py-12 text-sm text-text-tertiary">
+          <div className="text-center py-12 text-sm text-sparkle-text-muted">
             No featured applications available.
           </div>
         ) : (
@@ -151,7 +151,7 @@ export default function AppInstaller() {
                   <Card key={app.id} className="p-4 flex flex-col gap-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-semibold text-text truncate">{app.name}</div>
+                        <div className="text-sm font-semibold text-sparkle-text truncate">{app.name}</div>
                         {app.category && (
                           <Badge
                             variant={CATEGORY_COLORS[app.category] || 'default'}
@@ -168,17 +168,17 @@ export default function AppInstaller() {
                       )}
                     </div>
                     {app.desc && (
-                      <p className="text-xs text-text-tertiary leading-relaxed flex-1">{app.desc}</p>
+                      <p className="text-xs text-sparkle-text-muted leading-relaxed flex-1">{app.desc}</p>
                     )}
                     <div className="mt-auto pt-1">
                       {isInstalled ? (
-                        <div className="flex items-center gap-2 text-xs text-green">
+                        <div className="flex items-center gap-2 text-xs text-sparkle-success">
                           <CheckCircle2 size={13} className="shrink-0" />
                           <span>Installed</span>
                         </div>
                       ) : (
                         <Button
-                          variant="gradient"
+                          variant="primary"
                           size="sm"
                           className="w-full"
                           onClick={() => handleInstall(app)}
@@ -199,7 +199,7 @@ export default function AppInstaller() {
           </div>
         )}
         <CardFooter>
-          <div className="flex items-center gap-2 text-xs text-text-tertiary">
+          <div className="flex items-center gap-2 text-xs text-sparkle-text-muted">
             <Package size={12} />
             Powered by winget — requires Windows Package Manager
           </div>
