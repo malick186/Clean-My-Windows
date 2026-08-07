@@ -1733,6 +1733,331 @@ ipcMain.handle('network:reset', async () => {
   }
 })
 
+/* ============================================================
+   ADVANCED FEATURES — v3.3.0
+   ============================================================ */
+
+// ── System Hardware Info ───────────────────────────────────
+ipcMain.handle('system:hardware', async () => {
+  try {
+    const cpu = os.cpus()[0] || {}
+    const totalMem = os.totalmem()
+    const freeMem = os.freemem()
+    let gpu = 'Unknown'
+    let vram = ''
+    try { const r = execFileSync('wmic', ['path', 'win32_VideoController', 'get', 'name,AdapterRAM', '/format:csv'], { encoding: 'utf8', timeout: 10000 }).split('\n').filter(Boolean).slice(1); if (r[0]) { const p = r[0].split(','); gpu = p[p.length - 2] || p[1] || 'Unknown'; const ram = parseInt(p[p.length - 1] || '0', 10); vram = ram > 0 ? `${(ram / (1024 * 1024 * 1024)).toFixed(1)} GB` : '' } } catch (_) {}
+    let disks = []
+    try {
+      const r = execFileSync('wmic', ['logicaldisk', 'where', 'drivetype=3', 'get', 'deviceid,size,freespace,volumename', '/format:csv'], { encoding: 'utf8', timeout: 10000 }).split('\n').filter(Boolean).slice(1)
+      disks = r.map(l => { const p = l.split(','); return { drive: p[1] || p[p.length - 4], label: p[p.length - 1] || '', total: parseInt(p[p.length - 3] || '0', 10), free: parseInt(p[p.length - 2] || '0', 10) } }).filter(d => d.drive)
+    } catch (_) {}
+    let motherboard = ''
+    try { const r = execFileSync('wmic', ['baseboard', 'get', 'product,manufacturer', '/format:csv'], { encoding: 'utf8', timeout: 5000 }).split('\n').filter(Boolean).slice(1)[0]; if (r) { const p = r.split(','); motherboard = `${p[p.length - 2] || ''} ${p[p.length - 1] || ''}`.trim() } } catch (_) {}
+    let bios = ''
+    try { const r = execFileSync('wmic', ['bios', 'get', 'version,manufacturer', '/format:csv'], { encoding: 'utf8', timeout: 5000 }).split('\n').filter(Boolean).slice(1)[0]; if (r) { const p = r.split(','); bios = `${p[p.length - 2] || ''} ${p[p.length - 1] || ''}`.trim() } } catch (_) {}
+    return {
+      success: true,
+      cpu: { model: cpu.model || 'Unknown', cores: os.cpus().length, speed: `${cpu.speed || 0} MHz`, architecture: os.arch() },
+      gpu: { model: gpu.trim(), vram },
+      ram: { total: totalMem, free: freeMem, used: totalMem - freeMem },
+      disks,
+      motherboard,
+      bios,
+      hostname: os.hostname(),
+      os: { platform: os.platform(), release: os.release(), arch: os.arch(), uptime: os.uptime() }
+    }
+  } catch (e) { return { success: false, error: errorMessage(e) } }
+})
+
+// ── Process List ───────────────────────────────────────────
+ipcMain.handle('system:processes', async () => {
+  try {
+    const r = execFileSync('powershell', ['-NoProfile', '-Command', 'Get-Process | Sort-Object -Property CPU -Descending | Select-Object -First 50 Name,Id,CPU,WorkingSet64 | ForEach-Object { "$($_.Name)|$($_.Id)|$([math]::Round($_.CPU,1))|$([math]::Round($_.WorkingSet64/1MB,0))" }'], { encoding: 'utf8', timeout: 15000 })
+    const procs = r.split('\n').filter(Boolean).map(l => { const [name, pid, cpu, mem] = l.split('|'); return { name, pid: parseInt(pid, 10), cpu: parseFloat(cpu), mem: parseInt(mem, 10) } })
+    return { success: true, processes: procs }
+  } catch (e) { return { success: false, error: errorMessage(e), processes: [] } }
+})
+
+ipcMain.handle('system:killProcess', async (_, pid) => {
+  try { execFileSync('taskkill', ['/PID', String(pid), '/F'], { timeout: 10000 }); return { success: true } }
+  catch (e) { return { success: false, error: errorMessage(e) } }
+})
+
+// ── Service List ───────────────────────────────────────────
+ipcMain.handle('system:services', async () => {
+  try {
+    const r = execFileSync('powershell', ['-NoProfile', '-Command', 'Get-Service | Sort-Object Status,Name | Select-Object Name,DisplayName,Status,StartType | ForEach-Object { "$($_.Name)|$($_.DisplayName)|$($_.Status)|$($_.StartType)" }'], { encoding: 'utf8', timeout: 15000 })
+    const svcs = r.split('\n').filter(Boolean).map(l => { const [name, display, status, startType] = l.split('|'); return { name, display, status, startType } })
+    return { success: true, services: svcs }
+  } catch (e) { return { success: false, error: errorMessage(e), services: [] } }
+})
+
+// ── Duplicate File Finder ──────────────────────────────────
+ipcMain.handle('duplicates:scan', async (_, dirPath) => {
+  try {
+    const target = dirPath || process.env.USERPROFILE || os.homedir()
+    mainWindow.webContents.send('duplicates:progress', { stage: 'indexing', percent: 0 })
+    const hashMap = new Map()
+    const duplicates = []
+    let scanned = 0
+    const files = []
+    function walk(dir, depth) {
+      if (depth > 8) return
+      try {
+        for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+          const fp = path.join(dir, entry.name)
+          try {
+            if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules' && entry.name !== 'Windows') walk(fp, depth + 1)
+            else if (entry.isFile() && entry.size > 1024 && entry.size < 500 * 1024 * 1024) files.push({ path: fp, size: entry.size })
+          } catch (_) {}
+        }
+      } catch (_) {}
+    }
+    walk(target, 0)
+    const bySize = new Map()
+    for (const f of files) { const k = f.size; if (!bySize.has(k)) bySize.set(k, []); bySize.get(k).push(f) }
+    const candidates = [...bySize.values()].filter(g => g.length > 1)
+    let totalCandidates = candidates.reduce((s, g) => s + g.length, 0)
+    let processed = 0
+    for (const group of candidates) {
+      const hashGroups = new Map()
+      for (const f of group) {
+        try {
+          const fd = fs.openSync(f.path, 'r')
+          const buf = Buffer.alloc(8192)
+          fs.readSync(fd, buf, 0, 8192, 0)
+          fs.closeSync(fd)
+          const hash = crypto.createHash('md5').update(buf).digest('hex')
+          if (!hashGroups.has(hash)) hashGroups.set(hash, [])
+          hashGroups.get(hash).push(f.path)
+        } catch (_) {}
+        processed++
+        if (processed % 20 === 0) mainWindow.webContents.send('duplicates:progress', { stage: 'hashing', percent: Math.round((processed / totalCandidates) * 100) })
+      }
+      for (const [, paths] of hashGroups) { if (paths.length > 1) duplicates.push({ paths, size: group[0].size }) }
+      scanned++
+    }
+    mainWindow.webContents.send('duplicates:progress', { stage: 'done', percent: 100 })
+    const totalWasted = duplicates.reduce((s, d) => s + (d.size * (d.paths.length - 1)), 0)
+    return { success: true, duplicates, totalGroups: duplicates.length, totalWasted, totalScanned: files.length }
+  } catch (e) { return { success: false, error: errorMessage(e), duplicates: [] } }
+})
+
+ipcMain.handle('duplicates:delete', async (_, filePaths) => {
+  try {
+    let deleted = 0; let freed = 0
+    for (const fp of filePaths) { try { const s = fs.statSync(fp).size; fs.unlinkSync(fp); deleted++; freed += s } catch (_) {} }
+    return { success: true, deleted, freed }
+  } catch (e) { return { success: false, error: errorMessage(e) } }
+})
+
+// ── Browser Data Cleaner ───────────────────────────────────
+ipcMain.handle('browser:scan', async () => {
+  try {
+    const browsers = []
+    const home = process.env.USERPROFILE || os.homedir()
+    const profiles = [
+      { name: 'Google Chrome', paths: [path.join(home, 'AppData', 'Local', 'Google', 'Chrome', 'User Data'), path.join(home, 'AppData', 'Local', 'Google', 'Chrome SxS', 'User Data')] },
+      { name: 'Microsoft Edge', paths: [path.join(home, 'AppData', 'Local', 'Microsoft', 'Edge', 'User Data')] },
+      { name: 'Mozilla Firefox', paths: [path.join(home, 'AppData', 'Roaming', 'Mozilla', 'Firefox', 'Profiles')] },
+      { name: 'Brave', paths: [path.join(home, 'AppData', 'Local', 'BraveSoftware', 'Brave-Browser', 'User Data')] },
+      { name: 'Opera', paths: [path.join(home, 'AppData', 'Roaming', 'Opera Software', 'Opera Stable')] },
+    ]
+    for (const browser of profiles) {
+      let found = false
+      let cacheSize = 0; let cookieSize = 0; let historySize = 0
+      for (const bp of browser.paths) {
+        if (!fs.existsSync(bp)) continue
+        found = true
+        const dirSize = (dir) => { let s = 0; try { for (const e of fs.readdirSync(dir, { withFileTypes: true })) { const p = path.join(dir, e.name); try { s += e.isDirectory() ? dirSize(p) : fs.statSync(p).size } catch (_) {} } } catch (_) {} return s }
+        const cachePaths = ['Cache', 'Code Cache', 'GPUCache', 'ShaderCache', 'DawnCache', 'GrShaderCache', 'Service Worker/CacheStorage', 'Service Worker/ScriptCache']
+        for (const cp of cachePaths) { try { const full = path.join(bp, 'Default', cp); if (fs.existsSync(full)) cacheSize += dirSize(full) } catch (_) {} try { const full = path.join(bp, cp); if (fs.existsSync(full)) cacheSize += dirSize(full) } catch (_) {} }
+        for (const cp of ['Default/Cookies', 'Default/Cookies-journal', 'Cookies', 'Cookies-journal']) { try { const full = path.join(bp, cp); if (fs.existsSync(full)) cookieSize += fs.statSync(full).size } catch (_) {} }
+        for (const cp of ['Default/History', 'Default/History-journal', 'History', 'History-journal']) { try { const full = path.join(bp, cp); if (fs.existsSync(full)) historySize += fs.statSync(full).size } catch (_) {} }
+        for (const cp of ['Default/Web Data', 'Web Data']) { try { const full = path.join(bp, cp); if (fs.existsSync(full)) historySize += fs.statSync(full).size } catch (_) {} }
+        for (const sf of ['places.sqlite', 'cookies.sqlite', 'storage']) { try { const d = path.join(bp, sf); if (fs.existsSync(d)) { const s = fs.statSync(d); if (s.isDirectory()) cacheSize += dirSize(d); else cacheSize += s.size } } catch (_) {} }
+      }
+      if (found) browsers.push({ name: browser.name, cacheSize, cookieSize, historySize, totalSize: cacheSize + cookieSize + historySize })
+    }
+    return { success: true, browsers }
+  } catch (e) { return { success: false, error: errorMessage(e), browsers: [] } }
+})
+
+ipcMain.handle('browser:clean', async (_, browserName, dataTypes) => {
+  try {
+    const home = process.env.USERPROFILE || os.homedir()
+    let freed = 0
+    const cleanDir = (dir) => { let s = 0; try { if (!fs.existsSync(dir)) return 0; const entries = fs.readdirSync(dir, { withFileTypes: true }); for (const e of entries) { const p = path.join(dir, e.name); try { if (e.isDirectory()) s += cleanDir(p); else { s += fs.statSync(p).size; fs.unlinkSync(p) } } catch (_) {} } } catch (_) {} return s }
+    const rmIfExists = (fp) => { try { if (fs.existsSync(fp)) { const s = fs.statSync(fp); if (s.isDirectory()) freed += cleanDir(fp); else { freed += s.size; fs.unlinkSync(fp) } } } catch (_) {} }
+    const maps = {
+      'Google Chrome': [path.join(home, 'AppData', 'Local', 'Google', 'Chrome', 'User Data')],
+      'Microsoft Edge': [path.join(home, 'AppData', 'Local', 'Microsoft', 'Edge', 'User Data')],
+      'Mozilla Firefox': [path.join(home, 'AppData', 'Roaming', 'Mozilla', 'Firefox', 'Profiles')],
+      'Brave': [path.join(home, 'AppData', 'Local', 'BraveSoftware', 'Brave-Browser', 'User Data')],
+      'Opera': [path.join(home, 'AppData', 'Roaming', 'Opera Software', 'Opera Stable')]
+    }
+    const bps = maps[browserName]
+    if (!bps) return { success: false, error: 'Browser not found' }
+    let cleaned = 0
+    for (const bp of bps) {
+      if (!fs.existsSync(bp)) continue
+      if (dataTypes.includes('cache')) {
+        const cachePaths = ['Cache', 'Code Cache', 'GPUCache', 'ShaderCache', 'DawnCache', 'GrShaderCache']
+        for (const cp of cachePaths) { rmIfExists(path.join(bp, 'Default', cp)); rmIfExists(path.join(bp, cp)) }
+      }
+      if (dataTypes.includes('cookies')) {
+        for (const cp of ['Default/Cookies', 'Default/Cookies-journal', 'Cookies', 'Cookies-journal']) rmIfExists(path.join(bp, cp))
+      }
+      if (dataTypes.includes('history')) {
+        for (const cp of ['Default/History', 'Default/History-journal', 'History', 'History-journal', 'Default/Web Data', 'Web Data', 'places.sqlite']) rmIfExists(path.join(bp, cp))
+      }
+      cleaned++
+    }
+    return { success: true, cleaned, freed }
+  } catch (e) { return { success: false, error: errorMessage(e) } }
+})
+
+// ── Power Management ───────────────────────────────────────
+ipcMain.handle('power:list', async () => {
+  try {
+    const r = execFileSync('powercfg', ['/list'], { encoding: 'utf8', timeout: 10000 })
+    const plans = []
+    const lines = r.split('\n')
+    for (const line of lines) {
+      const m = line.match(/:\s+([\da-f-]+)\s+(.+?)(?:\s+\*)?$/)
+      if (m) plans.push({ id: m[1].trim(), name: m[2].trim(), active: line.includes('*') })
+    }
+    let currentScheme = ''
+    try { const cr = execFileSync('powercfg', ['/getactivescheme'], { encoding: 'utf8', timeout: 5000 }); const cm = cr.match(/([\da-f-]+)/); if (cm) currentScheme = cm[1] } catch (_) {}
+    return { success: true, plans, currentScheme }
+  } catch (e) { return { success: false, error: errorMessage(e), plans: [] } }
+})
+
+ipcMain.handle('power:set', async (_, planId) => {
+  try { execFileSync('powercfg', ['/setactive', planId], { timeout: 10000 }); return { success: true } }
+  catch (e) { return { success: false, error: errorMessage(e) } }
+})
+
+ipcMain.handle('power:ultimate', async () => {
+  try {
+    let r
+    try { r = execFileSync('powercfg', ['/duplicatescheme', 'e9a42b02-d5df-448d-aa00-03f14749eb61'], { encoding: 'utf8', timeout: 10000 }) } catch (_) { r = '' }
+    if (!r.includes('e9a42b02') && !r.includes('already exists')) {
+      execFileSync('powercfg', ['-duplicatescheme', 'e9a42b02-d5df-448d-aa00-03f14749eb61'], { timeout: 10000 })
+    }
+    execFileSync('powercfg', ['/setactive', 'e9a42b02-d5df-448d-aa00-03f14749eb61'], { timeout: 10000 })
+    return { success: true, message: 'Ultimate Performance plan activated' }
+  } catch (e) { return { success: false, error: errorMessage(e) } }
+})
+
+// ── Network Diagnostics ────────────────────────────────────
+ipcMain.handle('network:ping', async (_, host) => {
+  try {
+    const target = host || '8.8.8.8'
+    const r = execFileSync('ping', ['-n', '4', target], { encoding: 'utf8', timeout: 15000 })
+    const results = []
+    const lines = r.split('\n')
+    let avg = ''; let loss = ''
+    for (const line of lines) {
+      const tm = line.match(/time[=<]\s*(\d+)ms|time=(\d+)ms/)
+      if (tm) results.push(parseInt(tm[1] || tm[2], 10))
+      const lm = line.match(/\((\d+)% loss\)/)
+      if (lm) loss = lm[1] + '%'
+      const am = line.match(/Average\s*=\s*(\d+)ms/)
+      if (am) avg = am[1] + 'ms'
+    }
+    return { success: true, host: target, results, avg: avg || (results.length ? Math.round(results.reduce((a, b) => a + b, 0) / results.length) + 'ms' : 'N/A'), loss: loss || '0%', min: results.length ? Math.min(...results) + 'ms' : 'N/A', max: results.length ? Math.max(...results) + 'ms' : 'N/A' }
+  } catch (e) { return { success: false, error: errorMessage(e) } }
+})
+
+ipcMain.handle('network:traceroute', async (_, host) => {
+  try {
+    const target = host || '8.8.8.8'
+    const r = execFileSync('tracert', ['-d', '-h', '15', target], { encoding: 'utf8', timeout: 60000 })
+    const hops = []
+    for (const line of r.split('\n')) {
+      const m = line.match(/^\s*(\d+)\s+(.+)/)
+      if (m) {
+        const times = [...m[2].matchAll(/(\d+)\s*ms/g)].map(t => parseInt(t[1], 10))
+        const ip = m[2].match(/(\d+\.\d+\.\d+\.\d+)/)
+        hops.push({ hop: parseInt(m[1], 10), ip: ip ? ip[1] : (m[2].includes('*') ? '*' : m[2].trim().split(/\s+/)[0]), times })
+      }
+    }
+    return { success: true, host: target, hops }
+  } catch (e) { return { success: false, error: errorMessage(e), hops: [] } }
+})
+
+ipcMain.handle('network:speedtest', async () => {
+  try {
+    const results = { download: 0, upload: 0, ping: 0, unit: 'Mbps' }
+    let pingTotal = 0; let pingCount = 0
+    for (let i = 0; i < 3; i++) {
+      try {
+        const start = Date.now()
+        execFileSync('ping', ['-n', '1', '-w', '2000', '8.8.8.8'], { encoding: 'utf8', timeout: 5000 })
+        pingTotal += Date.now() - start; pingCount++
+      } catch (_) {}
+    }
+    results.ping = pingCount > 0 ? Math.round(pingTotal / pingCount) : 0
+    try {
+      const testUrl = 'http://speedtest.tele2.net/100MB.zip'
+      const { execSync } = require('child_process')
+      const cmd = `powershell -NoProfile -Command "$progressPreference='silentlyContinue';$start=Get-Date;try{Invoke-WebRequest -Uri '${testUrl}' -TimeoutSec 10 -UseBasicParsing | Out-Null;$elapsed=(Get-Date)-$start;[math]::Round(100*8/($elapsed.TotalSeconds*2),1)}catch{'0'}"`
+      const r = execSync(cmd, { encoding: 'utf8', timeout: 20000 }).trim()
+      results.download = parseFloat(r) || 0
+    } catch (_) {}
+    return { success: true, ...results }
+  } catch (e) { return { success: false, error: errorMessage(e) } }
+})
+
+// ── Context Menu Manager ───────────────────────────────────
+ipcMain.handle('system:contextMenu', async () => {
+  try {
+    const paths = ['HKLM\\Software\\Classes\\*\\shell', 'HKLM\\Software\\Classes\\Directory\\shell', 'HKLM\\Software\\Classes\\Directory\\Background\\shell', 'HKCU\\Software\\Classes\\*\\shell', 'HKCU\\Software\\Classes\\Directory\\shell']
+    const entries = []
+    for (const p of paths) {
+      try {
+        const r = execFileSync('reg', ['query', p], { encoding: 'utf8', timeout: 5000 })
+        const lines = r.split('\n').filter(l => l.includes('\\') && !l.includes(p + '\\'))
+        for (const line of lines) {
+          const name = line.trim().split('\\').pop()
+          if (name && name !== '(Default)') entries.push({ name, path: p + '\\' + name, hive: p.startsWith('HKCU') ? 'HKCU' : 'HKLM' })
+        }
+      } catch (_) {}
+    }
+    return { success: true, entries }
+  } catch (e) { return { success: false, error: errorMessage(e), entries: [] } }
+})
+
+ipcMain.handle('system:removeContextMenu', async (_, regPath) => {
+  try { execFileSync('reg', ['delete', regPath, '/f'], { timeout: 10000 }); return { success: true } }
+  catch (e) { return { success: false, error: errorMessage(e) } }
+})
+
+// ── Export System Report ───────────────────────────────────
+ipcMain.handle('system:exportReport', async () => {
+  try {
+    const parts = []
+    parts.push('=== WinBoost System Report ===')
+    parts.push(`Generated: ${new Date().toISOString()}`)
+    parts.push(`Hostname: ${os.hostname()}`)
+    parts.push(`OS: ${os.type()} ${os.release()} ${os.arch()}`)
+    parts.push(`CPU: ${(os.cpus()[0] || {}).model || 'Unknown'}`)
+    parts.push(`Cores: ${os.cpus().length}`)
+    parts.push(`RAM: ${(os.totalmem() / (1024 ** 3)).toFixed(1)} GB total, ${(os.freemem() / (1024 ** 3)).toFixed(1)} GB free`)
+    parts.push(`Uptime: ${Math.floor(os.uptime() / 3600)}h ${Math.floor((os.uptime() % 3600) / 60)}m`)
+    let drives = ''
+    try { const r = execFileSync('wmic', ['logicaldisk', 'get', 'size,freespace,deviceid'], { encoding: 'utf8', timeout: 10000 }).split('\n').filter(l => l.includes(':')); for (const l of r.slice(1)) { const p = l.trim().split(/\s+/); if (p.length >= 3) drives += `\n  ${p[0]}: ${(parseInt(p[2]) / (1024 ** 3)).toFixed(1)} GB / ${(parseInt(p[1]) / (1024 ** 3)).toFixed(1)} GB` } } catch (_) {}
+    parts.push(`Drives:${drives || ' N/A'}`)
+    const report = parts.join('\n')
+    const fp = path.join(os.tmpdir(), `winboost-report-${Date.now()}.txt`)
+    fs.writeFileSync(fp, report)
+    return { success: true, path: fp }
+  } catch (e) { return { success: false, error: errorMessage(e) } }
+})
+
+// ── Window Controls ────────────────────────────────────────
+
 ipcMain.on('window-minimize', () => mainWindow?.minimize())
 ipcMain.on('window-maximize', () => {
   if (mainWindow?.isMaximized()) mainWindow.unmaximize()

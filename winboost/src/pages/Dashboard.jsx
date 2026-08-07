@@ -7,28 +7,38 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { getSystemStats, runSmartScan } from '@/lib/api'
+import { getHardwareInfo, getSystemStats, runSmartScan } from '@/lib/api'
 
 const FALLBACK_STATS = {
-  cpu: { usage: 18, model: 'Intel Core i7-12700K', cores: 12, threads: 20, speed: 3.6 },
-  memory: { used: 8.5, total: 16, free: 7.5, percent: 53 },
-  disk: [{ fs: 'C:', used: 328, total: 512, free: 184, percent: 64 }],
-  os: { platform: 'Windows 11 Pro', version: '23H2', build: '22631', uptime: 2.4, hostname: 'DESKTOP-WINBOOST' },
+  cpu: { usage: 18, model: 'Intel Core i7-12700K', cores: 16, speed: '3600 MHz', architecture: 'x64' },
+  gpu: { model: 'NVIDIA GeForce RTX 3060', vram: '12 GB' },
+  ram: { total: 17179869184, used: 8589934592, free: 8589934592, percent: 50 },
+  disks: [{ drive: 'C:', label: 'Windows', total: 500107862016, free: 250053931008, used: 250053931008, percent: 50 }],
+  os: { platform: 'win32', release: '10.0.22621', arch: 'x64', uptime: 86400 },
+  hostname: 'DESKTOP-WINBOOST',
+  tweaks: { applied: 12, status: 'Protected' },
+  lastScan: '2 hours ago',
 }
 
-function formatUptime(hours) {
-  if (!hours && hours !== 0) return 'N/A'
-  if (hours < 1) return `${Math.round(hours * 60)} min`
-  if (hours < 24) return `${Math.round(hours)} hr`
-  const days = Math.floor(hours / 24)
-  const remainder = Math.round(hours % 24)
-  return remainder > 0 ? `${days}d ${remainder}h` : `${days}d`
+function formatGB(bytes) {
+  if (bytes == null) return 'N/A'
+  return (bytes / (1024 ** 3)).toFixed(1)
 }
 
-function formatGB(gb) {
-  if (gb == null) return 'N/A'
-  if (gb >= 1000) return `${(gb / 1000).toFixed(2)} TB`
-  return `${gb.toFixed(1)} GB`
+function formatUptime(seconds) {
+  if (seconds == null) return 'N/A'
+  const hrs = Math.floor(seconds / 3600)
+  const mins = Math.floor((seconds % 3600) / 60)
+  if (hrs > 0) return `${hrs}h ${mins}m`
+  return `${mins}m`
+}
+
+function formatBytes(bytes) {
+  if (bytes == null) return 'N/A'
+  if (bytes >= 1024 ** 4) return `${(bytes / (1024 ** 4)).toFixed(1)} TB`
+  if (bytes >= 1024 ** 3) return `${(bytes / (1024 ** 3)).toFixed(1)} GB`
+  if (bytes >= 1024 ** 2) return `${(bytes / (1024 ** 2)).toFixed(1)} MB`
+  return `${(bytes / 1024).toFixed(1)} KB`
 }
 
 function InfoCard({ icon: Icon, title, subtitle, badgeVariant, badgeValue, iconBg, iconColor, rows, children }) {
@@ -86,8 +96,83 @@ export default function Dashboard() {
   const fetchStats = useCallback(async () => {
     try {
       setError(null)
-      const data = await getSystemStats()
-      setStats(data || FALLBACK_STATS)
+      const [hw, sys] = await Promise.all([
+        getHardwareInfo().catch(() => null),
+        getSystemStats().catch(() => null),
+      ])
+
+      if (!hw && !sys) {
+        setStats(FALLBACK_STATS)
+        setLoading(false)
+        return
+      }
+
+      const ramTotal = hw?.ram?.total
+        ?? (sys?.memory?.total != null ? sys.memory.total * (1024 ** 3) : null)
+        ?? 0
+      const ramUsed = hw?.ram?.used
+        ?? (sys?.memory?.used != null ? sys.memory.used * (1024 ** 3) : null)
+        ?? 0
+      const ramFree = hw?.ram?.free
+        ?? (sys?.memory?.free != null ? sys.memory.free * (1024 ** 3) : null)
+        ?? 0
+      const ramPercent = sys?.memory?.percent
+        ?? (ramTotal > 0 ? (ramUsed / ramTotal) * 100 : 0)
+
+      const disks = hw?.disks?.map(d => ({
+        drive: d.drive,
+        label: d.label,
+        total: d.total,
+        free: d.free,
+        used: d.total - d.free,
+        percent: d.total > 0 ? ((d.total - d.free) / d.total) * 100 : 0,
+      }))
+        ?? sys?.disk?.map(d => ({
+          drive: d.fs,
+          label: d.fs,
+          total: (d.total ?? 0) * (1024 ** 3),
+          free: (d.free ?? 0) * (1024 ** 3),
+          used: (d.used ?? 0) * (1024 ** 3),
+          percent: d.percent ?? 0,
+        }))
+        ?? FALLBACK_STATS.disks
+
+      const merged = {
+        cpu: {
+          model: hw?.cpu?.model ?? sys?.cpu?.model ?? FALLBACK_STATS.cpu.model,
+          cores: hw?.cpu?.cores ?? sys?.cpu?.cores ?? FALLBACK_STATS.cpu.cores,
+          speed: hw?.cpu?.speed ?? (sys?.cpu?.speed != null ? `${sys.cpu.speed} GHz` : FALLBACK_STATS.cpu.speed),
+          architecture: hw?.cpu?.architecture ?? FALLBACK_STATS.cpu.architecture,
+          usage: sys?.cpu?.usage,
+        },
+        gpu: {
+          model: hw?.gpu?.model ?? FALLBACK_STATS.gpu.model,
+          vram: hw?.gpu?.vram ?? FALLBACK_STATS.gpu.vram,
+        },
+        ram: {
+          total: ramTotal,
+          used: ramUsed,
+          free: ramFree,
+          percent: ramPercent,
+        },
+        disks,
+        os: {
+          platform: hw?.os?.platform ?? sys?.os?.platform ?? FALLBACK_STATS.os.platform,
+          release: hw?.os?.release ?? sys?.os?.version ?? FALLBACK_STATS.os.release,
+          arch: hw?.os?.arch ?? FALLBACK_STATS.os.arch,
+          uptime: hw?.os?.uptime ?? (sys?.os?.uptime != null ? sys.os.uptime * 3600 : FALLBACK_STATS.os.uptime),
+        },
+        hostname: hw?.hostname ?? sys?.os?.hostname ?? FALLBACK_STATS.hostname,
+        tweaks: {
+          applied: sys?.tweaks?.applied,
+          status: sys?.tweaks?.status,
+        },
+        lastScan: sys?.lastScan,
+        motherboard: hw?.motherboard,
+        bios: hw?.bios,
+      }
+
+      setStats(merged)
     } catch {
       setStats(FALLBACK_STATS)
     } finally {
@@ -138,8 +223,9 @@ export default function Dashboard() {
   }
 
   const cpu = stats?.cpu ?? FALLBACK_STATS.cpu
-  const memory = stats?.memory ?? FALLBACK_STATS.memory
-  const disk = stats?.disk?.[0] ?? FALLBACK_STATS.disk[0]
+  const gpu = stats?.gpu ?? FALLBACK_STATS.gpu
+  const ram = stats?.ram ?? FALLBACK_STATS.ram
+  const disks = stats?.disks ?? FALLBACK_STATS.disks
   const os = stats?.os ?? FALLBACK_STATS.os
 
   return (
@@ -148,7 +234,7 @@ export default function Dashboard() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-sparkle-text">
           Hello, there!{' '}
-          <span className="text-gradient">{os.hostname?.split('-')[0] ?? 'User'}</span>
+          <span className="text-gradient">{stats?.hostname?.split('-')[0] ?? 'User'}</span>
         </h1>
         <p className="text-sm text-sparkle-text-secondary mt-1">
           Here&apos;s your system overview
@@ -165,11 +251,11 @@ export default function Dashboard() {
           iconBg="bg-sparkle-primary/10"
           iconColor="text-sparkle-primary"
           badgeVariant="default"
-          badgeValue={`${Math.round(cpu.usage ?? 0)}%`}
+          badgeValue={cpu.usage != null ? `${Math.round(cpu.usage)}%` : 'N/A'}
           rows={[
-            { label: 'Cores', value: `${cpu.cores ?? 'N/A'}` },
-            { label: 'Threads', value: `${cpu.threads ?? 'N/A'}` },
-            { label: 'Base Speed', value: cpu.speed ? `${cpu.speed} GHz` : 'N/A' },
+            { label: 'Cores', value: cpu.cores != null ? `${cpu.cores} cores` : 'N/A' },
+            { label: 'Speed', value: cpu.speed ?? 'N/A' },
+            { label: 'Architecture', value: cpu.architecture ?? 'N/A' },
           ]}
         />
 
@@ -177,14 +263,13 @@ export default function Dashboard() {
         <InfoCard
           icon={Monitor}
           title="Graphics"
-          subtitle={stats?.gpu?.name ?? 'NVIDIA RTX 3060'}
+          subtitle={gpu.model ?? 'Unknown GPU'}
           iconBg="bg-sparkle-purple/10"
           iconColor="text-sparkle-purple"
           badgeVariant="purple"
-          badgeValue={stats?.gpu?.temp != null ? `${Math.round(stats.gpu.temp)}°C` : '45°C'}
+          badgeValue="GPU"
           rows={[
-            { label: 'Driver', value: stats?.gpu?.driverVersion ?? '537.42' },
-            { label: 'VRAM', value: stats?.gpu?.vram ? `${stats.gpu.vram} GB` : '12 GB' },
+            { label: 'VRAM', value: gpu.vram ?? 'N/A' },
           ]}
         />
 
@@ -192,20 +277,20 @@ export default function Dashboard() {
         <InfoCard
           icon={MemoryStick}
           title="Memory"
-          subtitle={`${formatGB(memory.total)} Total`}
+          subtitle={`${formatGB(ram.total)} GB Total`}
           iconBg="bg-sparkle-success/10"
           iconColor="text-sparkle-success"
           badgeVariant="success"
-          badgeValue={`${Math.round(memory.percent ?? 0)}%`}
+          badgeValue={`${Math.round(ram.percent ?? 0)}%`}
           rows={[
-            { label: 'Used', value: formatGB(memory.used) },
-            { label: 'Free', value: formatGB(memory.free) },
+            { label: 'Used', value: `${formatGB(ram.used)} GB` },
+            { label: 'Free', value: `${formatGB(ram.free)} GB` },
           ]}
         >
           <ProgressRow
             label="Usage"
-            value={`${Math.round(memory.percent ?? 0)}%`}
-            percent={memory.percent ?? 0}
+            value={`${Math.round(ram.percent ?? 0)}%`}
+            percent={ram.percent ?? 0}
           />
         </InfoCard>
 
@@ -213,37 +298,41 @@ export default function Dashboard() {
         <InfoCard
           icon={Monitor}
           title="System"
-          subtitle={os.hostname ?? 'Unknown'}
+          subtitle={stats?.hostname ?? 'Unknown'}
           iconBg="bg-sparkle-teal/10"
           iconColor="text-sparkle-teal"
           badgeVariant="teal"
           badgeValue={os.platform ?? 'Windows'}
           rows={[
-            { label: 'Version', value: os.version ?? 'N/A' },
+            { label: 'OS', value: `${os.platform ?? '?'} ${os.release ?? ''}` },
+            { label: 'Architecture', value: os.arch ?? 'N/A' },
             { label: 'Uptime', value: formatUptime(os.uptime) },
           ]}
         />
 
         {/* Storage */}
-        <InfoCard
-          icon={HardDrive}
-          title="Storage"
-          subtitle={`${disk.fs ?? 'C:'} Drive`}
-          iconBg="bg-sparkle-warning/10"
-          iconColor="text-sparkle-warning"
-          badgeVariant="warning"
-          badgeValue={`${Math.round(disk.percent ?? 0)}%`}
-          rows={[
-            { label: 'Total', value: formatGB(disk.total) },
-            { label: 'Free', value: formatGB(disk.free) },
-          ]}
-        >
-          <ProgressRow
-            label="Used"
-            value={formatGB(disk.used)}
-            percent={disk.percent ?? 0}
-          />
-        </InfoCard>
+        {disks.map((disk, i) => (
+          <InfoCard
+            key={i}
+            icon={HardDrive}
+            title="Storage"
+            subtitle={`${disk.drive} ${disk.label ? `(${disk.label})` : ''}`}
+            iconBg="bg-sparkle-warning/10"
+            iconColor="text-sparkle-warning"
+            badgeVariant="warning"
+            badgeValue={`${Math.round(disk.percent ?? 0)}%`}
+            rows={[
+              { label: 'Total', value: `${formatGB(disk.total)} GB` },
+              { label: 'Free', value: `${formatGB(disk.free)} GB` },
+            ]}
+          >
+            <ProgressRow
+              label="Used"
+              value={`${formatGB(disk.used)} GB`}
+              percent={disk.percent ?? 0}
+            />
+          </InfoCard>
+        ))}
 
         {/* Tweaks */}
         <InfoCard

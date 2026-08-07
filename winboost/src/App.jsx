@@ -21,6 +21,12 @@ const Debloat = lazy(() => import('./pages/Debloat'))
 const AppInstaller = lazy(() => import('./pages/AppInstaller'))
 const SystemUtils = lazy(() => import('./pages/SystemUtils'))
 const NetworkOptimizer = lazy(() => import('./pages/NetworkOptimizer'))
+const PowerManager = lazy(() => import('./pages/PowerManager'))
+const NetworkDiagnostics = lazy(() => import('./pages/NetworkDiagnostics'))
+const ContextMenuManager = lazy(() => import('./pages/ContextMenuManager'))
+const SystemInfo = lazy(() => import('./pages/SystemInfo'))
+const DuplicateFinder = lazy(() => import('./pages/DuplicateFinder'))
+const BrowserCleaner = lazy(() => import('./pages/BrowserCleaner'))
 
 const LoaderFallback = () => (
   <div className="loading-state">
@@ -57,6 +63,12 @@ export default function App() {
           <Route path="appinstaller" element={page(AppInstaller)} />
           <Route path="sysutils" element={page(SystemUtils)} />
           <Route path="network" element={page(NetworkOptimizer)} />
+          <Route path="power" element={page(PowerManager)} />
+          <Route path="network-diag" element={page(NetworkDiagnostics)} />
+          <Route path="context-menu" element={page(ContextMenuManager)} />
+          <Route path="system" element={page(SystemInfo)} />
+          <Route path="duplicates" element={page(DuplicateFinder)} />
+          <Route path="browser" element={page(BrowserCleaner)} />
         </Route>
       </Routes>
     </HashRouter>

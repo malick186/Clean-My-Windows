@@ -315,3 +315,90 @@ export async function optimizeNetwork() {
 export async function resetNetwork() {
   return assertSuccess(await invoke('network:reset'), 'Network reset failed.')
 }
+
+// Advanced System Info
+export async function getHardwareInfo() {
+  if (!hasElectron) return { success: true, cpu: { model: 'Intel Core i7-12700K', cores: 16, speed: '3600 MHz', architecture: 'x64' }, gpu: { model: 'NVIDIA GeForce RTX 3060', vram: '12 GB' }, ram: { total: 17179869184, free: 8589934592, used: 8589934592 }, disks: [{ drive: 'C:', label: 'Windows', total: 500107862016, free: 250053931008 }], motherboard: 'ASUS ROG STRIX', bios: 'American Megatrends Inc. 2.10', hostname: 'DESKTOP-ABC123', os: { platform: 'win32', release: '10.0.22621', arch: 'x64', uptime: 86400 } }
+  return invoke('system:hardware')
+}
+
+export async function listProcesses() {
+  if (!hasElectron) return { success: true, processes: [] }
+  return invoke('system:processes')
+}
+
+export async function killProcess(pid) {
+  return invoke('system:killProcess', pid)
+}
+
+export async function listServices() {
+  if (!hasElectron) return { success: true, services: [] }
+  return invoke('system:services')
+}
+
+// Duplicate File Finder
+export async function scanDuplicates(dirPath, onProgress) {
+  if (!hasElectron) return { success: true, duplicates: [], totalGroups: 0, totalWasted: 0 }
+  const off = on('duplicates:progress', data => onProgress?.(data))
+  try { return await invoke('duplicates:scan', dirPath) }
+  finally { off() }
+}
+
+export async function deleteDuplicates(filePaths) {
+  return invoke('duplicates:delete', filePaths)
+}
+
+// Browser Cleaner
+export async function scanBrowsers() {
+  if (!hasElectron) return { success: true, browsers: [] }
+  return invoke('browser:scan')
+}
+
+export async function cleanBrowser(browserName, dataTypes) {
+  return invoke('browser:clean', browserName, dataTypes)
+}
+
+// Power Management
+export async function listPowerPlans() {
+  if (!hasElectron) return { success: true, plans: [{ id: '381b4222-f694-41f0-9685-ff5bb260df2e', name: 'Balanced', active: true }], currentScheme: '381b4222' }
+  return invoke('power:list')
+}
+
+export async function setPowerPlan(planId) {
+  return invoke('power:set', planId)
+}
+
+export async function activateUltimatePerformance() {
+  return invoke('power:ultimate')
+}
+
+// Network Diagnostics
+export async function pingHost(host) {
+  if (!hasElectron) return { success: true, host: host || '8.8.8.8', results: [12, 14, 11, 13], avg: '12ms', loss: '0%', min: '11ms', max: '14ms' }
+  return invoke('network:ping', host)
+}
+
+export async function tracerouteHost(host) {
+  if (!hasElectron) return { success: true, host: host || '8.8.8.8', hops: [] }
+  return invoke('network:traceroute', host)
+}
+
+export async function runSpeedtest() {
+  if (!hasElectron) return { success: true, download: 0, upload: 0, ping: 0 }
+  return invoke('network:speedtest')
+}
+
+// Context Menu Manager
+export async function listContextMenus() {
+  if (!hasElectron) return { success: true, entries: [] }
+  return invoke('system:contextMenu')
+}
+
+export async function removeContextMenu(regPath) {
+  return invoke('system:removeContextMenu', regPath)
+}
+
+// Export Report
+export async function exportSystemReport() {
+  return invoke('system:exportReport')
+}

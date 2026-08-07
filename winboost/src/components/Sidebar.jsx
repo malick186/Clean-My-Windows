@@ -3,7 +3,8 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, ShieldCheck, Brush, Gauge, Power, Shield,
   HardDrive, Search, Database, Trash2, Shredder as ShredderIcon,
-  Monitor, Download, Wrench, Boxes, Wifi, Settings2, RefreshCw
+  Monitor, Download, Wrench, Boxes, Wifi, Settings2, RefreshCw,
+  Zap, Activity, Menu, Cpu, Files, Globe
 } from 'lucide-react'
 
 const items = [
@@ -23,6 +24,12 @@ const items = [
   { to: '/sysutils', icon: Wrench, label: 'Sys Utils' },
   { to: '/maintenance', icon: Boxes, label: 'Maintenance' },
   { to: '/network', icon: Wifi, label: 'Network' },
+  { to: '/power', icon: Zap, label: 'Power' },
+  { to: '/network-diag', icon: Activity, label: 'Net Diag' },
+  { to: '/system', icon: Cpu, label: 'System Info' },
+  { to: '/duplicates', icon: Files, label: 'Duplicates' },
+  { to: '/browser', icon: Globe, label: 'Browser' },
+  { to: '/context-menu', icon: Menu, label: 'Context Menu' },
   { to: '/settings', icon: Settings2, label: 'Settings' },
 ]
 
