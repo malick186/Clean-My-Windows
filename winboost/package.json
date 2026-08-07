@@ -1,6 +1,6 @@
 {
   "name": "winboost",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "description": "A local-first Windows maintenance suite with ClamAV malware scanning, system recovery, safety safeguards, and a polished animated interface.",
   "author": {
     "name": "malick186",
