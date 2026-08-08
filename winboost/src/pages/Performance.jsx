@@ -60,7 +60,7 @@ export default function Performance() {
               <Zap size={11} /> Reversible Windows tuning
             </div>
             <h1 className="text-[28px] font-bold leading-[1.1] tracking-tight">Performance Studio</h1>
-            <p className="text-[13px] text-sparkle-muted mt-1.5 leading-relaxed">Apply measured, user-level optimizations. Every switch reads and changes the actual Windows setting.</p>
+            <p className="text-[13px] text-sparkle-text-muted mt-1.5 leading-relaxed">Apply measured, user-level optimizations. Every switch reads and changes the actual Windows setting.</p>
           </div>
         </div>
         <Button variant="secondary" size="sm" onClick={refresh} disabled={loading || Boolean(busy)}>
@@ -81,7 +81,7 @@ export default function Performance() {
             <CardContent className="flex flex-col items-center gap-1">
               <item.icon size={18} style={{ color: item.color }} />
               <strong className="text-lg font-bold">{item.val}</strong>
-              <span className="text-[11px] text-sparkle-muted">{item.sub}</span>
+              <span className="text-[11px] text-sparkle-text-muted">{item.sub}</span>
             </CardContent>
           </Card>
         ))}
@@ -93,9 +93,9 @@ export default function Performance() {
             <Monitor size={22} />
           </div>
           <div className="flex-1">
-            <small className="text-[11px] text-sparkle-muted uppercase tracking-wider">Balanced preset</small>
+            <small className="text-[11px] text-sparkle-text-muted uppercase tracking-wider">Balanced preset</small>
             <strong className="block text-[14px] font-semibold">Responsiveness without disabling core Windows services</strong>
-            <p className="text-[11px] text-sparkle-muted mt-0.5">Search indexing, SysMain and Prefetch are intentionally left intact.</p>
+            <p className="text-[11px] text-sparkle-text-muted mt-0.5">Search indexing, SysMain and Prefetch are intentionally left intact.</p>
           </div>
           <Button onClick={optimize} disabled={loading || Boolean(busy)}>
             {busy === 'all' ? <Loader size={15} className="animate-spin" /> : <Sparkles size={15} />}Optimize Safely
@@ -107,7 +107,7 @@ export default function Performance() {
         <CardHeader>
           <div>
             <CardTitle>Optimization controls</CardTitle>
-            <p className="text-[12px] text-sparkle-muted mt-1">Switches can be restored at any time.</p>
+            <p className="text-[12px] text-sparkle-text-muted mt-1">Switches can be restored at any time.</p>
           </div>
           <span className="text-[13px] text-sparkle-text-secondary ml-auto">{applied}/{tweaks.length} active</span>
         </CardHeader>
@@ -121,7 +121,7 @@ export default function Performance() {
               </span>
               <div className="flex-1 min-w-0">
                 <strong className="text-[13px] font-semibold block">{tweak.name}</strong>
-                <small className="text-[11px] text-sparkle-muted block truncate">{tweak.desc}</small>
+                <small className="text-[11px] text-sparkle-text-muted block truncate">{tweak.desc}</small>
               </div>
               <Badge variant={impactBadge[tweak.impact] || 'success'} className="text-[10px] uppercase">{tweak.impact}</Badge>
               <Badge variant="outline" className="text-[11px] font-mono">{tweak.cat}</Badge>

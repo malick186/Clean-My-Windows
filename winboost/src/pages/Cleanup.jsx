@@ -70,7 +70,7 @@ export default function Cleanup() {
               <Sparkles size={11} /> Junk File Cleaner
             </div>
             <h1 className="text-[28px] font-bold leading-[1.1] tracking-tight">System Cleanup</h1>
-            <p className="text-[13px] text-sparkle-muted mt-1.5 leading-relaxed">Remove junk files, caches, and temporary data to free up space</p>
+            <p className="text-[13px] text-sparkle-text-muted mt-1.5 leading-relaxed">Remove junk files, caches, and temporary data to free up space</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -133,7 +133,7 @@ export default function Cleanup() {
                   sel ? 'ring-1 ring-sparkle-teal/25 bg-sparkle-teal/[0.04]' : ''
                 }`}>
                 <input type="checkbox" className="w-4 h-4 rounded accent-sparkle-teal" checked={sel} readOnly />
-                <div className={`flex items-center justify-center w-10 h-10 rounded-xl shrink-0 ${sel ? 'bg-sparkle-teal/10 text-sparkle-teal' : 'bg-sparkle-accent text-sparkle-muted'}`}>
+                <div className={`flex items-center justify-center w-10 h-10 rounded-xl shrink-0 ${sel ? 'bg-sparkle-teal/10 text-sparkle-teal' : 'bg-sparkle-accent text-sparkle-text-muted'}`}>
                   <Icon size={18} />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -141,7 +141,7 @@ export default function Cleanup() {
                     {label}
                     <Badge variant={isRecommended ? 'success' : 'warning'}>{isRecommended ? 'Recommended' : risk}</Badge>
                   </div>
-                  <div className="text-[11px] text-sparkle-muted mt-0.5">{desc} &middot; {files} files &middot; {detail.slice(0, 60)}</div>
+                  <div className="text-[11px] text-sparkle-text-muted mt-0.5">{desc} &middot; {files} files &middot; {detail.slice(0, 60)}</div>
                 </div>
                 <div className="text-[13px] font-semibold text-sparkle-text-secondary shrink-0">{size >= 1 ? `${size.toFixed(2)} GB` : `${(size * 1024).toFixed(0)} MB`}</div>
               </div>

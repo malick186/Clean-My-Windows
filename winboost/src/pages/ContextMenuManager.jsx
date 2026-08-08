@@ -27,6 +27,7 @@ export default function ContextMenuManager() {
   useEffect(() => { refresh() }, [])
 
   const remove = async (entry) => {
+    if (!window.confirm(`Remove context menu entry: ${entry?.name || entry?.path}?`)) return
     setBusy(entry.path)
     setNotice(null)
     try {

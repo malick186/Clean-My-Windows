@@ -56,11 +56,11 @@ export default function PrivacyTools() {
                 <Shield size={11} /> Privacy controls
               </div>
               <h1 className="text-[28px] font-bold leading-[1.1] tracking-tight">Privacy Tools</h1>
-              <p className="text-[13px] text-sparkle-muted mt-1.5 leading-relaxed">Control your Windows privacy settings and manage data sharing</p>
+              <p className="text-[13px] text-sparkle-text-muted mt-1.5 leading-relaxed">Control your Windows privacy settings and manage data sharing</p>
             </div>
           </div>
         </div>
-        <div className="rounded-xl bg-sparkle-card border border-sparkle-border p-10 text-center text-[13px] text-sparkle-muted">Loading privacy settings...</div>
+        <div className="rounded-xl bg-sparkle-card border border-sparkle-border p-10 text-center text-[13px] text-sparkle-text-muted">Loading privacy settings...</div>
       </div>
     )
   }
@@ -79,7 +79,7 @@ export default function PrivacyTools() {
               <Shield size={11} /> Privacy controls
             </div>
             <h1 className="text-[28px] font-bold leading-[1.1] tracking-tight">Privacy Tools</h1>
-            <p className="text-[13px] text-sparkle-muted mt-1.5 leading-relaxed">Control your Windows privacy settings and manage data sharing</p>
+            <p className="text-[13px] text-sparkle-text-muted mt-1.5 leading-relaxed">Control your Windows privacy settings and manage data sharing</p>
           </div>
         </div>
       </div>
@@ -96,7 +96,7 @@ export default function PrivacyTools() {
             <CardContent>
               <s.icon size={18} style={{ color: s.color }} className="mb-2" />
               <div className="text-xl font-bold">{s.val}</div>
-              <div className="text-xs text-sparkle-muted">{s.sub}</div>
+              <div className="text-xs text-sparkle-text-muted">{s.sub}</div>
             </CardContent>
           </Card>
         ))}
@@ -118,7 +118,7 @@ export default function PrivacyTools() {
                   {item.enabled ? <Eye size={15} className="text-sparkle-warning" /> : <EyeOff size={15} className="text-sparkle-success" />}
                   <div>
                     <div className="text-[13px] font-medium flex items-center gap-1.5">{item.name}{item.requiresAdmin && <LockKeyhole size={11} className="text-sparkle-purple" title="Requires administrator approval" />}</div>
-                    <div className="text-[11px] text-sparkle-muted">{item.desc}</div>
+                    <div className="text-[11px] text-sparkle-text-muted">{item.desc}</div>
                   </div>
                 </div>
                 {busy === item.name ? <Loader size={15} className="animate-spin" /> : <Switch checked={item.enabled} onCheckedChange={() => toggle(gi, ii)} />}

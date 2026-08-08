@@ -206,7 +206,7 @@ export default function Debloat() {
             No installed bloatware detected.
           </div>
         ) : (
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-sparkle-border">
             {installedItems.map((item) => (
               <div
                 key={item.id}

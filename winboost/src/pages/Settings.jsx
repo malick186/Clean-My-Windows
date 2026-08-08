@@ -41,7 +41,7 @@ export default function Settings() {
               <Sparkles size={11} /> Personalize WinBoost
             </div>
             <h1 className="text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em]">Appearance &amp; experience</h1>
-            <p className="text-[13px] sparkle-text-muted mt-1.5 leading-relaxed">Choose a Windows-aware theme, color system, and motion level. Every preference is stored locally on this PC.</p>
+            <p className="text-[13px] text-sparkle-text-muted mt-1.5 leading-relaxed">Choose a Windows-aware theme, color system, and motion level. Every preference is stored locally on this PC.</p>
           </div>
         </div>
         <Badge
@@ -59,7 +59,7 @@ export default function Settings() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <Laptop size={20} className="flex-shrink-0 sparkle-text-muted" />
+              <Laptop size={20} className="flex-shrink-0 text-sparkle-text-muted" />
               <div>
                 <CardTitle className="text-base">Theme</CardTitle>
                 <CardDescription className="text-[12px]">Switch instantly or follow your Windows setting</CardDescription>
@@ -74,8 +74,8 @@ export default function Settings() {
                   onClick={() => setTheme(id)}
                   className={`flex items-center gap-3 p-4 rounded-xl border text-left transition-all duration-200 ${
                     theme === id
-                      ? 'bg-sparkle-primary/10 border-sparkle-primary/30 sparkle-text shadow-sm'
-                      : 'bg-sparkle-accent/50 border-sparkle-border sparkle-text-secondary hover:bg-sparkle-accent'
+                      ? 'bg-sparkle-primary/10 border-sparkle-primary/30 text-sparkle-text shadow-sm'
+                      : 'bg-sparkle-accent/50 border-sparkle-border text-sparkle-text-secondary hover:bg-sparkle-accent'
                   }`}
                 >
                   <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-sparkle-card">
@@ -83,7 +83,7 @@ export default function Settings() {
                   </span>
                   <div className="flex flex-col flex-1">
                     <strong className="text-[13px]">{label}</strong>
-                    <small className="text-[11px] sparkle-text-muted">{desc}</small>
+                    <small className="text-[11px] text-sparkle-text-muted">{desc}</small>
                   </div>
                   {theme === id && <Check size={16} className="text-sparkle-primary ml-auto flex-shrink-0" />}
                 </button>
@@ -96,7 +96,7 @@ export default function Settings() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <Palette size={20} className="flex-shrink-0 sparkle-text-muted" />
+              <Palette size={20} className="flex-shrink-0 text-sparkle-text-muted" />
               <div>
                 <CardTitle className="text-base">Accent colors</CardTitle>
                 <CardDescription className="text-[12px]">Colorful without compromising readability</CardDescription>
@@ -120,7 +120,7 @@ export default function Settings() {
                       <span key={i} className="flex-1" style={{ background: c }} />
                     ))}
                   </div>
-                  <strong className="text-[12px] sparkle-text">{label}</strong>
+                  <strong className="text-[12px] text-sparkle-text">{label}</strong>
                   {accent === id && <Check size={14} className="text-sparkle-primary" />}
                 </button>
               ))}
@@ -132,7 +132,7 @@ export default function Settings() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <Gauge size={20} className="flex-shrink-0 sparkle-text-muted" />
+              <Gauge size={20} className="flex-shrink-0 text-sparkle-text-muted" />
               <div>
                 <CardTitle className="text-base">Motion</CardTitle>
                 <CardDescription className="text-[12px]">Control graphics and page transitions throughout the app</CardDescription>
@@ -147,8 +147,8 @@ export default function Settings() {
                   onClick={() => setMotion(id)}
                   className={`flex items-center gap-3 p-4 rounded-xl border text-left transition-all duration-200 ${
                     motion === id
-                      ? 'bg-sparkle-primary/10 border-sparkle-primary/30 sparkle-text shadow-sm'
-                      : 'bg-sparkle-accent/50 border-sparkle-border sparkle-text-secondary hover:bg-sparkle-accent'
+                      ? 'bg-sparkle-primary/10 border-sparkle-primary/30 text-sparkle-text shadow-sm'
+                      : 'bg-sparkle-accent/50 border-sparkle-border text-sparkle-text-secondary hover:bg-sparkle-accent'
                   }`}
                 >
                   <span className="flex items-center gap-0.5 w-9 h-9 rounded-xl bg-sparkle-card items-center justify-center">
@@ -158,7 +158,7 @@ export default function Settings() {
                   </span>
                   <div className="flex flex-col flex-1">
                     <strong className="text-[13px]">{label}</strong>
-                    <small className="text-[11px] sparkle-text-muted">{desc}</small>
+                    <small className="text-[11px] text-sparkle-text-muted">{desc}</small>
                   </div>
                   {motion === id && <Check size={16} className="text-sparkle-primary ml-auto flex-shrink-0" />}
                 </button>
@@ -171,7 +171,7 @@ export default function Settings() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <ShieldCheck size={20} className="flex-shrink-0 sparkle-text-muted" />
+              <ShieldCheck size={20} className="flex-shrink-0 text-sparkle-text-muted" />
               <div>
                 <CardTitle className="text-base">Local by design</CardTitle>
                 <CardDescription className="text-[12px]">Privacy-first operation</CardDescription>
@@ -180,14 +180,14 @@ export default function Settings() {
           </CardHeader>
           <CardContent>
             <ul className="flex flex-col gap-2.5">
-              <li className="flex items-center gap-3 text-[13px] sparkle-text-secondary p-3 rounded-xl hover:sparkle-accent/50 transition-colors">
-                <Check size={14} className="sparkle-success flex-shrink-0" /> No cloud account or telemetry
+              <li className="flex items-center gap-3 text-[13px] text-sparkle-text-secondary p-3 rounded-xl hover:bg-sparkle-accent/50 transition-colors">
+                <Check size={14} className="text-sparkle-success flex-shrink-0" /> No cloud account or telemetry
               </li>
-              <li className="flex items-center gap-3 text-[13px] sparkle-text-secondary p-3 rounded-xl hover:sparkle-accent/50 transition-colors">
-                <Check size={14} className="sparkle-success flex-shrink-0" /> UAC requested only when required
+              <li className="flex items-center gap-3 text-[13px] text-sparkle-text-secondary p-3 rounded-xl hover:bg-sparkle-accent/50 transition-colors">
+                <Check size={14} className="text-sparkle-success flex-shrink-0" /> UAC requested only when required
               </li>
-              <li className="flex items-center gap-3 text-[13px] sparkle-text-secondary p-3 rounded-xl hover:sparkle-accent/50 transition-colors">
-                <Check size={14} className="sparkle-success flex-shrink-0" /> Registry and startup backups retained
+              <li className="flex items-center gap-3 text-[13px] text-sparkle-text-secondary p-3 rounded-xl hover:bg-sparkle-accent/50 transition-colors">
+                <Check size={14} className="text-sparkle-success flex-shrink-0" /> Registry and startup backups retained
               </li>
             </ul>
           </CardContent>
@@ -197,7 +197,7 @@ export default function Settings() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <Cpu size={20} className="flex-shrink-0 sparkle-text-muted" />
+              <Cpu size={20} className="flex-shrink-0 text-sparkle-text-muted" />
               <div>
                 <CardTitle className="text-base">Optimized shell</CardTitle>
                 <CardDescription className="text-[12px]">Built for Windows 10 and 11</CardDescription>
@@ -206,18 +206,18 @@ export default function Settings() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-3">
-              <div className="flex items-center gap-3 p-4 rounded-xl sparkle-accent/50 border border-sparkle-border">
-                <HardDrive size={17} className="sparkle-text-muted" />
+              <div className="flex items-center gap-3 p-4 rounded-xl bg-sparkle-accent/50 border border-sparkle-border">
+                <HardDrive size={17} className="text-sparkle-text-muted" />
                 <div className="flex flex-col">
-                  <strong className="text-[12px] sparkle-text">Local</strong>
-                  <small className="text-[11px] sparkle-text-muted">System actions</small>
+                  <strong className="text-[12px] text-sparkle-text">Local</strong>
+                  <small className="text-[11px] text-sparkle-text-muted">System actions</small>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-4 rounded-xl sparkle-accent/50 border border-sparkle-border">
-                <Sparkles size={17} className="sparkle-text-muted" />
+              <div className="flex items-center gap-3 p-4 rounded-xl bg-sparkle-accent/50 border border-sparkle-border">
+                <Sparkles size={17} className="text-sparkle-text-muted" />
                 <div className="flex flex-col">
-                  <strong className="text-[12px] sparkle-text">Adaptive</strong>
-                  <small className="text-[11px] sparkle-text-muted">GPU-friendly effects</small>
+                  <strong className="text-[12px] text-sparkle-text">Adaptive</strong>
+                  <small className="text-[11px] text-sparkle-text-muted">GPU-friendly effects</small>
                 </div>
               </div>
             </div>

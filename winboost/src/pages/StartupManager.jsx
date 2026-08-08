@@ -70,7 +70,7 @@ export default function StartupManager() {
               <Timer size={11} /> Startup Manager
             </div>
             <h1 className="text-[28px] font-bold leading-[1.1] tracking-tight">Startup Manager</h1>
-            <p className="text-[13px] text-sparkle-muted mt-1.5 leading-relaxed">Control which programs launch at startup to reduce boot time</p>
+            <p className="text-[13px] text-sparkle-text-muted mt-1.5 leading-relaxed">Control which programs launch at startup to reduce boot time</p>
           </div>
         </div>
         <Button variant="ghost" size="sm"><Info size={14} /></Button>
@@ -87,7 +87,7 @@ export default function StartupManager() {
           <Card key={s.sub} className="p-4">
             <s.icon size={18} style={{ color: s.color }} className="mb-2" />
             <div className="text-xl font-bold text-sparkle-text">{s.val}</div>
-            <div className="text-xs text-sparkle-muted">{s.sub}</div>
+            <div className="text-xs text-sparkle-text-muted">{s.sub}</div>
           </Card>
         ))}
       </div>
@@ -99,7 +99,7 @@ export default function StartupManager() {
           </CardTitle>
           <Badge variant="teal" className="ml-auto">{progs.length} entries</Badge>
         </CardHeader>
-        <div className="grid grid-cols-12 gap-4 px-6 py-2.5 text-[11px] font-semibold text-sparkle-muted uppercase tracking-wider bg-sparkle-accent/50">
+        <div className="grid grid-cols-12 gap-4 px-6 py-2.5 text-[11px] font-semibold text-sparkle-text-muted uppercase tracking-wider bg-sparkle-accent/50">
           <div className="col-span-5">Program</div>
           <div className="col-span-3">Publisher</div>
           <div className="col-span-2">Impact</div>
@@ -107,16 +107,16 @@ export default function StartupManager() {
         </div>
         <Separator />
         {progs.length === 0 ? (
-          <div className="text-center py-10 text-sm text-sparkle-muted">No startup entries found</div>
+          <div className="text-center py-10 text-sm text-sparkle-text-muted">No startup entries found</div>
         ) : (
           progs.map((p, i) => (
             <div key={p.name}>
               <div className="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-sparkle-accent/50 transition-all duration-200">
-                <div className={`col-span-5 text-sm font-medium ${p.enabled ? 'text-sparkle-text' : 'text-sparkle-muted'}`}>
+                <div className={`col-span-5 text-sm font-medium ${p.enabled ? 'text-sparkle-text' : 'text-sparkle-text-muted'}`}>
                   <div className="truncate max-w-[200px] flex items-center gap-1.5">{p.name}{p.requiresAdmin && <LockKeyhole size={11} title="Machine-wide entry" />}</div>
-                  {p.path && <div className="text-[11px] text-sparkle-muted truncate max-w-[200px] mt-0.5">{p.path}</div>}
+                  {p.path && <div className="text-[11px] text-sparkle-text-muted truncate max-w-[200px] mt-0.5">{p.path}</div>}
                 </div>
-                <div className="col-span-3 text-xs text-sparkle-muted">{p.pub}</div>
+                <div className="col-span-3 text-xs text-sparkle-text-muted">{p.pub}</div>
                 <div className="col-span-2">
                   <Badge variant={impactVariant[p.impact] || 'teal'}>{p.impact}</Badge>
                 </div>

@@ -159,7 +159,10 @@ async function addHistory(action, detail, status = 'success', meta = {}) {
   await writeJsonFile(file, history.slice(0, 120))
 }
 
-ipcMain.handle('history:list', async () => readJsonFile(dataFile('operation-history.json'), []))
+ipcMain.handle('history:list', async () => {
+  try { return readJsonFile(dataFile('operation-history.json'), []) }
+  catch (_) { return [] }
+})
 
 async function getSystemStats() {
   try {
@@ -336,7 +339,10 @@ async function scanCleanup() {
   return result
 }
 
-ipcMain.handle('cleanup:scan', scanCleanup)
+ipcMain.handle('cleanup:scan', async () => {
+  try { return await scanCleanup() }
+  catch (e) { return [] }
+})
 ipcMain.handle('cleanup:clean', async (_, categoryIds) => {
   const allowedIds = new Set(Array.isArray(categoryIds) ? categoryIds : [])
   const categories = getCleanupCategories().filter(category => allowedIds.has(category.id))
@@ -392,7 +398,7 @@ async function getDefenderStatus() {
   try {
     const { stdout } = await runPowerShell(script, { timeout: 15000 })
     return parseJson(stdout, { available: false, error: 'Unable to read Microsoft Defender status.' })
-  } catch (error) {
+  } catch (defenderError) {
     try {
       const { stdout } = await runPowerShell(`$s = Get-Service WinDefend -ErrorAction SilentlyContinue; [pscustomobject]@{ status = [string]$s.Status; startType = [string]$s.StartType } | ConvertTo-Json -Compress`, { timeout: 8000 })
       const service = parseJson(stdout, {})
@@ -401,7 +407,7 @@ async function getDefenderStatus() {
         permissionRequired: true, serviceStatus: service.status || 'Unknown',
         error: 'Detailed Microsoft Defender status requires administrator approval on this PC.',
       }
-    } catch (_) { return { available: false, antivirusEnabled: false, realTimeProtection: false, permissionRequired: true, error: errorMessage(error) } }
+    } catch (_) { return { available: false, antivirusEnabled: false, realTimeProtection: false, permissionRequired: true, error: errorMessage(defenderError) } }
   }
 }
 
@@ -617,10 +623,11 @@ ipcMain.handle('uninstaller:uninstall', async (_, appId) => {
 })
 
 ipcMain.handle('shredder:pickFiles', async () => {
-  const result = await dialog.showOpenDialog(mainWindow, {
-    title: 'Select files to shred permanently', properties: ['openFile', 'multiSelections'], filters: [{ name: 'All Files', extensions: ['*'] }],
-  })
-  if (result.canceled) return []
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Select files to shred permanently', properties: ['openFile', 'multiSelections'], filters: [{ name: 'All Files', extensions: ['*'] }],
+    })
+    if (result.canceled) return []
   const files = []
   for (const filePath of result.filePaths) {
     try {
@@ -631,7 +638,8 @@ ipcMain.handle('shredder:pickFiles', async () => {
       files.push({ name: path.basename(resolved), path: resolved, size: Number((stat.size / 1048576).toFixed(2)), bytes: stat.size })
     } catch (_) {}
   }
-  return files
+    return files
+  } catch (_) { return [] }
 })
 
 async function overwriteFile(filePath, passes, progressState) {
@@ -821,38 +829,42 @@ async function walkFilesystem(root, options = {}) {
 }
 
 ipcMain.handle('diskanalyzer:scan', async (_, targetId) => {
-  const roots = await allowedScanRoots()
-  const root = roots.get(targetId) || roots.get('home')
-  send('diskanalyzer:progress', { percent: 4, stage: `Analyzing ${root}...` })
-  const result = await walkFilesystem(root, { maxItems: 180000, progressChannel: 'diskanalyzer:progress' })
-  send('diskanalyzer:progress', { percent: 100, stage: 'Analysis complete' })
-  return {
-    success: true, root, scannedItems: result.scannedItems, totalSize: Number((result.totalBytes / 1073741824).toFixed(2)), limited: result.limited,
-    folders: [...result.folders.entries()].sort((a, b) => b[1].size - a[1].size).slice(0, 18).map(([name, data]) => ({ name, size: Number((data.size / 1073741824).toFixed(2)), items: data.items })),
-    types: [...result.types.entries()].sort((a, b) => b[1].size - a[1].size).map(([type, data]) => ({ type, size: Number((data.size / 1073741824).toFixed(2)), count: data.count })),
-  }
+  try {
+    const roots = await allowedScanRoots()
+    const root = roots.get(targetId) || roots.get('home')
+    send('diskanalyzer:progress', { percent: 4, stage: `Analyzing ${root}...` })
+    const result = await walkFilesystem(root, { maxItems: 180000, progressChannel: 'diskanalyzer:progress' })
+    send('diskanalyzer:progress', { percent: 100, stage: 'Analysis complete' })
+    const folders = result.folders.sort((a, b) => b.size - a.size)
+    const types = Object.entries(result.byType || {}).sort((a, b) => b[1] - a[1]).map(([type, size]) => ({ type, size }))
+    return { success: true, folders, types, root, scannedItems: result.scannedItems, totalBytes: result.totalBytes, limited: result.limited }
+  } catch (e) { return { success: false, error: errorMessage(e), folders: [], types: [], scannedItems: 0 } }
 })
 
 ipcMain.handle('largefiles:scan', async (_, minSizeMB) => {
-  const root = os.homedir()
-  const minSize = Math.max(1, Math.min(102400, Number(minSizeMB) || 100)) * 1048576
-  state.largeFiles.clear()
-  send('largefiles:progress', { percent: 3, stage: `Scanning ${root}...` })
-  const result = await walkFilesystem(root, { maxItems: 220000, minSize, progressChannel: 'largefiles:progress' })
-  const files = result.large.sort((a, b) => b.size - a.size).slice(0, 100).map(item => {
-    const id = stableId(item.fullPath, item.size, item.mtime.toISOString())
-    state.largeFiles.set(id, item.fullPath)
-    return { id, name: path.basename(item.fullPath), path: path.dirname(item.fullPath), size: Number((item.size / 1073741824).toFixed(3)), bytes: item.size, date: item.mtime.toISOString().slice(0, 10), type: fileType(item.fullPath).toLowerCase() }
-  })
-  send('largefiles:progress', { percent: 100, stage: `Found ${files.length} large files` })
-  return { success: true, root, files, scannedItems: result.scannedItems, limited: result.limited }
+  try {
+    const root = os.homedir()
+    const minSize = Math.max(1, Math.min(102400, Number(minSizeMB) || 100)) * 1048576
+    state.largeFiles.clear()
+    send('largefiles:progress', { percent: 3, stage: `Scanning ${root}...` })
+    const result = await walkFilesystem(root, { maxItems: 220000, minSize, progressChannel: 'largefiles:progress' })
+    const files = result.large.sort((a, b) => b.size - a.size).slice(0, 100).map(item => {
+      const id = stableId(item.fullPath, item.size, item.mtime.toISOString())
+      state.largeFiles.set(id, item.fullPath)
+      return { id, name: path.basename(item.fullPath), path: path.dirname(item.fullPath), size: Number((item.size / 1073741824).toFixed(3)), bytes: item.size, date: item.mtime.toISOString().slice(0, 10), type: fileType(item.fullPath).toLowerCase() }
+    })
+    send('largefiles:progress', { percent: 100, stage: `Found ${files.length} large files` })
+    return { success: true, root, files, scannedItems: result.scannedItems, limited: result.limited }
+  } catch (e) { return { success: false, error: errorMessage(e), files: [], scannedItems: 0 } }
 })
 
 ipcMain.handle('largefiles:reveal', async (_, fileId) => {
-  const filePath = state.largeFiles.get(fileId)
-  if (!filePath || !fs.existsSync(filePath)) return { success: false, error: 'The file is no longer available.' }
-  shell.showItemInFolder(filePath)
-  return { success: true }
+  try {
+    const filePath = state.largeFiles.get(fileId)
+    if (!filePath || !fs.existsSync(filePath)) return { success: false, error: 'The file is no longer available.' }
+    shell.showItemInFolder(filePath)
+    return { success: true }
+  } catch (e) { return { success: false, error: errorMessage(e) } }
 })
 
 ipcMain.handle('largefiles:trash', async (_, fileId) => {
@@ -1034,10 +1046,12 @@ ipcMain.handle('registry:fix', async (_, issueIds) => {
 })
 
 ipcMain.handle('registry:openBackups', async () => {
-  const backupDir = path.join(app.getPath('userData'), 'Backups', 'Registry')
-  await fs.promises.mkdir(backupDir, { recursive: true })
-  const error = await shell.openPath(backupDir)
-  return error ? { success: false, error } : { success: true }
+  try {
+    const backupDir = path.join(app.getPath('userData'), 'Backups', 'Registry')
+    await fs.promises.mkdir(backupDir, { recursive: true })
+    const error = await shell.openPath(backupDir)
+    return error ? { success: false, error } : { success: true }
+  } catch (e) { return { success: false, error: errorMessage(e) } }
 })
 
 const PRIVACY_SPECS = [
@@ -1167,25 +1181,28 @@ ipcMain.handle('performance:applyAll', async () => {
 /* ═══════════════════════════ V3.4: ClamAV — Complete Scanner Engine ═══════════════════════════ */
 
 const QUARANTINE_DIR = path.join(os.tmpdir(), 'winboost-quarantine')
-const CLAMAV_PORTABLE_URL = 'https://www.clamav.net/downloads/production/clamav-1.4.2.win.x64.zip'
+const CLAMAV_PORTABLE_URL = 'https://oss-clamav.clamav.net/clamav-1.4.2.win.x64.zip'
 const CLAMAV_PORTABLE_DIR = path.join(os.homedir(), '.winboost', 'clamav')
 
 let scanChildProcess = null
-let clamavFound = null
-let clamavPath = null
-let freshclamPath = null
+let killTimeout = null
 
-function findClamAV() {
-  if (clamavFound !== null) return { found: clamavFound, clamscan: clamavPath, freshclam: freshclamPath }
+function findClamAV(force = false) {
+  if (!force && clamavFound === true && clamavPath && fs.existsSync(clamavPath)) {
+    return { found: true, clamscan: clamavPath, freshclam: freshclamPath }
+  }
+
+  const portableDirExe = path.join(CLAMAV_PORTABLE_DIR, 'clamscan.exe')
 
   const searchPaths = [
-    path.join(CLAMAV_PORTABLE_DIR, 'clamscan.exe'),
+    portableDirExe,
     ...scanCommonPaths('ClamAV', 'clamscan.exe'),
     ...scanCommonPaths('ClamAV-x64', 'clamscan.exe'),
     'C:\\Program Files\\ClamAV\\clamscan.exe',
     'C:\\Program Files (x86)\\ClamAV\\clamscan.exe',
     'C:\\ClamAV\\clamscan.exe',
     path.join(os.homedir(), 'ClamAV', 'clamscan.exe'),
+    path.join(os.homedir(), 'clamav', 'clamscan.exe'),
   ]
 
   for (const p of searchPaths) {
@@ -1206,14 +1223,21 @@ function findClamAV() {
     }
   } catch {}
 
-  const portableExe = path.join(CLAMAV_PORTABLE_DIR, 'clamscan.exe')
-  if (fs.existsSync(portableExe)) {
-    clamavFound = true; clamavPath = portableExe
-    freshclamPath = path.join(CLAMAV_PORTABLE_DIR, 'freshclam.exe')
-    return { found: true, clamscan: portableExe, freshclam: freshclamPath }
-  }
+  try {
+    const result = execFileSync('where', ['freshclam'], { encoding: 'utf8', timeout: 5000, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
+    const lines = result.trim().split('\n').filter(Boolean)
+    if (lines.length > 0 && fs.existsSync(lines[0].trim())) {
+      const dir = path.dirname(lines[0].trim())
+      const csPath = path.join(dir, 'clamscan.exe')
+      if (fs.existsSync(csPath)) {
+        clamavFound = true; clamavPath = csPath
+        freshclamPath = lines[0].trim()
+        return { found: true, clamscan: csPath, freshclam: freshclamPath }
+      }
+    }
+  } catch {}
 
-  clamavFound = false
+  clamavFound = false; clamavPath = null; freshclamPath = null
   return { found: false, clamscan: null, freshclam: null }
 }
 
@@ -1229,7 +1253,7 @@ function scanCommonPaths(folderName, exeName) {
 
 // ── Detect ─────────────────────────────────────────────────
 ipcMain.handle('clamav:detect', async () => {
-  const result = findClamAV()
+  const result = findClamAV(true)
   let version = null; let defsVersion = null; let defsDate = null
 
   if (result.found && result.clamscan) {
@@ -1268,8 +1292,22 @@ ipcMain.handle('clamav:install', async () => {
       await new Promise((resolve, reject) => {
         const file = fs.createWriteStream(zipPath)
         https.get(CLAMAV_PORTABLE_URL, { timeout: 300000 }, (response) => {
-          if (response.statusCode >= 400) { file.close(); fs.unlinkSync(zipPath); reject(new Error('HTTP ' + response.statusCode)) }
+          if (response.statusCode >= 400) { file.close(); try { fs.unlinkSync(zipPath) } catch {}; reject(new Error('HTTP ' + response.statusCode)) }
+          else if (response.statusCode >= 300 && response.statusCode < 400) {
+            file.close(); try { fs.unlinkSync(zipPath) } catch {}
+            const redirectUrl = response.headers.location
+            if (redirectUrl) {
+              https.get(redirectUrl, { timeout: 300000 }, (redirectRes) => {
+                if (redirectRes.statusCode >= 400) { file.close(); try { fs.unlinkSync(zipPath) } catch {}; reject(new Error('Redirect HTTP ' + redirectRes.statusCode)) }
+                else { const f2 = fs.createWriteStream(zipPath); redirectRes.pipe(f2); f2.on('finish', () => f2.close(resolve)) }
+              }).on('error', reject)
+            } else { reject(new Error('Redirect without location header')) }
+          }
           else {
+            const ct = (response.headers['content-type'] || '').toLowerCase()
+            if (ct && !ct.includes('zip') && !ct.includes('octet-stream') && !ct.includes('binary')) {
+              file.close(); try { fs.unlinkSync(zipPath) } catch {}; reject(new Error('Unexpected content type: ' + ct + '. The download URL may need updating.'))
+            }
             const total = parseInt(response.headers['content-length'] || '0', 10)
             let downloaded = 0
             response.on('data', (chunk) => { downloaded += chunk.length; mainWindow?.webContents.send('clamav:update-progress', { percent: 10 + Math.round((downloaded / (total || 50000000)) * 70), output: `Downloading... ${(downloaded / 1048576).toFixed(1)} MB` }) })
@@ -1283,15 +1321,24 @@ ipcMain.handle('clamav:install', async () => {
     }
 
     mainWindow?.webContents.send('clamav:update-progress', { percent: 80, output: 'Extracting ClamAV...' })
+    let extractedFiles = 0
     try {
       const AdmZip = require('adm-zip')
       const zip = new AdmZip(zipPath)
       const entries = zip.getEntries()
       for (const entry of entries) {
         const targetName = entry.entryName.split('/').pop()
-        if (targetName && (targetName.endsWith('.exe') || targetName.endsWith('.dll') || targetName.endsWith('.conf'))) {
+        if (targetName && (targetName.endsWith('.exe') || targetName.endsWith('.dll') || targetName.endsWith('.conf') || targetName.endsWith('.cvd'))) {
           const dest = path.join(CLAMAV_PORTABLE_DIR, targetName)
-          try { fs.writeFileSync(dest, entry.getData()) } catch {}
+          try { fs.writeFileSync(dest, entry.getData()); extractedFiles++ } catch {}
+        }
+      }
+      if (extractedFiles === 0) {
+        try { execFileSync('powershell', ['-NoProfile', '-Command', `Expand-Archive -Path '${zipPath}' -DestinationPath '${CLAMAV_PORTABLE_DIR}' -Force`], { timeout: 60000, windowsHide: true }) } catch {}
+        const checkFiles = fs.readdirSync(CLAMAV_PORTABLE_DIR).filter(f => f.endsWith('.exe'))
+        if (checkFiles.length === 0) {
+          try { fs.unlinkSync(zipPath) } catch {}
+          return { success: false, error: 'Extraction produced no executable files. The downloaded file may not be a valid ClamAV archive. Try manual install from https://www.clamav.net/downloads' }
         }
       }
     } catch (zipErr) {
@@ -1299,17 +1346,31 @@ ipcMain.handle('clamav:install', async () => {
     }
     try { if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath) } catch {}
 
-    mainWindow?.webContents.send('clamav:update-progress', { percent: 85, output: 'Downloading virus definitions...' })
-    const freshClam = path.join(CLAMAV_PORTABLE_DIR, 'freshclam.exe')
     const clamScan = path.join(CLAMAV_PORTABLE_DIR, 'clamscan.exe')
+    if (!fs.existsSync(clamScan)) {
+      return { success: false, error: 'ClamAV executable not found after extraction. Try manual install from https://www.clamav.net/downloads' }
+    }
+
+    const freshClam = path.join(CLAMAV_PORTABLE_DIR, 'freshclam.exe')
+    const confPath = path.join(CLAMAV_PORTABLE_DIR, 'freshclam.conf')
+    if (!fs.existsSync(confPath)) {
+      try {
+        fs.writeFileSync(confPath, [
+          'DatabaseMirror database.clamav.net',
+          'DatabaseDirectory "' + CLAMAV_PORTABLE_DIR.replace(/\\/g, '\\\\') + '"',
+          'LogVerbose false',
+          'NotifyClamd ""',
+        ].join('\n'))
+      } catch {}
+    }
 
     if (fs.existsSync(freshClam)) {
-      try { execFileSync(freshClam, ['--stdout', '--no-dns'], { timeout: 120000, windowsHide: true, stdio: 'ignore' }) } catch {}
+      try { execFileSync(freshClam, ['--stdout', '--no-dns', '--config-file=' + confPath], { timeout: 120000, windowsHide: true, stdio: 'ignore' }) } catch {}
     }
 
     mainWindow?.webContents.send('clamav:update-progress', { percent: 100, output: 'ClamAV installed successfully' })
-    clamavFound = null
-    const fresh = findClamAV()
+    clamavFound = null; clamavPath = null; freshclamPath = null
+    const fresh = findClamAV(true)
     return { success: true, message: 'ClamAV installed. Virus definitions downloaded.', found: fresh.found, clamscan: fresh.clamscan, freshclam: fresh.freshclam }
   } catch (e) {
     return { success: false, error: 'Installation failed: ' + errorMessage(e) + '. Try manual install from https://www.clamav.net/downloads' }
@@ -1371,7 +1432,8 @@ ipcMain.handle('clamav:scan', async (_, scanType) => {
       '--infected',
       '--max-filesize=400M',
       '--max-scansize=400M',
-      '--max-files=' + maxFiles,
+      '--max-files',
+      String(maxFiles),
       ...scanPaths,
     ]
 
@@ -1386,8 +1448,6 @@ ipcMain.handle('clamav:scan', async (_, scanType) => {
         const lines = text.split('\n').filter(l => l.trim())
 
         for (const line of lines) {
-          filesScanned++
-
           if (line.includes('FOUND')) {
             const colonIdx = line.indexOf(':')
             if (colonIdx > 0) {
@@ -1395,6 +1455,8 @@ ipcMain.handle('clamav:scan', async (_, scanType) => {
               const rest = line.slice(colonIdx + 1).trim()
               const parts = rest.split(/\s+/)
               const threatName = parts[parts.length - 1]
+
+              filesScanned++
 
               if (threatName && threatName !== 'OK') {
                 let severity = 'High'
@@ -1442,15 +1504,17 @@ ipcMain.handle('clamav:scan', async (_, scanType) => {
 
       scanChildProcess.on('close', (code) => {
         scanChildProcess = null
-        const lastScan = { total: filesScanned, threats: threatsFound.length }
-        try { fs.writeFileSync(path.join(QUARANTINE_DIR, '.lastscan'), JSON.stringify({ date: new Date().toISOString(), lastScan })) } catch {}
+        try {
+          ensureQuarantineDir()
+          fs.writeFileSync(path.join(QUARANTINE_DIR, '.lastscan'), JSON.stringify({ date: new Date().toISOString(), lastScan: { total: filesScanned, threats: threatsFound.length } }))
+        } catch {}
 
         mainWindow?.webContents.send('malware:scan-progress', {
           percent: 100, stage: 'Scan complete: ' + threatsFound.length + ' threat' + (threatsFound.length !== 1 ? 's' : '') + ' found',
           filesScanned, threatsFound: threatsFound.length,
         })
 
-        try { addHistory('Security Scan', `${scanType} scan finished: ${threatsFound.length} threats in ${filesScanned.toLocaleString()} files`, threatsFound.length > 0 ? 'error' : 'success') } catch {}
+        try { addHistory('Security Scan', `${scanType} scan finished: ${threatsFound.length} threats in ${filesScanned.toLocaleString()} files`, threatsFound.length > 0 ? 'error' : 'success').catch(() => {}) } catch {}
         resolve({ threats: threatsFound, filesScanned, engine: 'clamav', scanType })
       })
 
@@ -1467,8 +1531,9 @@ ipcMain.handle('clamav:scan', async (_, scanType) => {
 
 // ── Stop Scan ──────────────────────────────────────────────
 ipcMain.handle('clamav:stopScan', async () => {
+  if (killTimeout) { clearTimeout(killTimeout); killTimeout = null }
   if (scanChildProcess) {
-    try { scanChildProcess.kill('SIGTERM'); setTimeout(() => { try { scanChildProcess?.kill('SIGKILL') } catch {} }, 3000) } catch {}
+    try { scanChildProcess.kill('SIGTERM'); killTimeout = setTimeout(() => { try { scanChildProcess?.kill('SIGKILL') } catch {}; killTimeout = null; scanChildProcess = null }, 3000) } catch {}
     scanChildProcess = null
     return { success: true }
   }
@@ -1481,18 +1546,27 @@ function ensureQuarantineDir() {
   return QUARANTINE_DIR
 }
 
+function safeQuarantinePath(filename) {
+  const resolved = path.resolve(QUARANTINE_DIR, filename)
+  const normalizedDir = path.resolve(QUARANTINE_DIR) + path.sep
+  if (!resolved.startsWith(normalizedDir) || resolved === path.resolve(QUARANTINE_DIR)) {
+    throw new Error('Invalid quarantine path')
+  }
+  return resolved
+}
+
 ipcMain.handle('clamav:quarantine', async (_, threats) => {
   try {
     ensureQuarantineDir()
     let count = 0
     const results = []
     for (const t of threats) {
-      if (!fs.existsSync(t.path)) { results.push({ path: t.path, success: false, error: 'File not found' }); continue }
+      if (!t.path || !fs.existsSync(t.path)) { results.push({ path: t.path, success: false, error: 'File not found' }); continue }
       try {
         const name = path.basename(t.path)
         const destName = `${Date.now()}_${count}_${name}`
         const dest = path.join(QUARANTINE_DIR, destName)
-        fs.copyFileSync(t.path, dest)
+        fs.copyFileSync(dest, t.path)
         const meta = { originalPath: t.path, threatName: t.name, severity: t.severity, quarantinedAt: new Date().toISOString(), quarantinedName: destName }
         fs.writeFileSync(dest + '.meta.json', JSON.stringify(meta, null, 2))
         fs.unlinkSync(t.path)
@@ -1522,11 +1596,12 @@ ipcMain.handle('clamav:quarantineList', async () => {
 
 ipcMain.handle('clamav:restore', async (_, quarantineFile) => {
   try {
-    const fp = path.join(QUARANTINE_DIR, quarantineFile)
-    const metaFile = path.join(QUARANTINE_DIR, quarantineFile + '.meta.json')
+    const fp = safeQuarantinePath(quarantineFile)
+    const metaFile = fp + '.meta.json'
     let meta = {}
     try { if (fs.existsSync(metaFile)) meta = JSON.parse(fs.readFileSync(metaFile, 'utf8')) } catch {}
     const dest = meta.originalPath || path.join(os.homedir(), 'Restored_' + quarantineFile)
+    if (!fs.existsSync(path.dirname(dest))) fs.mkdirSync(path.dirname(dest), { recursive: true })
     fs.copyFileSync(fp, dest)
     fs.unlinkSync(fp)
     try { if (fs.existsSync(metaFile)) fs.unlinkSync(metaFile) } catch {}
@@ -1536,8 +1611,8 @@ ipcMain.handle('clamav:restore', async (_, quarantineFile) => {
 
 ipcMain.handle('clamav:deleteQuarantined', async (_, quarantineFile) => {
   try {
-    const fp = path.join(QUARANTINE_DIR, quarantineFile)
-    const metaFile = path.join(QUARANTINE_DIR, quarantineFile + '.meta.json')
+    const fp = safeQuarantinePath(quarantineFile)
+    const metaFile = fp + '.meta.json'
     if (fs.existsSync(fp)) fs.unlinkSync(fp)
     try { if (fs.existsSync(metaFile)) fs.unlinkSync(metaFile) } catch {}
     return { success: true }
@@ -1626,7 +1701,7 @@ ipcMain.handle('debloat:list', async () => {
   }
 })
 
-ipcMain.handle('debloat:remove', async (_, itemId) => {
+async function removeDebloatItem(itemId) {
   const item = DEBLOAT_ITEMS.find(i => i.id === itemId)
   if (!item) return { success: false, error: 'Unknown debloat item.' }
 
@@ -1649,6 +1724,10 @@ ipcMain.handle('debloat:remove', async (_, itemId) => {
       resolve({ success: false, error: err.message, item: itemId })
     })
   })
+}
+
+ipcMain.handle('debloat:remove', async (_, itemId) => {
+  return removeDebloatItem(itemId)
 })
 
 ipcMain.handle('debloat:removeAll', async (_, selectedIds) => {
@@ -1656,7 +1735,7 @@ ipcMain.handle('debloat:removeAll', async (_, selectedIds) => {
   const results = []
   for (const id of ids) {
     mainWindow?.webContents.send('debloat:progress', { id, done: false })
-    const result = await ipcMain.emit('debloat:remove', null, id) || { success: false, error: 'Failed' }
+    const result = await removeDebloatItem(id)
     results.push({ id, success: result.success || false })
   }
   return { success: results.every(r => r.success), results }
@@ -2027,7 +2106,10 @@ ipcMain.handle('duplicates:scan', async (_, dirPath) => {
 ipcMain.handle('duplicates:delete', async (_, filePaths) => {
   try {
     let deleted = 0; let freed = 0
-    for (const fp of filePaths) { try { const s = fs.statSync(fp).size; fs.unlinkSync(fp); deleted++; freed += s } catch (_) {} }
+    for (const fp of filePaths) {
+      if (!fp || isProtected(fp)) continue
+      try { const s = fs.statSync(fp).size; fs.unlinkSync(fp); deleted++; freed += s } catch (_) {}
+    }
     return { success: true, deleted, freed }
   } catch (e) { return { success: false, error: errorMessage(e) } }
 })

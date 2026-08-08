@@ -286,7 +286,7 @@ export default function Security() {
               <LockKeyhole size={11} /> Security Center
             </div>
             <h1 className="text-[28px] font-bold leading-[1.1] tracking-tight">Security &amp; Protection</h1>
-            <p className="text-[13px] text-sparkle-muted mt-1.5 leading-relaxed">Malware scanning, quarantine, system restore, and real-time security monitoring</p>
+            <p className="text-[13px] text-sparkle-text-muted mt-1.5 leading-relaxed">Malware scanning, quarantine, system restore, and real-time security monitoring</p>
           </div>
         </div>
         <Button
@@ -302,7 +302,7 @@ export default function Security() {
 
       {notice && (
         <div className={`notice-banner ${notice.type}`}>
-          {notice.type === 'success' ? <CheckCircle2 size={17} /> : <ShieldOff size={17} />}
+          {notice.type === 'success' ? <CheckCircle2 size={17} /> : notice.type === 'error' ? <ShieldOff size={17} /> : <AlertTriangle size={17} />}
           {notice.text}
         </div>
       )}
@@ -433,14 +433,14 @@ export default function Security() {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-1 text-[12px]" style={{ gridTemplateColumns: '1fr auto 1fr' }}>
-                  <div className="text-[10px] text-sparkle-muted uppercase tracking-wider px-2 pb-2">Threat</div>
-                  <div className="text-[10px] text-sparkle-muted uppercase tracking-wider px-2 pb-2">Severity</div>
-                  <div className="text-[10px] text-sparkle-muted uppercase tracking-wider px-2 pb-2">Location</div>
+                  <div className="text-[10px] text-sparkle-text-muted uppercase tracking-wider px-2 pb-2">Threat</div>
+                  <div className="text-[10px] text-sparkle-text-muted uppercase tracking-wider px-2 pb-2">Severity</div>
+                  <div className="text-[10px] text-sparkle-text-muted uppercase tracking-wider px-2 pb-2">Location</div>
                   {scanThreatsList.map((t, i) => (
                     <div key={i} className="contents">
                       <span className="px-2 py-2 font-semibold text-sparkle-danger rounded-l-lg hover:bg-sparkle-accent">{t.name}</span>
                       <span className="px-2 py-2 hover:bg-sparkle-accent">{severityBadge(t.severity)}</span>
-                      <span className="px-2 py-2 text-sparkle-muted font-mono text-[11px] truncate rounded-r-lg hover:bg-sparkle-accent" title={t.path}>{t.pathShort || t.path}</span>
+                      <span className="px-2 py-2 text-sparkle-text-muted font-mono text-[11px] truncate rounded-r-lg hover:bg-sparkle-accent" title={t.path}>{t.pathShort || t.path}</span>
                     </div>
                   ))}
                 </div>
@@ -458,8 +458,8 @@ export default function Security() {
             <CardContent>
               <div className="grid grid-cols-3 gap-4">
                 <div className="flex flex-col gap-2 p-4 rounded-xl bg-sparkle-accent/50 border border-sparkle-border">
-                  <span className="text-[10px] text-sparkle-muted uppercase tracking-wider">ClamAV</span>
-                  <span className={`text-[14px] font-semibold ${clamav?.found ? 'text-sparkle-success' : 'text-sparkle-muted'}`}>
+                  <span className="text-[10px] text-sparkle-text-muted uppercase tracking-wider">ClamAV</span>
+                  <span className={`text-[14px] font-semibold ${clamav?.found ? 'text-sparkle-success' : 'text-sparkle-text-muted'}`}>
                     {clamav?.found ? (clamav.version ? `v${clamav.version}` : 'Installed') : 'Not installed'}
                   </span>
                   {!clamav?.found && !installingAv && (
@@ -468,14 +468,14 @@ export default function Security() {
                     </button>
                   )}
                   {!clamav?.found && (
-                    <a href="https://www.clamav.net/downloads" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-sparkle-muted hover:underline mt-1">
+                    <a href="https://www.clamav.net/downloads" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-sparkle-text-muted hover:underline mt-1">
                       <ExternalLink size={12} /> Manual download
                     </a>
                   )}
                 </div>
                 <div className="flex flex-col gap-2 p-4 rounded-xl bg-sparkle-accent/50 border border-sparkle-border">
-                  <span className="text-[10px] text-sparkle-muted uppercase tracking-wider">Definitions</span>
-                  <span className={`text-[14px] font-semibold ${clamav?.definitionsVersion ? 'text-sparkle-success' : 'text-sparkle-muted'}`}>
+                  <span className="text-[10px] text-sparkle-text-muted uppercase tracking-wider">Definitions</span>
+                  <span className={`text-[14px] font-semibold ${clamav?.definitionsVersion ? 'text-sparkle-success' : 'text-sparkle-text-muted'}`}>
                     {clamav?.definitionsVersion ? `v${clamav.definitionsVersion} (${clamav.definitionsDate || 'N/A'})` : 'N/A'}
                   </span>
                   {clamav?.found && (
@@ -486,8 +486,8 @@ export default function Security() {
                   )}
                 </div>
                 <div className="flex flex-col gap-2 p-4 rounded-xl bg-sparkle-accent/50 border border-sparkle-border">
-                  <span className="text-[10px] text-sparkle-muted uppercase tracking-wider">Windows Defender</span>
-                  <span className={`text-[14px] font-semibold ${defender.available ? 'text-sparkle-success' : 'text-sparkle-muted'}`}>
+                  <span className="text-[10px] text-sparkle-text-muted uppercase tracking-wider">Windows Defender</span>
+                  <span className={`text-[14px] font-semibold ${defender.available ? 'text-sparkle-success' : 'text-sparkle-text-muted'}`}>
                     {defender.available ? 'Active' : 'Unavailable'}
                   </span>
                   <button onClick={() => openWindowsSettings('security')} className="inline-flex items-center gap-1 text-[11px] text-sparkle-primary hover:underline mt-1">
@@ -498,7 +498,7 @@ export default function Security() {
               {updatingDefs && defUpdateProgress > 0 && (
                 <div className="mt-4 p-4 rounded-xl bg-sparkle-accent/50">
                   <Progress value={defUpdateProgress} className="max-w-[300px] h-1.5" />
-                  <p className="text-[11px] text-sparkle-muted mt-2">{defUpdateOutput || 'Updating definitions...'}</p>
+                  <p className="text-[11px] text-sparkle-text-muted mt-2">{defUpdateOutput || 'Updating definitions...'}</p>
                 </div>
               )}
             </CardContent>
@@ -548,7 +548,7 @@ export default function Security() {
                 </div>
               </div>
               {protectionStatus?.lastScan && (
-                <p className="text-[11px] text-sparkle-muted mt-4">
+                <p className="text-[11px] text-sparkle-text-muted mt-4">
                   Last scan: {timeAgo(protectionStatus.lastScan.date)} —
                   {protectionStatus.lastScan.lastScan?.total?.toLocaleString() || 0} files, {protectionStatus.lastScan.lastScan?.threats || 0} threats
                 </p>
@@ -576,7 +576,7 @@ export default function Security() {
             </CardHeader>
             <CardContent>
               {quarantineItems.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-sparkle-muted">
+                <div className="flex flex-col items-center justify-center py-8 text-sparkle-text-muted">
                   <PackageOpen size={36} className="mb-2 opacity-40" />
                   <p className="text-[13px]">No quarantined items</p>
                   <p className="text-[11px]">Detected threats can be quarantined here for safe review</p>
@@ -584,17 +584,17 @@ export default function Security() {
               ) : (
                 <div className="flex flex-col gap-1">
                   <div className="grid gap-1 text-[12px]" style={{ gridTemplateColumns: '1fr auto 1fr auto' }}>
-                    <div className="text-[10px] text-sparkle-muted uppercase tracking-wider px-2 pb-2">Threat</div>
-                    <div className="text-[10px] text-sparkle-muted uppercase tracking-wider px-2 pb-2">Severity</div>
-                    <div className="text-[10px] text-sparkle-muted uppercase tracking-wider px-2 pb-2">Date</div>
-                    <div className="text-[10px] text-sparkle-muted uppercase tracking-wider px-2 pb-2">Actions</div>
+                    <div className="text-[10px] text-sparkle-text-muted uppercase tracking-wider px-2 pb-2">Threat</div>
+                    <div className="text-[10px] text-sparkle-text-muted uppercase tracking-wider px-2 pb-2">Severity</div>
+                    <div className="text-[10px] text-sparkle-text-muted uppercase tracking-wider px-2 pb-2">Date</div>
+                    <div className="text-[10px] text-sparkle-text-muted uppercase tracking-wider px-2 pb-2">Actions</div>
                     {quarantineItems.slice(0, 20).map((item, i) => (
                       <div key={i} className="contents">
                         <span className="px-2 py-2.5 text-sparkle-text-secondary text-[12px] font-medium rounded-l-lg hover:bg-sparkle-accent truncate" title={item.originalPath}>
                           {item.threatName || item.quarantineFile}
                         </span>
                         <span className="px-2 py-2.5 hover:bg-sparkle-accent">{severityBadge(item.severity || 'Medium')}</span>
-                        <span className="px-2 py-2.5 text-[11px] text-sparkle-muted hover:bg-sparkle-accent">{timeAgo(item.quarantinedAt)}</span>
+                        <span className="px-2 py-2.5 text-[11px] text-sparkle-text-muted hover:bg-sparkle-accent">{timeAgo(item.quarantinedAt)}</span>
                         <span className="px-2 py-2.5 flex items-center gap-1 rounded-r-lg hover:bg-sparkle-accent">
                           <Button variant="ghost" size="sm" onClick={() => handleRestore(item.quarantineFile)} className="h-7 px-2 text-[11px] rounded-lg">
                             <RotateCcw size={12} className="mr-1" /> Restore
@@ -625,7 +625,7 @@ export default function Security() {
                     <div key={entry.id || i} className="flex items-center gap-4 px-3 py-2 rounded-xl hover:bg-sparkle-accent text-[12px] transition-colors">
                       <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${entry.status === 'success' ? 'bg-sparkle-success' : 'bg-sparkle-danger'}`} />
                       <span className="text-sparkle-text-secondary font-semibold flex-1">{entry.detail}</span>
-                      <span className="text-sparkle-muted text-[11px] flex items-center gap-1 flex-shrink-0">
+                      <span className="text-sparkle-text-muted text-[11px] flex items-center gap-1 flex-shrink-0">
                         <Clock3 size={11} /> {timeAgo(entry.at)}
                       </span>
                     </div>
@@ -649,10 +649,10 @@ export default function Security() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <strong className="text-[13px] text-sparkle-text block">System Restore</strong>
-                  <p className="text-[11px] text-sparkle-muted">
+                  <p className="text-[11px] text-sparkle-text-muted">
                     {safetyStatus?.restore?.enabled ? `${safetyStatus.restore.count} point${safetyStatus.restore.count !== 1 ? 's' : ''} available` : 'Not configured'}
                   </p>
-                  {safetyStatus?.restore?.lastCreated && <small className="text-[10px] text-sparkle-muted">Last: {timeAgo(safetyStatus.restore.lastCreated)}</small>}
+                  {safetyStatus?.restore?.lastCreated && <small className="text-[10px] text-sparkle-text-muted">Last: {timeAgo(safetyStatus.restore.lastCreated)}</small>}
                 </div>
                 <div className="flex gap-2 flex-shrink-0">
                   <Button
@@ -681,7 +681,7 @@ export default function Security() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <strong className="text-[13px] text-sparkle-text block">Windows Security</strong>
-                  <p className="text-[11px] text-sparkle-muted">{defender.available ? 'Defender is active' : 'Check Windows Security'}</p>
+                  <p className="text-[11px] text-sparkle-text-muted">{defender.available ? 'Defender is active' : 'Check Windows Security'}</p>
                 </div>
                 <Button
                   variant="ghost"
@@ -709,8 +709,8 @@ export default function Security() {
                     <div key={entry.id || i} className="flex items-center gap-4 px-3 py-2 rounded-xl hover:bg-sparkle-accent text-[12px] transition-colors">
                       <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${entry.status === 'error' ? 'bg-sparkle-danger' : 'bg-sparkle-success'}`} />
                       <span className="text-sparkle-text-secondary font-semibold w-[90px] flex-shrink-0">{entry.action}</span>
-                      <span className="text-sparkle-muted flex-1 truncate">{entry.detail}</span>
-                      <span className="text-sparkle-muted text-[11px] flex items-center gap-1 flex-shrink-0">
+                      <span className="text-sparkle-text-muted flex-1 truncate">{entry.detail}</span>
+                      <span className="text-sparkle-text-muted text-[11px] flex items-center gap-1 flex-shrink-0">
                         <Clock3 size={11} /> {timeAgo(entry.at)}
                       </span>
                     </div>

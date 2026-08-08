@@ -234,7 +234,7 @@ export default function Dashboard() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-sparkle-text">
           Hello, there!{' '}
-          <span className="text-gradient">{stats?.hostname?.split('-')[0] ?? 'User'}</span>
+            <span className="text-gradient">{(stats?.hostname || 'Windows').split('-')[0]}</span>
         </h1>
         <p className="text-sm text-sparkle-text-secondary mt-1">
           Here&apos;s your system overview

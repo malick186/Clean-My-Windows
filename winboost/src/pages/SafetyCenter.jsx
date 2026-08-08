@@ -58,7 +58,7 @@ export default function SafetyCenter() {
               <LockKeyhole size={11} /> Recovery &amp; Verification
             </div>
             <h1 className="text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em]">Safety Center</h1>
-            <p className="text-[13px] sparkle-text-muted mt-1.5 leading-relaxed">Protection status, restore points and an honest audit trail for every WinBoost action.</p>
+            <p className="text-[13px] text-sparkle-text-muted mt-1.5 leading-relaxed">Protection status, restore points and an honest audit trail for every WinBoost action.</p>
           </div>
         </div>
         <Button variant="secondary" size="sm" onClick={refresh} disabled={loading}>
@@ -78,9 +78,9 @@ export default function SafetyCenter() {
                 {defender.realTimeProtection ? <ShieldCheck size={24} /> : <ShieldOff size={24} />}
               </div>
               <div className="flex-1">
-                <div className="text-[11px] sparkle-text-muted font-semibold uppercase tracking-wider mb-0.5">Microsoft Defender</div>
+                <div className="text-[11px] text-sparkle-text-muted font-semibold uppercase tracking-wider mb-0.5">Microsoft Defender</div>
                 <div className="text-sm font-bold">{defender.realTimeProtection ? 'Real-time protection active' : 'Protection needs attention'}</div>
-                <div className="text-xs sparkle-text-muted mt-0.5">{defender.signatureUpdated ? `Signatures updated ${timeAgo(defender.signatureUpdated)}` : defender.error || 'Status could not be confirmed'}</div>
+                <div className="text-xs text-sparkle-text-muted mt-0.5">{defender.signatureUpdated ? `Signatures updated ${timeAgo(defender.signatureUpdated)}` : defender.error || 'Status could not be confirmed'}</div>
               </div>
               <Button variant="secondary" size="sm" onClick={() => openWindowsSettings('security')} className="shrink-0">
                 <ExternalLink size={14} /> Windows Security
@@ -91,9 +91,9 @@ export default function SafetyCenter() {
                 <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-sparkle-teal/10 text-sparkle-teal mb-3">
                   <UserRoundCog size={22} />
                 </div>
-                <div className="text-[11px] sparkle-text-muted font-semibold uppercase tracking-wider mb-0.5">Execution level</div>
+                <div className="text-[11px] text-sparkle-text-muted font-semibold uppercase tracking-wider mb-0.5">Execution level</div>
                 <div className="text-sm font-bold">{status?.admin ? 'Administrator' : 'Standard user'}</div>
-                <div className="text-xs sparkle-text-muted mt-0.5">{status?.admin ? 'Elevated tools are available' : 'UAC appears only when a protected task needs it'}</div>
+                <div className="text-xs text-sparkle-text-muted mt-0.5">{status?.admin ? 'Elevated tools are available' : 'UAC appears only when a protected task needs it'}</div>
               </CardContent>
             </Card>
             <Card className="col-start-3">
@@ -101,9 +101,9 @@ export default function SafetyCenter() {
                 <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-sparkle-purple/10 text-sparkle-purple mb-3">
                   <FileClock size={22} />
                 </div>
-                <div className="text-[11px] sparkle-text-muted font-semibold uppercase tracking-wider mb-0.5">System Restore</div>
+                <div className="text-[11px] text-sparkle-text-muted font-semibold uppercase tracking-wider mb-0.5">System Restore</div>
                 <div className="text-sm font-bold">{status?.restore?.enabled ? `${status.restore.count} restore point${status.restore.count === 1 ? '' : 's'}` : 'Protection status unavailable'}</div>
-                <div className="text-xs sparkle-text-muted mt-0.5">{status?.restore?.lastCreated ? `Latest ${timeAgo(status.restore.lastCreated)}` : 'Create one before advanced changes'}</div>
+                <div className="text-xs text-sparkle-text-muted mt-0.5">{status?.restore?.lastCreated ? `Latest ${timeAgo(status.restore.lastCreated)}` : 'Create one before advanced changes'}</div>
               </CardContent>
             </Card>
           </div>
@@ -112,13 +112,13 @@ export default function SafetyCenter() {
             <Card>
               <CardHeader>
                 <div>
-                  <span className="block text-[10px] sparkle-text-muted font-normal tracking-wider uppercase mb-0.5">Recovery guard</span>
+                  <span className="block text-[10px] text-sparkle-text-muted font-normal tracking-wider uppercase mb-0.5">Recovery guard</span>
                   <CardTitle>Create a safety point</CardTitle>
                 </div>
-                <FolderArchive size={21} className="sparkle-text-muted ml-auto" />
+                <FolderArchive size={21} className="text-sparkle-text-muted ml-auto" />
               </CardHeader>
               <CardContent>
-                <p className="text-xs sparkle-text-secondary mb-4">Windows can roll system settings back if an advanced maintenance or registry change causes a problem. Windows normally permits one checkpoint per day.</p>
+                <p className="text-xs text-sparkle-text-secondary mb-4">Windows can roll system settings back if an advanced maintenance or registry change causes a problem. Windows normally permits one checkpoint per day.</p>
                 <Button onClick={createPoint} disabled={creating}>
                   {creating ? <Loader size={15} className="animate-spin" /> : <ShieldCheck size={15} />}
                   {creating ? 'Waiting for administrator approval...' : 'Create Restore Point'}
@@ -129,21 +129,21 @@ export default function SafetyCenter() {
             <Card>
               <CardHeader>
                 <div>
-                  <span className="block text-[10px] sparkle-text-muted font-normal tracking-wider uppercase mb-0.5">Local audit trail</span>
+                  <span className="block text-[10px] text-sparkle-text-muted font-normal tracking-wider uppercase mb-0.5">Local audit trail</span>
                   <CardTitle>Recent operations</CardTitle>
                 </div>
-                <Clock3 size={20} className="sparkle-text-muted ml-auto" />
+                <Clock3 size={20} className="text-sparkle-text-muted ml-auto" />
               </CardHeader>
               <CardContent>
                 <div className="space-y-1">
-                  {history.length === 0 ? <div className="text-center py-6 text-xs sparkle-text-muted">No operations recorded yet.</div> : history.slice(0, 6).map(item => (
-                    <div key={item.id} className="flex items-center gap-4 p-4 rounded-xl sparkle-accent/50 hover:sparkle-accent transition-all duration-200 border border-sparkle-border">
+                  {history.length === 0 ? <div className="text-center py-6 text-xs text-sparkle-text-muted">No operations recorded yet.</div> : history.slice(0, 6).map(item => (
+                    <div key={item.id} className="flex items-center gap-4 p-4 rounded-xl bg-sparkle-accent/50 hover:bg-sparkle-accent transition-all duration-200 border border-sparkle-border">
                       <span className={`w-2 h-2 rounded-full shrink-0 ${item.status === 'success' ? 'bg-sparkle-success' : item.status === 'error' ? 'bg-sparkle-danger' : item.status === 'info' ? 'text-sparkle-primary' : 'bg-sparkle-text-muted'}`} />
                       <div className="flex-1 min-w-0">
-                        <strong className="text-[12px] sparkle-text block">{item.action}</strong>
-                        <span className="text-[11px] sparkle-text-muted">{item.detail}</span>
+                        <strong className="text-[12px] text-sparkle-text block">{item.action}</strong>
+                        <span className="text-[11px] text-sparkle-text-muted">{item.detail}</span>
                       </div>
-                      <time className="text-[10px] sparkle-text-muted shrink-0">{timeAgo(item.at)}</time>
+                      <time className="text-[10px] text-sparkle-text-muted shrink-0">{timeAgo(item.at)}</time>
                     </div>
                   ))}
                 </div>

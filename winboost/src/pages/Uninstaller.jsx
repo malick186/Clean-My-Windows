@@ -119,7 +119,7 @@ export default function Uninstaller() {
           </div>
         </CardHeader>
         <Separator />
-        <div className="divide-y divide-border">
+        <div className="divide-y divide-sparkle-border">
           {filtered.map((app, i) => (
             <div key={app.name} className="flex items-center gap-4 p-4 rounded-xl mx-2 my-1 bg-sparkle-accent/50 hover:bg-sparkle-accent transition-all duration-200 border border-sparkle-border">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0" style={{ background: COLORS[i % COLORS.length] }}>

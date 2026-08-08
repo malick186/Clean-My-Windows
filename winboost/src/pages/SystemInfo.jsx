@@ -89,7 +89,8 @@ export default function SystemInfo() {
     fetchProcesses()
   }, [fetchHardware, fetchProcesses])
 
-  const handleKillProcess = async (pid) => {
+  const handleKillProcess = async (pid, name) => {
+    if (!window.confirm(`Kill process "${name}" (PID: ${pid})? This may crash applications.`)) return
     setKilling(pid)
     try {
       await killProcess(pid)
@@ -343,11 +344,11 @@ export default function SystemInfo() {
           </CardContent>
         ) : processes.length === 0 ? (
           <CardContent>
-            <div className="text-center py-10 text-sm text-sparkle-muted">No running processes found</div>
+            <div className="text-center py-10 text-sm text-sparkle-text-muted">No running processes found</div>
           </CardContent>
         ) : (
           <>
-            <div className="grid grid-cols-12 gap-4 px-6 py-2.5 text-[11px] font-semibold text-sparkle-muted uppercase tracking-wider bg-sparkle-accent/50">
+            <div className="grid grid-cols-12 gap-4 px-6 py-2.5 text-[11px] font-semibold text-sparkle-text-muted uppercase tracking-wider bg-sparkle-accent/50">
               <div className="col-span-4">Name</div>
               <div className="col-span-2">PID</div>
               <div className="col-span-2">CPU</div>
@@ -368,7 +369,7 @@ export default function SystemInfo() {
                     <Button
                       variant="danger"
                       size="sm"
-                      onClick={() => handleKillProcess(proc.pid)}
+                      onClick={() => handleKillProcess(proc.pid, proc.name)}
                       disabled={killing === proc.pid}
                     >
                       {killing === proc.pid ? (
