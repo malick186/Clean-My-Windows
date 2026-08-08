@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, ShieldCheck, Brush, Gauge, Power, Shield,
-  HardDrive, Search, Database, Trash2, Shredder as ShredderIcon,
+  HardDrive, Database, Trash2, Shredder as ShredderIcon,
   Monitor, Download, Wrench, Boxes, Wifi, Settings2, RefreshCw,
   Zap, Activity, Menu, Cpu, Files, Globe
 } from 'lucide-react'
@@ -14,8 +14,7 @@ const items = [
   { to: '/performance', icon: Gauge, label: 'Performance' },
   { to: '/startup', icon: Power, label: 'Startup' },
   { to: '/privacy', icon: Shield, label: 'Privacy' },
-  { to: '/disk', icon: HardDrive, label: 'Disk' },
-  { to: '/largefiles', icon: Search, label: 'Large Files' },
+  { to: '/disk', icon: HardDrive, label: 'Disk Explorer' },
   { to: '/registry', icon: Database, label: 'Registry' },
   { to: '/uninstaller', icon: Trash2, label: 'Uninstaller' },
   { to: '/shredder', icon: ShredderIcon, label: 'Shredder' },

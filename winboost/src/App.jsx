@@ -12,7 +12,6 @@ const MalwareScanner = lazy(() => import('./pages/MalwareScanner'))
 const Uninstaller = lazy(() => import('./pages/Uninstaller'))
 const Shredder = lazy(() => import('./pages/Shredder'))
 const Maintenance = lazy(() => import('./pages/Maintenance'))
-const LargeFiles = lazy(() => import('./pages/LargeFiles'))
 const RegistryCleaner = lazy(() => import('./pages/RegistryCleaner'))
 const SafetyCenter = lazy(() => import('./pages/SafetyCenter'))
 const Settings = lazy(() => import('./pages/Settings'))
@@ -51,7 +50,6 @@ export default function App() {
           <Route path="uninstaller" element={page(Uninstaller)} />
           <Route path="startup" element={page(StartupManager)} />
           <Route path="disk" element={page(DiskAnalyzer)} />
-          <Route path="largefiles" element={page(LargeFiles)} />
           <Route path="registry" element={page(RegistryCleaner)} />
           <Route path="privacy" element={page(PrivacyTools)} />
           <Route path="shredder" element={page(Shredder)} />

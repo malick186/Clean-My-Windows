@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   AlertTriangle, BadgeCheck, CheckCircle2, Clock3, Download, ExternalLink,
   FileClock, FolderArchive, Loader, LockKeyhole, RefreshCw, ScanSearch,
   ShieldCheck, ShieldOff, ShieldAlert, X, Database, Square,
   Trash2, RotateCcw, PackageOpen, HardDrive, Cpu, Zap,
-  FolderOpen, MapPin, ChevronDown,
+  FolderOpen, MapPin, Timer, ListTodo,
 } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -32,6 +32,13 @@ function timeAgo(value) {
   return `${Math.round(hours / 24)} days ago`
 }
 
+function formatElapsed(seconds) {
+  if (seconds < 60) return `${seconds}s`
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return `${m}m ${s.toString().padStart(2, '0')}s`
+}
+
 function HealthRing({ score, scanning, progress, engine }) {
   const value = scanning ? progress : score
   const radius = 72
@@ -39,7 +46,7 @@ function HealthRing({ score, scanning, progress, engine }) {
 
   return (
     <div className="health-ring-lg">
-      <svg viewBox="0 0 180 180" role="img">
+      <svg viewBox="0 0 180 180" role="img" className={scanning ? 'scan-ring-pulse' : 'scan-ring-glow'}>
         <defs>
           <linearGradient id="secRing" x1="15%" y1="0%" x2="85%" y2="100%">
             <stop offset="0%" stopColor={score >= 80 ? '#6366f1' : score >= 50 ? '#f59e0b' : 'var(--sp-danger)'} />
@@ -82,6 +89,9 @@ export default function Security() {
   const [scanFiles, setScanFiles] = useState(0)
   const [scanThreats, setScanThreats] = useState(0)
   const [scanResult, setScanResult] = useState(null)
+  const [elapsedTime, setElapsedTime] = useState(0)
+  const [pendingTotal, setPendingTotal] = useState(0)
+  const timerRef = useRef(null)
 
   const [updatingDefs, setUpdatingDefs] = useState(false)
   const [defUpdateProgress, setDefUpdateProgress] = useState(0)
@@ -96,6 +106,10 @@ export default function Security() {
   const [quarantining, setQuarantining] = useState(false)
   const [scanHistory, setScanHistory] = useState([])
   const [protectionStatus, setProtectionStatus] = useState(null)
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearInterval(timerRef.current) }
+  }, [])
 
   const refreshAll = useCallback(async () => {
     setLoading(true)
@@ -152,6 +166,8 @@ export default function Security() {
     }
     setScanning(true); setScanProgress(0); setScanStage('Initializing...')
     setScanFiles(0); setScanThreats(0); setScanResult(null)
+    setElapsedTime(0); setPendingTotal(100)
+    timerRef.current = setInterval(() => setElapsedTime(t => t + 1), 1000)
     try {
       let result
       if (scanMode === 'dual') {
@@ -161,6 +177,7 @@ export default function Security() {
           setScanEngine(data.engine || '')
           setScanThreats(data.threatsFound || 0)
           if (data.filesScanned > 0) setScanFiles(data.filesScanned)
+          setPendingTotal(Math.max(0, 100 - (data.percent || 0)))
         })
       } else if (scanMode === 'defender') {
         result = await scanWithDefender(st, cp, (data) => {
@@ -168,6 +185,7 @@ export default function Security() {
           setScanStage(data.stage || '')
           setScanEngine('defender')
           setScanThreats(data.threatsFound || 0)
+          setPendingTotal(Math.max(0, 100 - (data.percent || 0)))
         })
       } else {
         result = await scanWithClamAV(st, cp, (data) => {
@@ -176,10 +194,11 @@ export default function Security() {
           setScanEngine('clamav')
           setScanFiles(data.filesScanned || 0)
           setScanThreats(data.threatsFound || 0)
+          setPendingTotal(Math.max(0, 100 - (data.percent || 0)))
         })
       }
       setScanResult(result)
-      setScanProgress(100)
+      setScanProgress(100); setPendingTotal(0)
       const tCount = result?.threats?.length || 0
       const errors = result?.errors || (result?.error ? [{ engine: result.engine || scanMode, error: result.error }] : [])
       if (tCount === 0 && errors.length === 0) {
@@ -192,6 +211,7 @@ export default function Security() {
     } catch (error) {
       setNotice({ type: 'error', text: error.message })
     } finally {
+      if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
       setScanning(false)
     }
   }
@@ -203,6 +223,7 @@ export default function Security() {
       else await stopSecurityScan()
       setScanning(false)
       setScanStage('Scan stopped')
+      if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
     } catch {}
   }
 
@@ -360,9 +381,23 @@ export default function Security() {
         <div className="loading-state"><Loader className="animate-spin" size={22} /><span>Loading security status...</span></div>
       ) : (
         <>
-          {/* Scan card */}
-          <Card>
-            <CardContent className="!p-7">
+          {/* Scan card - Glass morphism */}
+          <div className={`relative overflow-hidden ${scanning ? 'glass-card glass-card-active' : 'glass-card'}`}>
+            {scanning && (
+              <div className="absolute inset-0 particles-bg pointer-events-none">
+                {[...Array(12)].map((_, i) => (
+                  <div key={i} className="particle" style={{
+                    left: `${(i * 37 + 11) % 95}%`,
+                    animationDelay: `${(i * 0.4) % 3}s`,
+                    animationDuration: `${2.5 + (i % 3) * 0.5}s`,
+                    width: `${2 + (i % 3)}px`,
+                    height: `${2 + (i % 3)}px`,
+                    background: i % 3 === 0 ? 'var(--sp-primary)' : i % 3 === 1 ? 'var(--sp-purple)' : 'var(--sp-teal)',
+                  }} />
+                ))}
+              </div>
+            )}
+            <div className="p-7 relative z-10">
               <div className="flex items-center gap-10">
                 <HealthRing score={score} scanning={scanning} progress={scanProgress} engine={scanEngine} />
                 <div className="flex-1 min-w-0">
@@ -487,9 +522,12 @@ export default function Security() {
                     )}
                   </div>
 
+                  {/* Fluid scan progress */}
                   {(scanning || installingAv) && (
-                    <div className="scan-progress mb-2">
-                      <div className="scan-progress-fill" style={{ width: `${installingAv ? installProgress : scanProgress}%` }} />
+                    <div className="space-y-2 mb-2">
+                      <div className="scan-progress">
+                        <div className="scan-progress-fill" style={{ width: `${installingAv ? installProgress : scanProgress}%` }} />
+                      </div>
                     </div>
                   )}
                   {installingAv && (
@@ -498,11 +536,30 @@ export default function Security() {
                     </p>
                   )}
                   {scanning && (
-                    <div className="flex items-center gap-2 text-[11px] text-sparkle-text-secondary">
-                      {scanEngine && engineBadge(scanEngine)}
-                      <span>{scanStage || 'Scanning...'}</span>
-                      {scanFiles > 0 && <span>({scanFiles.toLocaleString()} files)</span>}
-                      {scanThreats > 0 && <Badge variant="danger" className="text-[10px]">{scanThreats} threat{scanThreats !== 1 ? 's' : ''}</Badge>}
+                    <div className="space-y-2">
+                      {/* Fluid scan status row */}
+                      <div className="flex items-center gap-4 text-[11px] text-sparkle-text-secondary flex-wrap">
+                        {scanEngine && engineBadge(scanEngine)}
+                        <span className="flex items-center gap-1">
+                          <span className="status-dot active" />
+                          {scanStage || 'Scanning...'}
+                        </span>
+                      </div>
+                      {/* Fluid metrics row */}
+                      <div className="flex items-center gap-4 text-[10px] text-sparkle-text-muted flex-wrap">
+                        <span className="flex items-center gap-1.5">
+                          <Timer size={11} />
+                          <span className="elapsed-timer anim-elapsed">{formatElapsed(elapsedTime)}</span>
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <ListTodo size={11} />
+                          <span>Pending: {pendingTotal}%</span>
+                        </span>
+                        {scanFiles > 0 && <span>{scanFiles.toLocaleString()} files scanned</span>}
+                      </div>
+                      {scanThreats > 0 && (
+                        <Badge variant="danger" className="text-[10px]">{scanThreats} threat{scanThreats !== 1 ? 's' : ''}</Badge>
+                      )}
                     </div>
                   )}
 
@@ -534,8 +591,8 @@ export default function Security() {
                   )}
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Engine Status */}
           <Card>
@@ -547,8 +604,8 @@ export default function Security() {
             <CardContent>
               <div className="grid grid-cols-3 gap-4">
                 {/* Defender */}
-                <div className="flex flex-col gap-2 p-4 rounded-xl bg-sparkle-accent/50 border border-sparkle-border">
-                  <div className="flex items-center gap-2">
+                <div className="glass-stat">
+                  <div className="flex items-center gap-2 mb-2">
                     <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${defender?.available ? 'bg-sparkle-success/10 text-sparkle-success' : 'bg-sparkle-text-muted/10 text-sparkle-text-muted'}`}>
                       <ShieldCheck size={15} />
                     </div>
@@ -557,14 +614,14 @@ export default function Security() {
                   <span className={`text-[14px] font-semibold ${defender?.available ? 'text-sparkle-success' : 'text-sparkle-text-muted'}`}>
                     {defender?.available ? 'Active' : 'Unavailable'}
                   </span>
-                  <button onClick={() => openWindowsSettings('security')} className="inline-flex items-center gap-1 text-[11px] text-sparkle-primary hover:underline mt-1">
+                  <button onClick={() => openWindowsSettings('security')} className="inline-flex items-center gap-1 text-[11px] text-sparkle-primary hover:underline mt-2">
                     <ExternalLink size={12} /> Open Windows Security
                   </button>
                 </div>
 
                 {/* ClamAV */}
-                <div className="flex flex-col gap-2 p-4 rounded-xl bg-sparkle-accent/50 border border-sparkle-border">
-                  <div className="flex items-center gap-2">
+                <div className="glass-stat">
+                  <div className="flex items-center gap-2 mb-2">
                     <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${clamav?.found ? 'bg-sparkle-purple/10 text-sparkle-purple' : 'bg-sparkle-text-muted/10 text-sparkle-text-muted'}`}>
                       <Database size={15} />
                     </div>
@@ -574,12 +631,12 @@ export default function Security() {
                     {clamav?.found ? (clamav.version ? `v${clamav.version}` : 'Installed') : 'Not installed'}
                   </span>
                   {clamav?.found ? (
-                    <button onClick={handleUpdateDefs} disabled={updatingDefs} className="inline-flex items-center gap-1 text-[11px] text-sparkle-primary hover:underline mt-1 disabled:opacity-50">
+                    <button onClick={handleUpdateDefs} disabled={updatingDefs} className="inline-flex items-center gap-1 text-[11px] text-sparkle-primary hover:underline mt-2 disabled:opacity-50">
                       {updatingDefs ? <Loader size={12} className="animate-spin" /> : <RefreshCw size={12} />}
                       {updatingDefs ? `Updating... ${defUpdateProgress}%` : 'Update Definitions'}
                     </button>
                   ) : !installingAv && (
-                    <button onClick={handleInstallClamAV} className="inline-flex items-center gap-1 text-[11px] text-sparkle-primary hover:underline mt-1">
+                    <button onClick={handleInstallClamAV} className="inline-flex items-center gap-1 text-[11px] text-sparkle-primary hover:underline mt-2">
                       <Download size={12} /> Install Automatically
                     </button>
                   )}
@@ -592,8 +649,8 @@ export default function Security() {
                 </div>
 
                 {/* Definitions */}
-                <div className="flex flex-col gap-2 p-4 rounded-xl bg-sparkle-accent/50 border border-sparkle-border">
-                  <div className="flex items-center gap-2">
+                <div className="glass-stat">
+                  <div className="flex items-center gap-2 mb-2">
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-sparkle-primary/10 text-sparkle-primary">
                       <HardDrive size={15} />
                     </div>
@@ -603,7 +660,7 @@ export default function Security() {
                     {protectionStatus?.defenderRealtime ? 'Protected' : 'Check'}
                   </span>
                   {protectionStatus?.lastScan && (
-                    <span className="text-[10px] text-sparkle-text-muted">
+                    <span className="text-[10px] text-sparkle-text-muted block mt-1">
                       Last scan: {timeAgo(protectionStatus.lastScan.date)}
                     </span>
                   )}
@@ -660,7 +717,7 @@ export default function Security() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-3 gap-4">
-                <div className="flex items-center gap-3 p-4 rounded-xl bg-sparkle-accent/50 border border-sparkle-border">
+                <div className="glass-stat flex items-center gap-3">
                   <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${protectionStatus?.defenderRealtime ? 'bg-sparkle-success/10 text-sparkle-success' : 'bg-sparkle-warning/10 text-sparkle-warning'}`}>
                     {protectionStatus?.defenderRealtime ? <ShieldCheck size={18} /> : <ShieldOff size={18} />}
                   </div>
@@ -671,7 +728,7 @@ export default function Security() {
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-4 rounded-xl bg-sparkle-accent/50 border border-sparkle-border">
+                <div className="glass-stat flex items-center gap-3">
                   <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${protectionStatus?.defenderAntivirus ? 'bg-sparkle-success/10 text-sparkle-success' : 'bg-sparkle-warning/10 text-sparkle-warning'}`}>
                     {protectionStatus?.defenderAntivirus ? <BadgeCheck size={18} /> : <AlertTriangle size={18} />}
                   </div>
@@ -682,7 +739,7 @@ export default function Security() {
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-4 rounded-xl bg-sparkle-accent/50 border border-sparkle-border">
+                <div className="glass-stat flex items-center gap-3">
                   <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${protectionStatus?.firewall ? 'bg-sparkle-success/10 text-sparkle-success' : 'bg-sparkle-warning/10 text-sparkle-warning'}`}>
                     {protectionStatus?.firewall ? <ShieldCheck size={18} /> : <ShieldOff size={18} />}
                   </div>
@@ -784,7 +841,7 @@ export default function Security() {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
-              <div className="flex items-center gap-4 p-4 rounded-xl bg-sparkle-accent/50 hover:bg-sparkle-accent transition-all duration-200 border border-sparkle-border">
+              <div className="glass-stat flex items-center gap-4">
                 <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-sparkle-purple/10 text-sparkle-purple flex-shrink-0">
                   <FolderArchive size={20} />
                 </div>
@@ -816,7 +873,7 @@ export default function Security() {
                   </Button>
                 </div>
               </div>
-              <div className="flex items-center gap-4 p-4 rounded-xl bg-sparkle-accent/50 hover:bg-sparkle-accent transition-all duration-200 border border-sparkle-border">
+              <div className="glass-stat flex items-center gap-4">
                 <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-sparkle-success/10 text-sparkle-success flex-shrink-0">
                   <ShieldCheck size={20} />
                 </div>

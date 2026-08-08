@@ -191,11 +191,183 @@
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+@keyframes fluidPulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+@keyframes fluidWave {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes fluidBorder {
+  0%, 100% { border-color: transparent; box-shadow: 0 0 0 0 rgba(79, 144, 230, 0.2); }
+  50% { border-color: var(--sp-primary); box-shadow: 0 0 12px 0 rgba(79, 144, 230, 0.15); }
+}
+@keyframes scanPulse {
+  0%, 100% { opacity: 0.5; transform: scale(0.95); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+@keyframes flowDown {
+  0% { top: -100%; opacity: 0; }
+  20% { opacity: 0.6; }
+  80% { opacity: 0.6; }
+  100% { top: 100%; opacity: 0; }
+}
+@keyframes float3D {
+  0%, 100% { transform: translateY(0px) rotateX(0deg); }
+  50% { transform: translateY(-8px) rotateX(2deg); }
+}
+@keyframes breathe {
+  0%, 100% { box-shadow: 0 0 20px rgba(79, 144, 230, 0.05), 0 8px 32px rgba(0, 0, 0, 0.2); }
+  50% { box-shadow: 0 0 40px rgba(79, 144, 230, 0.12), 0 8px 32px rgba(0, 0, 0, 0.3); }
+}
+@keyframes progressPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+@keyframes scanRingPulse {
+  0%, 100% { stroke-dashoffset: 0; filter: drop-shadow(0 0 6px rgba(79, 144, 230, 0.3)); }
+  50% { filter: drop-shadow(0 0 14px rgba(79, 144, 230, 0.6)); }
+}
+@keyframes particle {
+  0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+  10% { opacity: 0.8; }
+  90% { opacity: 0.2; }
+  100% { transform: translateY(-120px) translateX(30px) scale(0); opacity: 0; }
+}
+@keyframes elapsedTick {
+  0%, 100% { color: var(--sp-primary); }
+  50% { color: var(--sp-text); }
+}
 
 /* ===== ANIMATION CLASSES ===== */
 .anim-fade-up { animation: fadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 .anim-fade-in { animation: fadeIn 0.3s ease forwards; }
 .anim-scale-in { animation: scaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.anim-fluid-pulse { animation: fluidPulse 2s ease-in-out infinite; }
+.anim-breathe { animation: breathe 3s ease-in-out infinite; }
+.anim-float { animation: float3D 4s ease-in-out infinite; }
+.anim-elapsed { animation: elapsedTick 1.5s ease-in-out infinite; }
+
+/* ===== GLASS-MORPHISM CARDS ===== */
+.glass-card {
+  background: color-mix(in srgb, var(--sp-card) 75%, transparent);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid color-mix(in srgb, var(--sp-border) 60%, transparent);
+  border-radius: var(--radius-xl);
+  transition: all 0.3s ease;
+}
+.glass-card:hover {
+  background: color-mix(in srgb, var(--sp-card) 85%, transparent);
+  border-color: color-mix(in srgb, var(--sp-primary) 30%, transparent);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+.glass-card-active {
+  animation: fluidBorder 2s ease-in-out infinite;
+}
+
+/* ===== FLUID SCAN STATUS BAR ===== */
+.scan-status-bar {
+  position: relative;
+  overflow: hidden;
+}
+.scan-status-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -200%;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--sp-primary) 8%, transparent) 50%, transparent 100%);
+  animation: fluidWave 2.5s ease-in-out infinite;
+}
+.scan-status-bar-fluid {
+  background: linear-gradient(90deg, var(--sp-primary), var(--sp-purple), var(--sp-pink), var(--sp-primary));
+  background-size: 300% 100%;
+  animation: fluidWave 3s ease-in-out infinite;
+}
+
+/* ===== FLUID PROGRESS BAR ===== */
+.fluid-progress {
+  position: relative;
+  overflow: hidden;
+}
+.fluid-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--sp-primary) 0%, var(--sp-purple) 50%, var(--sp-teal) 100%);
+  background-size: 300% 100%;
+  animation: fluidWave 3s linear infinite;
+  transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ===== GLASS STATS GRID ===== */
+.glass-stat {
+  background: color-mix(in srgb, var(--sp-card) 70%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid color-mix(in srgb, var(--sp-border) 50%, transparent);
+  border-radius: var(--radius-xl);
+  padding: 1.25rem;
+  transition: all 0.25s ease;
+}
+.glass-stat:hover {
+  background: color-mix(in srgb, var(--sp-card) 82%, transparent);
+  border-color: color-mix(in srgb, var(--sp-primary) 25%, transparent);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+}
+
+/* ===== SCAN RING GLOW ===== */
+.scan-ring-glow {
+  filter: drop-shadow(0 0 8px rgba(79, 144, 230, 0.3));
+}
+.scan-ring-pulse {
+  animation: scanRingPulse 2s ease-in-out infinite;
+}
+
+/* ===== PARTICLES BACKGROUND ===== */
+.particles-bg {
+  position: relative;
+  overflow: hidden;
+}
+.particle {
+  position: absolute;
+  bottom: -10px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--sp-primary);
+  animation: particle 3s ease-in infinite;
+  opacity: 0;
+}
+
+/* ===== ELAPSED TIMER ===== */
+.elapsed-timer {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+}
+
+/* ===== STATUS DOT PULSE ===== */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.status-dot.active {
+  background: var(--sp-success);
+  animation: fluidPulse 1.5s ease-in-out infinite;
+}
+.status-dot.warning {
+  background: var(--sp-warning);
+  animation: fluidPulse 1s ease-in-out infinite;
+}
+.status-dot.idle {
+  background: var(--sp-text-muted);
+}
 
 /* ===== GRADIENT TEXT ===== */
 .text-gradient {
@@ -447,12 +619,15 @@
   background: var(--sp-accent);
   border-radius: 2px;
   overflow: hidden;
+  position: relative;
 }
 .scan-progress-fill {
   height: 100%;
-  background: var(--sp-primary);
+  background: linear-gradient(90deg, var(--sp-primary), var(--sp-purple), var(--sp-teal));
+  background-size: 300% 100%;
+  animation: fluidWave 3s linear infinite;
   border-radius: 2px;
-  transition: width 0.3s ease;
+  transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .beta-badge {
   display: inline-flex;
@@ -465,4 +640,87 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   padding: 2px 10px;
+}
+
+/* ===== HEALTH RING (SECURITY TAB) ===== */
+.health-ring-lg {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  flex-shrink: 0;
+}
+.health-ring-lg svg {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+}
+.health-ring-lg-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.health-ring-lg-center strong {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+}
+.health-ring-lg-center span {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--sp-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ===== GLASS PANEL ===== */
+.glass-panel {
+  background: color-mix(in srgb, var(--sp-card) 65%, transparent);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border: 1px solid color-mix(in srgb, var(--sp-border) 55%, transparent);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* ===== FLUID METER (FOR DISK USAGE ETC) ===== */
+.fluid-meter {
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.fluid-meter-bg {
+  position: absolute;
+  inset: 0;
+  background: var(--sp-accent);
+  border-radius: inherit;
+}
+.fluid-meter-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--sp-success), var(--sp-primary), var(--sp-purple));
+  background-size: 200% 100%;
+  animation: fluidWave 3s linear infinite;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ===== DASHBOARD SUMMARY CARD ===== */
+.summary-card {
+  background: color-mix(in srgb, var(--sp-card) 80%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid color-mix(in srgb, var(--sp-primary) 20%, var(--sp-border));
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+.summary-card-header {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--sp-primary) 10%, transparent) 0%, color-mix(in srgb, var(--sp-purple) 8%, transparent) 100%);
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--sp-border) 50%, transparent);
 }
