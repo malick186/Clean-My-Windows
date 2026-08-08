@@ -225,13 +225,13 @@ export async function updateClamAV(onProgress) {
   finally { off() }
 }
 
-export async function scanWithClamAV(scanType, onProgress) {
+export async function scanWithClamAV(scanType, customPath, onProgress) {
   if (!hasElectron) {
     onProgress?.({ percent: 100, stage: 'Preview: scan not available', filesScanned: 0, threatsFound: 0 })
     return { threats: [], filesScanned: 0, engine: 'preview' }
   }
   const off = on('security:scan-progress', data => onProgress?.(data))
-  try { return await invoke('clamav:scan', scanType) }
+  try { return await invoke('clamav:scan', scanType, customPath) }
   finally { off() }
 }
 
@@ -283,10 +283,10 @@ export async function detectDefender() {
   return invoke('defender:detect')
 }
 
-export async function scanWithDefender(scanType, onProgress) {
+export async function scanWithDefender(scanType, customPath, onProgress) {
   if (!hasElectron) return { threats: [], engine: 'defender', error: 'Preview only' }
   const off = on('security:scan-progress', data => onProgress?.(data))
-  try { return await invoke('defender:scan', scanType) }
+  try { return await invoke('defender:scan', scanType, customPath) }
   finally { off() }
 }
 
@@ -295,19 +295,24 @@ export async function stopDefenderScan() {
   return invoke('defender:stopScan')
 }
 
-export async function dualScan(scanType, onProgress) {
+export async function dualScan(scanType, customPath, onProgress) {
   if (!hasElectron) {
     onProgress?.({ percent: 100, stage: 'Preview only', engine: 'dual', threatsFound: 0 })
     return { threats: [], engines: [], errors: [] }
   }
   const off = on('security:scan-progress', data => onProgress?.(data))
-  try { return await invoke('security:scan', scanType) }
+  try { return await invoke('security:scan', scanType, customPath) }
   finally { off() }
 }
 
 export async function stopSecurityScan() {
   if (!hasElectron) return { success: false }
   return invoke('security:stopScan')
+}
+
+export async function openDirectoryDialog() {
+  if (!hasElectron) return { canceled: true }
+  return invoke('dialog:openDirectory')
 }
 
 export async function listDebloat() {

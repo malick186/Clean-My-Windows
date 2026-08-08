@@ -1262,14 +1262,15 @@ function walkDirRecursive(dir, onEntry) {
 
 // ════════════════════ Defender Engine ════════════════════
 
-function runDefenderScan(scanType) {
+function runDefenderScan(scanType, customPath) {
   const exe = findDefender()
   if (!exe) return Promise.resolve({ threats: [], engine: 'defender', error: 'Windows Defender not found.', exitCode: -1, scanType })
   if (scanProcess) return Promise.resolve({ threats: [], engine: 'defender', error: 'A scan is already running.', exitCode: -1, scanType })
 
   return new Promise(resolve => {
+    const isCustom = scanType === 'custom' && customPath && fs.existsSync(customPath)
     const scanArg = scanType === 'deep' ? 2 : 1
-    const estMs = scanType === 'deep' ? 2700000 : 300000
+    const estMs = isCustom ? 900000 : scanType === 'deep' ? 2700000 : 300000
     const start = Date.now()
     let lastPct = 0
     const threats = []
@@ -1285,7 +1286,10 @@ function runDefenderScan(scanType) {
     }, 2000)
 
     try {
-      scanProcess = spawn(exe, ['-Scan', '-ScanType', String(scanArg)], {
+      const spawnArgs = isCustom
+        ? ['-Scan', '-ScanType', '3', '-File', customPath]
+        : ['-Scan', '-ScanType', String(scanArg)]
+      scanProcess = spawn(exe, spawnArgs, {
         windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
       })
       scanEngine = 'defender'
@@ -1333,7 +1337,7 @@ ipcMain.handle('defender:detect', async () => {
   return { available: !!exe, path: exe || null }
 })
 
-ipcMain.handle('defender:scan', async (_, scanType) => runDefenderScan(scanType))
+ipcMain.handle('defender:scan', async (_, scanType, customPath) => runDefenderScan(scanType, customPath))
 
 ipcMain.handle('defender:stopScan', async () => {
   if (scanEngine !== 'defender') return { success: false, error: 'No Defender scan running' }
@@ -1366,6 +1370,19 @@ function findClamAV(force = false) {
       return { found: true, clamscan: p, freshclam: freshclamPath }
     }
   }
+
+  // Recursively search portable install directory for clamscan.exe (zip may nest in subfolder)
+  try {
+    let foundPath = null
+    walkDirRecursive(CLAMAV_DIR, (fp, name) => {
+      if (!foundPath && name.toLowerCase() === 'clamscan.exe') foundPath = fp
+    })
+    if (foundPath && fs.existsSync(foundPath)) {
+      clamavFound = true; clamavPath = foundPath
+      freshclamPath = path.join(path.dirname(foundPath), 'freshclam.exe')
+      return { found: true, clamscan: foundPath, freshclam: freshclamPath }
+    }
+  } catch {}
 
   try {
     const r = execFileSync('where', ['clamscan'], { encoding: 'utf8', timeout: 5000, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
@@ -1535,7 +1552,7 @@ ipcMain.handle('clamav:update', async () => {
 })
 
 // ── Scan ──
-function runClamAVScan(scanType) {
+function runClamAVScan(scanType, customPath) {
   const av = findClamAV()
   if (!av.found || !av.clamscan) return Promise.resolve({ threats: [], filesScanned: 0, engine: 'clamav', error: 'ClamAV not installed.', scanType })
   if (scanProcess) return Promise.resolve({ threats: [], filesScanned: 0, engine: 'clamav', error: 'A scan is already running.', scanType })
@@ -1544,10 +1561,9 @@ function runClamAVScan(scanType) {
     const pathMaps = {
       quick: [os.tmpdir(), process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local')],
       deep: ['C:\\'],
-      custom: [os.homedir()],
     }
-    const scanPaths = pathMaps[scanType] || [os.homedir()]
-    const maxFiles = scanType === 'deep' ? 500000 : 80000
+    const scanPaths = scanType === 'custom' && customPath ? [customPath] : (pathMaps[scanType] || [os.homedir()])
+    const maxFiles = scanType === 'deep' ? 500000 : scanType === 'custom' ? 120000 : 80000
 
     const args = ['--recursive', '--max-filesize=400M', '--max-scansize=400M', '--max-files', String(maxFiles), ...scanPaths]
 
@@ -1623,7 +1639,7 @@ function runClamAVScan(scanType) {
   })
 }
 
-ipcMain.handle('clamav:scan', async (_, scanType) => runClamAVScan(scanType))
+ipcMain.handle('clamav:scan', async (_, scanType, customPath) => runClamAVScan(scanType, customPath))
 
 // ════════════════════ Stop Scan (any engine) ════════════════════
 
@@ -1632,13 +1648,13 @@ ipcMain.handle('security:stopScan', async () => stopScanProcess())
 
 // ════════════════════ Dual-Engine Controller ════════════════════
 
-ipcMain.handle('security:scan', async (_, scanType) => {
+ipcMain.handle('security:scan', async (_, scanType, customPath) => {
   const result = { threats: [], filesScanned: 0, engines: [], scanType, errors: [] }
 
   const defenderExe = findDefender()
   if (defenderExe) {
     mainWindow?.webContents.send('security:scan-progress', { percent: 0, stage: 'Starting Defender scan...', engine: 'defender', threatsFound: 0 })
-    const dr = await runDefenderScan(scanType)
+    const dr = await runDefenderScan(scanType, customPath)
     if (!dr.error) {
       result.engines.push('defender')
       result.threats.push(...dr.threats.map(t => ({ ...t })))
@@ -1652,7 +1668,7 @@ ipcMain.handle('security:scan', async (_, scanType) => {
   const av = findClamAV()
   if (av.found && av.clamscan) {
     mainWindow?.webContents.send('security:scan-progress', { percent: 0, stage: 'Starting ClamAV scan...', engine: 'clamav', threatsFound: result.threats.length })
-    const cr = await runClamAVScan(scanType)
+    const cr = await runClamAVScan(scanType, customPath)
     if (!cr.error) {
       result.engines.push('clamav')
       result.filesScanned = cr.filesScanned || 0
@@ -1813,6 +1829,18 @@ ipcMain.handle('security:scanHistory', async () => {
     const scanHistory = h.filter(e => /Scan/.test(e.action)).slice(0, 20)
     return { success: true, history: scanHistory, total: scanHistory.length }
   } catch { return { success: true, history: [], total: 0 } }
+})
+
+ipcMain.handle('dialog:openDirectory', async () => {
+  try {
+    const { dialog } = require('electron')
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory'],
+      title: 'Select folder to scan',
+    })
+    if (result.canceled) return { canceled: true }
+    return { canceled: false, path: result.filePaths[0] }
+  } catch (e) { return { canceled: true, error: errorMessage(e) } }
 })
 
 /* ═══════════════════════════ End Dual-Engine Security ═══════════════════════════ */

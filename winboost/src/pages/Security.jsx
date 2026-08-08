@@ -4,6 +4,7 @@ import {
   FileClock, FolderArchive, Loader, LockKeyhole, RefreshCw, ScanSearch,
   ShieldCheck, ShieldOff, ShieldAlert, X, Database, Square,
   Trash2, RotateCcw, PackageOpen, HardDrive, Cpu, Zap,
+  FolderOpen, MapPin, ChevronDown,
 } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -17,6 +18,7 @@ import {
   getScanHistory,
   detectDefender, scanWithDefender, stopDefenderScan,
   dualScan, stopSecurityScan,
+  openDirectoryDialog,
 } from '../lib/api'
 
 function timeAgo(value) {
@@ -71,6 +73,8 @@ export default function Security() {
   const [notice, setNotice] = useState(null)
 
   const [scanMode, setScanMode] = useState('dual')
+  const [scanType, setScanType] = useState('quick')
+  const [customPath, setCustomPath] = useState('')
   const [scanning, setScanning] = useState(false)
   const [scanProgress, setScanProgress] = useState(0)
   const [scanStage, setScanStage] = useState('')
@@ -139,13 +143,19 @@ export default function Security() {
     finally { setCreatingRP(false) }
   }
 
-  const startScan = async (scanType) => {
+  const startScan = async (type) => {
+    const st = type || scanType
+    const cp = st === 'custom' ? customPath : null
+    if (st === 'custom' && !cp) {
+      setNotice({ type: 'error', text: 'Please select a folder for custom scan.' })
+      return
+    }
     setScanning(true); setScanProgress(0); setScanStage('Initializing...')
     setScanFiles(0); setScanThreats(0); setScanResult(null)
     try {
       let result
       if (scanMode === 'dual') {
-        result = await dualScan(scanType, (data) => {
+        result = await dualScan(st, cp, (data) => {
           setScanProgress(data.percent || 0)
           setScanStage(data.stage || '')
           setScanEngine(data.engine || '')
@@ -153,14 +163,14 @@ export default function Security() {
           if (data.filesScanned > 0) setScanFiles(data.filesScanned)
         })
       } else if (scanMode === 'defender') {
-        result = await scanWithDefender(scanType, (data) => {
+        result = await scanWithDefender(st, cp, (data) => {
           setScanProgress(data.percent || 0)
           setScanStage(data.stage || '')
           setScanEngine('defender')
           setScanThreats(data.threatsFound || 0)
         })
       } else {
-        result = await scanWithClamAV(scanType, (data) => {
+        result = await scanWithClamAV(st, cp, (data) => {
           setScanProgress(data.percent || 0)
           setScanStage(data.stage || '')
           setScanEngine('clamav')
@@ -382,29 +392,76 @@ export default function Security() {
                     ))}
                   </div>
 
+                  {/* Scan type selector */}
+                  <div className="flex items-center gap-1.5 mb-2 p-1 rounded-xl bg-sparkle-accent/50 w-fit">
+                    {[
+                      { key: 'quick', label: 'Quick', desc: 'Downloads & Temp', icon: Zap },
+                      { key: 'deep', label: 'Deep', desc: 'Full C:\\ drive', icon: ShieldAlert },
+                      { key: 'custom', label: 'Custom', desc: 'Choose folder', icon: FolderOpen },
+                    ].map(({ key, label, desc, icon: Icon }) => (
+                      <button
+                        key={key}
+                        disabled={scanning}
+                        onClick={() => setScanType(key)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
+                          scanType === key
+                            ? 'bg-sparkle-primary text-white shadow-sm'
+                            : 'text-sparkle-text-muted hover:text-sparkle-text hover:bg-sparkle-accent'
+                        } disabled:opacity-40 disabled:cursor-not-allowed`}
+                        title={desc}
+                      >
+                        <Icon size={12} /> {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Custom folder picker */}
+                  {scanType === 'custom' && (
+                    <div className="flex items-center gap-2 mb-3">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={async () => {
+                          const result = await openDirectoryDialog()
+                          if (!result.canceled && result.path) setCustomPath(result.path)
+                        }}
+                        disabled={scanning}
+                        className="rounded-xl text-[11px]"
+                      >
+                        <FolderOpen size={12} className="mr-1" />
+                        {customPath ? 'Change Folder' : 'Choose Folder'}
+                      </Button>
+                      {customPath && (
+                        <span className="text-[11px] text-sparkle-text-muted truncate max-w-[280px]" title={customPath}>
+                          <MapPin size={11} className="inline mr-1" />{customPath}
+                        </span>
+                      )}
+                      {!customPath && (
+                        <span className="text-[10px] text-sparkle-warning">Select a folder to scan</span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Scan target hint */}
+                  <p className="text-[10px] text-sparkle-text-muted mb-3 flex items-center gap-1">
+                    <MapPin size={10} />
+                    {scanType === 'quick' ? 'Scans Temp folder & AppData/Local' :
+                     scanType === 'deep' ? 'Scans entire C:\\ drive (may take 30+ minutes)' :
+                     customPath ? `Scans: ${customPath}` : 'Choose a folder first'}
+                  </p>
+
                   <div className="flex gap-2 flex-wrap mb-3">
                     {scanMode !== 'clamav' || clamav?.found ? (
-                      <>
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => startScan('quick')}
-                          disabled={scanning}
-                          className="rounded-xl"
-                        >
-                          {scanning ? <Loader size={16} className="animate-spin mr-1.5" /> : <ScanSearch size={16} className="mr-1.5" />}
-                          Quick Scan
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => startScan('deep')}
-                          disabled={scanning}
-                          className="rounded-xl"
-                        >
-                          <ShieldAlert size={16} className="mr-1.5" /> Deep Scan
-                        </Button>
-                      </>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => startScan(scanType)}
+                        disabled={scanning || (scanType === 'custom' && !customPath)}
+                        className="rounded-xl"
+                      >
+                        {scanning ? <Loader size={16} className="animate-spin mr-1.5" /> : <ScanSearch size={16} className="mr-1.5" />}
+                        Start Scan
+                      </Button>
                     ) : (
                       <Button
                         variant="primary"

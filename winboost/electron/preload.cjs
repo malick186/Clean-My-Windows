@@ -23,6 +23,7 @@ const invokeChannels = new Set([
   'sysutils:sfc', 'sysutils:dismCheck', 'sysutils:dismRestore', 'sysutils:chkdsk', 'sysutils:cleanWinUpdate',
   'network:status', 'network:setDns', 'network:optimize', 'network:reset',
   'system:hardware', 'system:processes', 'system:killProcess', 'system:services',
+  'dialog:openDirectory',
   'duplicates:scan', 'duplicates:delete',
   'browser:scan', 'browser:clean',
   'power:list', 'power:set', 'power:ultimate',
