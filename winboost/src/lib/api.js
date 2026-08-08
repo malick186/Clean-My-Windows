@@ -235,6 +235,48 @@ export async function scanWithClamAV(scanType, onProgress) {
   finally { off() }
 }
 
+export async function installClamAV(onProgress) {
+  if (!hasElectron) return { success: false, error: 'Not available in preview' }
+  const off = on('clamav:update-progress', data => onProgress?.(data))
+  try { return await invoke('clamav:install') }
+  finally { off() }
+}
+
+export async function stopClamAVScan() {
+  if (!hasElectron) return { success: false }
+  return invoke('clamav:stopScan')
+}
+
+export async function quarantineThreats(threats) {
+  if (!hasElectron) return { success: false, quarantined: 0, results: [] }
+  return invoke('clamav:quarantine', threats)
+}
+
+export async function listQuarantine() {
+  if (!hasElectron) return { success: true, items: [] }
+  return invoke('clamav:quarantineList')
+}
+
+export async function restoreFromQuarantine(quarantineFile) {
+  if (!hasElectron) return { success: false, error: 'Preview only' }
+  return invoke('clamav:restore', quarantineFile)
+}
+
+export async function deleteQuarantined(quarantineFile) {
+  if (!hasElectron) return { success: false, error: 'Preview only' }
+  return invoke('clamav:deleteQuarantined', quarantineFile)
+}
+
+export async function getProtectionStatus() {
+  if (!hasElectron) return { success: true, defenderRealtime: false, defenderAntivirus: false, firewall: false, lastScan: null }
+  return invoke('clamav:protectionStatus')
+}
+
+export async function getScanHistory() {
+  if (!hasElectron) return { success: true, history: [], total: 0 }
+  return invoke('clamav:scanHistory')
+}
+
 export async function listDebloat() {
   if (!hasElectron) return { success: true, items: [], total: 0, installed: 0 }
   return invoke('debloat:list')

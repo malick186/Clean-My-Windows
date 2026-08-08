@@ -3,6 +3,7 @@ import {
   AlertTriangle, BadgeCheck, CheckCircle2, Clock3, Download, ExternalLink,
   FileClock, FolderArchive, Loader, LockKeyhole, RefreshCw, ScanSearch,
   ShieldCheck, ShieldOff, ShieldAlert, X, Database, Square,
+  Trash2, RotateCcw, PackageOpen, HardDrive, Cpu,
 } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -10,7 +11,10 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import {
   createRestorePoint, getSafetyStatus, openWindowsSettings,
-  detectClamAV, updateClamAV, scanWithClamAV,
+  detectClamAV, updateClamAV, scanWithClamAV, installClamAV,
+  stopClamAVScan, quarantineThreats, listQuarantine,
+  restoreFromQuarantine, deleteQuarantined, getProtectionStatus,
+  getScanHistory,
 } from '../lib/api'
 
 function timeAgo(value) {
@@ -75,15 +79,31 @@ export default function Security() {
   const [defUpdateProgress, setDefUpdateProgress] = useState(0)
   const [defUpdateOutput, setDefUpdateOutput] = useState('')
 
+  const [installingAv, setInstallingAv] = useState(false)
+  const [installProgress, setInstallProgress] = useState(0)
+  const [installOutput, setInstallOutput] = useState('')
+
+  const [quarantineItems, setQuarantineItems] = useState([])
+  const [quarantineLoading, setQuarantineLoading] = useState(false)
+  const [quarantining, setQuarantining] = useState(false)
+  const [scanHistory, setScanHistory] = useState([])
+  const [protectionStatus, setProtectionStatus] = useState(null)
+
   const refreshAll = useCallback(async () => {
     setLoading(true)
     try {
-      const [safety, av] = await Promise.all([
+      const [safety, av, quarantine, history, pStatus] = await Promise.all([
         getSafetyStatus().catch(() => null),
         detectClamAV().catch(() => null),
+        listQuarantine().catch(() => ({ items: [] })),
+        getScanHistory().catch(() => ({ history: [] })),
+        getProtectionStatus().catch(() => null),
       ])
       setSafetyStatus(safety)
       setClamav(av)
+      setQuarantineItems(quarantine?.items || [])
+      setScanHistory(history?.history || [])
+      setProtectionStatus(pStatus)
     } catch (error) {
       setNotice({ type: 'error', text: error.message })
     } finally {
@@ -125,11 +145,23 @@ export default function Security() {
       })
       setScanResult(result)
       setScanProgress(100)
+      if (result?.threats?.length === 0) {
+        setNotice({ type: 'success', text: `Scan complete. ${result.filesScanned?.toLocaleString() || 0} files scanned — no threats found.` })
+      }
+      await refreshAll()
     } catch (error) {
       setScanError(error.message)
     } finally {
       setScanning(false)
     }
+  }
+
+  const stopScan = async () => {
+    try {
+      await stopClamAVScan()
+      setScanning(false)
+      setScanStage('Scan stopped')
+    } catch {}
   }
 
   const handleUpdateDefs = async () => {
@@ -152,15 +184,93 @@ export default function Security() {
     }
   }
 
+  const handleInstallClamAV = async () => {
+    setInstallingAv(true); setInstallProgress(0); setInstallOutput('Preparing...')
+    try {
+      const result = await installClamAV((data) => {
+        setInstallProgress(data.percent || 0)
+        setInstallOutput(data.output || '')
+      })
+      if (result.success) {
+        setNotice({ type: 'success', text: result.message || 'ClamAV installed successfully.' })
+        await refreshAll()
+      } else {
+        setNotice({ type: 'error', text: result.error || 'Installation failed.' })
+      }
+    } catch (error) {
+      setNotice({ type: 'error', text: error.message })
+    } finally {
+      setInstallingAv(false)
+    }
+  }
+
+  const handleQuarantine = async () => {
+    if (!scanResult?.threats?.length) return
+    setQuarantining(true)
+    try {
+      const result = await quarantineThreats(scanResult.threats)
+      if (result.success) {
+        setNotice({ type: 'success', text: `${result.quarantined} threat${result.quarantined !== 1 ? 's' : ''} quarantined.` })
+        setScanResult(null)
+        await refreshAll()
+      } else {
+        setNotice({ type: 'error', text: result.error || 'Quarantine failed.' })
+      }
+    } catch (error) {
+      setNotice({ type: 'error', text: error.message })
+    } finally {
+      setQuarantining(false)
+    }
+  }
+
+  const handleRestore = async (quarantineFile) => {
+    try {
+      const result = await restoreFromQuarantine(quarantineFile)
+      if (result.success) {
+        setNotice({ type: 'success', text: `File restored to ${result.restoredTo}` })
+        await refreshAll()
+      } else {
+        setNotice({ type: 'error', text: result.error || 'Restore failed.' })
+      }
+    } catch (error) {
+      setNotice({ type: 'error', text: error.message })
+    }
+  }
+
+  const handleDeleteQuarantined = async (quarantineFile) => {
+    try {
+      const result = await deleteQuarantined(quarantineFile)
+      if (result.success) {
+        setNotice({ type: 'success', text: 'File permanently deleted.' })
+        await refreshAll()
+      } else {
+        setNotice({ type: 'error', text: result.error || 'Delete failed.' })
+      }
+    } catch (error) {
+      setNotice({ type: 'error', text: error.message })
+    }
+  }
+
+  const loadQuarantine = async () => {
+    setQuarantineLoading(true)
+    try {
+      const result = await listQuarantine()
+      setQuarantineItems(result?.items || [])
+    } finally {
+      setQuarantineLoading(false)
+    }
+  }
+
   const defender = safetyStatus?.defender || {}
   const history = safetyStatus?.history || []
   const scanThreatsList = scanResult?.threats || []
 
-  const severityVariant = {
-    critical: 'danger',
-    high: 'danger',
-    medium: 'warning',
-    low: 'teal',
+  function severityBadge(severity) {
+    const s = (severity || 'high').toLowerCase()
+    if (s === 'critical') return <Badge variant="danger">Critical</Badge>
+    if (s === 'high') return <Badge variant="danger">High</Badge>
+    if (s === 'medium') return <Badge variant="warning">Medium</Badge>
+    return <Badge variant="teal">Low</Badge>
   }
 
   return (
@@ -176,7 +286,7 @@ export default function Security() {
               <LockKeyhole size={11} /> Security Center
             </div>
             <h1 className="text-[28px] font-bold leading-[1.1] tracking-tight">Security &amp; Protection</h1>
-            <p className="text-[13px] text-sparkle-muted mt-1.5 leading-relaxed">Malware scanning, system restore, and real-time security monitoring</p>
+            <p className="text-[13px] text-sparkle-muted mt-1.5 leading-relaxed">Malware scanning, quarantine, system restore, and real-time security monitoring</p>
           </div>
         </div>
         <Button
@@ -211,34 +321,49 @@ export default function Security() {
                   <CardDescription className="text-[12px] mb-4">
                     {clamav?.found
                       ? `ClamAV ${clamav.version || 'detected'} — open-source antivirus engine`
-                      : 'ClamAV not detected — Defender fallback available'}
+                      : 'ClamAV not installed — click Install to download'}
                   </CardDescription>
 
                   <div className="flex gap-2 flex-wrap mb-3">
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => startScan('quick')}
-                      disabled={scanning}
-                      className="rounded-xl"
-                    >
-                      {scanning ? <Loader size={16} className="animate-spin mr-1.5" /> : <ScanSearch size={16} className="mr-1.5" />}
-                      Quick Scan
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => startScan('deep')}
-                      disabled={scanning}
-                      className="rounded-xl"
-                    >
-                      <ShieldAlert size={16} className="mr-1.5" /> Deep Scan
-                    </Button>
+                    {clamav?.found ? (
+                      <>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => startScan('quick')}
+                          disabled={scanning}
+                          className="rounded-xl"
+                        >
+                          {scanning ? <Loader size={16} className="animate-spin mr-1.5" /> : <ScanSearch size={16} className="mr-1.5" />}
+                          Quick Scan
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => startScan('deep')}
+                          disabled={scanning}
+                          className="rounded-xl"
+                        >
+                          <ShieldAlert size={16} className="mr-1.5" /> Deep Scan
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={handleInstallClamAV}
+                        disabled={installingAv}
+                        className="rounded-xl"
+                      >
+                        {installingAv ? <Loader size={16} className="animate-spin mr-1.5" /> : <Download size={16} className="mr-1.5" />}
+                        {installingAv ? `Installing... ${installProgress}%` : 'Install ClamAV'}
+                      </Button>
+                    )}
                     {scanning && (
                       <Button
                         variant="danger"
                         size="sm"
-                        onClick={() => setScanning(false)}
+                        onClick={stopScan}
                         className="rounded-xl"
                       >
                         <Square size={14} className="mr-1.5" /> Stop
@@ -246,10 +371,15 @@ export default function Security() {
                     )}
                   </div>
 
-                  {scanning && (
+                  {(scanning || installingAv) && (
                     <div className="scan-progress mb-2">
-                      <div className="scan-progress-fill" style={{ width: `${scanProgress}%` }} />
+                      <div className="scan-progress-fill" style={{ width: `${installingAv ? installProgress : scanProgress}%` }} />
                     </div>
+                  )}
+                  {installingAv && (
+                    <p className="flex items-center gap-2 text-[11px] text-sparkle-text-secondary">
+                      <Loader size={12} className="animate-spin" /> {installOutput || 'Installing ClamAV...'}
+                    </p>
                   )}
                   {scanning && (
                     <p className="flex items-center gap-2 text-[11px] text-sparkle-text-secondary">
@@ -285,20 +415,32 @@ export default function Security() {
           {scanThreatsList.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <ShieldAlert size={18} /> Detected Threats
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <ShieldAlert size={18} /> Detected Threats
+                  </CardTitle>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={handleQuarantine}
+                    disabled={quarantining}
+                    className="rounded-xl"
+                  >
+                    {quarantining ? <Loader size={14} className="animate-spin mr-1.5" /> : <PackageOpen size={14} className="mr-1.5" />}
+                    Quarantine All
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-1 text-[12px]" style={{ gridTemplateColumns: '1fr 100px 1fr' }}>
+                <div className="grid gap-1 text-[12px]" style={{ gridTemplateColumns: '1fr auto 1fr' }}>
                   <div className="text-[10px] text-sparkle-muted uppercase tracking-wider px-2 pb-2">Threat</div>
                   <div className="text-[10px] text-sparkle-muted uppercase tracking-wider px-2 pb-2">Severity</div>
-                  <div className="text-[10px] text-sparkle-muted uppercase tracking-wider px-2 pb-2">Path</div>
+                  <div className="text-[10px] text-sparkle-muted uppercase tracking-wider px-2 pb-2">Location</div>
                   {scanThreatsList.map((t, i) => (
                     <div key={i} className="contents">
                       <span className="px-2 py-2 font-semibold text-sparkle-danger rounded-l-lg hover:bg-sparkle-accent">{t.name}</span>
-                      <span className={`severity-${(t.severity || 'high').toLowerCase()} px-2 py-2 hover:bg-sparkle-accent`}>{t.severity || 'High'}</span>
-                      <span className="px-2 py-2 text-sparkle-muted font-mono text-[11px] truncate rounded-r-lg hover:bg-sparkle-accent">{t.path}</span>
+                      <span className="px-2 py-2 hover:bg-sparkle-accent">{severityBadge(t.severity)}</span>
+                      <span className="px-2 py-2 text-sparkle-muted font-mono text-[11px] truncate rounded-r-lg hover:bg-sparkle-accent" title={t.path}>{t.pathShort || t.path}</span>
                     </div>
                   ))}
                 </div>
@@ -320,16 +462,21 @@ export default function Security() {
                   <span className={`text-[14px] font-semibold ${clamav?.found ? 'text-sparkle-success' : 'text-sparkle-muted'}`}>
                     {clamav?.found ? (clamav.version ? `v${clamav.version}` : 'Installed') : 'Not installed'}
                   </span>
+                  {!clamav?.found && !installingAv && (
+                    <button onClick={handleInstallClamAV} className="inline-flex items-center gap-1 text-[11px] text-sparkle-primary hover:underline mt-1">
+                      <Download size={12} /> Install Automatically
+                    </button>
+                  )}
                   {!clamav?.found && (
-                    <a href={clamav?.installUrl || 'https://www.clamav.net/downloads'} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-sparkle-primary hover:underline mt-1">
-                      <Download size={12} /> Download ClamAV
+                    <a href="https://www.clamav.net/downloads" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-sparkle-muted hover:underline mt-1">
+                      <ExternalLink size={12} /> Manual download
                     </a>
                   )}
                 </div>
                 <div className="flex flex-col gap-2 p-4 rounded-xl bg-sparkle-accent/50 border border-sparkle-border">
                   <span className="text-[10px] text-sparkle-muted uppercase tracking-wider">Definitions</span>
                   <span className={`text-[14px] font-semibold ${clamav?.definitionsVersion ? 'text-sparkle-success' : 'text-sparkle-muted'}`}>
-                    {clamav?.definitionsVersion ? `${clamav.definitionsVersion} (${clamav.definitionsDate || 'N/A'})` : 'N/A'}
+                    {clamav?.definitionsVersion ? `v${clamav.definitionsVersion} (${clamav.definitionsDate || 'N/A'})` : 'N/A'}
                   </span>
                   {clamav?.found && (
                     <button onClick={handleUpdateDefs} disabled={updatingDefs} className="inline-flex items-center gap-1 text-[11px] text-sparkle-primary hover:underline mt-1 disabled:opacity-50">
@@ -356,6 +503,137 @@ export default function Security() {
               )}
             </CardContent>
           </Card>
+
+          {/* Protection Status */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <HardDrive size={18} /> Real-time Protection
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-sparkle-accent/50 border border-sparkle-border">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${protectionStatus?.defenderRealtime ? 'bg-sparkle-success/10 text-sparkle-success' : 'bg-sparkle-warning/10 text-sparkle-warning'}`}>
+                    {protectionStatus?.defenderRealtime ? <ShieldCheck size={18} /> : <ShieldOff size={18} />}
+                  </div>
+                  <div>
+                    <strong className="text-[13px] text-sparkle-text block">Defender Realtime</strong>
+                    <span className={`text-[11px] ${protectionStatus?.defenderRealtime ? 'text-sparkle-success' : 'text-sparkle-warning'}`}>
+                      {protectionStatus?.defenderRealtime ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-sparkle-accent/50 border border-sparkle-border">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${protectionStatus?.defenderAntivirus ? 'bg-sparkle-success/10 text-sparkle-success' : 'bg-sparkle-warning/10 text-sparkle-warning'}`}>
+                    {protectionStatus?.defenderAntivirus ? <BadgeCheck size={18} /> : <AlertTriangle size={18} />}
+                  </div>
+                  <div>
+                    <strong className="text-[13px] text-sparkle-text block">Antivirus</strong>
+                    <span className={`text-[11px] ${protectionStatus?.defenderAntivirus ? 'text-sparkle-success' : 'text-sparkle-warning'}`}>
+                      {protectionStatus?.defenderAntivirus ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-sparkle-accent/50 border border-sparkle-border">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${protectionStatus?.firewall ? 'bg-sparkle-success/10 text-sparkle-success' : 'bg-sparkle-warning/10 text-sparkle-warning'}`}>
+                    {protectionStatus?.firewall ? <ShieldCheck size={18} /> : <ShieldOff size={18} />}
+                  </div>
+                  <div>
+                    <strong className="text-[13px] text-sparkle-text block">Firewall</strong>
+                    <span className={`text-[11px] ${protectionStatus?.firewall ? 'text-sparkle-success' : 'text-sparkle-warning'}`}>
+                      {protectionStatus?.firewall ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              {protectionStatus?.lastScan && (
+                <p className="text-[11px] text-sparkle-muted mt-4">
+                  Last scan: {timeAgo(protectionStatus.lastScan.date)} —
+                  {protectionStatus.lastScan.lastScan?.total?.toLocaleString() || 0} files, {protectionStatus.lastScan.lastScan?.threats || 0} threats
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Quarantine */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <PackageOpen size={18} /> Quarantine
+                </CardTitle>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={loadQuarantine}
+                  disabled={quarantineLoading}
+                  className="rounded-xl"
+                >
+                  <RefreshCw size={14} className={`${quarantineLoading ? 'animate-spin' : ''} mr-1.5`} /> Refresh
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {quarantineItems.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-sparkle-muted">
+                  <PackageOpen size={36} className="mb-2 opacity-40" />
+                  <p className="text-[13px]">No quarantined items</p>
+                  <p className="text-[11px]">Detected threats can be quarantined here for safe review</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  <div className="grid gap-1 text-[12px]" style={{ gridTemplateColumns: '1fr auto 1fr auto' }}>
+                    <div className="text-[10px] text-sparkle-muted uppercase tracking-wider px-2 pb-2">Threat</div>
+                    <div className="text-[10px] text-sparkle-muted uppercase tracking-wider px-2 pb-2">Severity</div>
+                    <div className="text-[10px] text-sparkle-muted uppercase tracking-wider px-2 pb-2">Date</div>
+                    <div className="text-[10px] text-sparkle-muted uppercase tracking-wider px-2 pb-2">Actions</div>
+                    {quarantineItems.slice(0, 20).map((item, i) => (
+                      <div key={i} className="contents">
+                        <span className="px-2 py-2.5 text-sparkle-text-secondary text-[12px] font-medium rounded-l-lg hover:bg-sparkle-accent truncate" title={item.originalPath}>
+                          {item.threatName || item.quarantineFile}
+                        </span>
+                        <span className="px-2 py-2.5 hover:bg-sparkle-accent">{severityBadge(item.severity || 'Medium')}</span>
+                        <span className="px-2 py-2.5 text-[11px] text-sparkle-muted hover:bg-sparkle-accent">{timeAgo(item.quarantinedAt)}</span>
+                        <span className="px-2 py-2.5 flex items-center gap-1 rounded-r-lg hover:bg-sparkle-accent">
+                          <Button variant="ghost" size="sm" onClick={() => handleRestore(item.quarantineFile)} className="h-7 px-2 text-[11px] rounded-lg">
+                            <RotateCcw size={12} className="mr-1" /> Restore
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDeleteQuarantined(item.quarantineFile)} className="h-7 px-2 text-[11px] rounded-lg text-sparkle-danger hover:text-sparkle-danger">
+                            <Trash2 size={12} className="mr-1" /> Delete
+                          </Button>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Scan History */}
+          {scanHistory.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <FileClock size={18} /> Scan History
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col gap-1 max-h-[260px] overflow-y-auto">
+                  {scanHistory.map((entry, i) => (
+                    <div key={entry.id || i} className="flex items-center gap-4 px-3 py-2 rounded-xl hover:bg-sparkle-accent text-[12px] transition-colors">
+                      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${entry.status === 'success' ? 'bg-sparkle-success' : 'bg-sparkle-danger'}`} />
+                      <span className="text-sparkle-text-secondary font-semibold flex-1">{entry.detail}</span>
+                      <span className="text-sparkle-muted text-[11px] flex items-center gap-1 flex-shrink-0">
+                        <Clock3 size={11} /> {timeAgo(entry.at)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Safety & Recovery */}
           <Card>

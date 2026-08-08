@@ -1164,240 +1164,421 @@ ipcMain.handle('performance:applyAll', async () => {
   return { success: errors.length === 0, applied, errors }
 })
 
-/* ═══════════════════════════ V3.0: ClamAV Integration ═══════════════════════════ */
-const CLAMAV_PATHS = [
-  'C:\\Program Files\\ClamAV\\clamscan.exe',
-  'C:\\Program Files (x86)\\ClamAV\\clamscan.exe',
-  'C:\\ClamAV\\clamscan.exe',
-  path.join(os.homedir(), 'ClamAV', 'clamscan.exe'),
-]
+/* ═══════════════════════════ V3.4: ClamAV — Complete Scanner Engine ═══════════════════════════ */
 
+const QUARANTINE_DIR = path.join(os.tmpdir(), 'winboost-quarantine')
+const CLAMAV_PORTABLE_URL = 'https://www.clamav.net/downloads/production/clamav-1.4.2.win.x64.zip'
+const CLAMAV_PORTABLE_DIR = path.join(os.homedir(), '.winboost', 'clamav')
+
+let scanChildProcess = null
 let clamavFound = null
 let clamavPath = null
 let freshclamPath = null
 
-function detectClamAV() {
+function findClamAV() {
   if (clamavFound !== null) return { found: clamavFound, clamscan: clamavPath, freshclam: freshclamPath }
 
-  for (const p of CLAMAV_PATHS) {
+  const searchPaths = [
+    path.join(CLAMAV_PORTABLE_DIR, 'clamscan.exe'),
+    ...scanCommonPaths('ClamAV', 'clamscan.exe'),
+    ...scanCommonPaths('ClamAV-x64', 'clamscan.exe'),
+    'C:\\Program Files\\ClamAV\\clamscan.exe',
+    'C:\\Program Files (x86)\\ClamAV\\clamscan.exe',
+    'C:\\ClamAV\\clamscan.exe',
+    path.join(os.homedir(), 'ClamAV', 'clamscan.exe'),
+  ]
+
+  for (const p of searchPaths) {
     if (fs.existsSync(p)) {
-      clamavFound = true
-      clamavPath = p
+      clamavFound = true; clamavPath = p
       freshclamPath = path.join(path.dirname(p), 'freshclam.exe')
       return { found: true, clamscan: p, freshclam: freshclamPath }
     }
   }
 
   try {
-    const result = execFileSync('where', ['clamscan'], {
-      encoding: 'utf8', timeout: 5000, windowsHide: true,
-      stdio: ['ignore', 'pipe', 'ignore'],
-    })
-    const lines = result.trim().split('\n')
+    const result = execFileSync('where', ['clamscan'], { encoding: 'utf8', timeout: 5000, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
+    const lines = result.trim().split('\n').filter(Boolean)
     if (lines.length > 0 && fs.existsSync(lines[0].trim())) {
-      clamavFound = true
-      clamavPath = lines[0].trim()
+      clamavFound = true; clamavPath = lines[0].trim()
       freshclamPath = path.join(path.dirname(clamavPath), 'freshclam.exe')
       return { found: true, clamscan: clamavPath, freshclam: freshclamPath }
     }
   } catch {}
 
+  const portableExe = path.join(CLAMAV_PORTABLE_DIR, 'clamscan.exe')
+  if (fs.existsSync(portableExe)) {
+    clamavFound = true; clamavPath = portableExe
+    freshclamPath = path.join(CLAMAV_PORTABLE_DIR, 'freshclam.exe')
+    return { found: true, clamscan: portableExe, freshclam: freshclamPath }
+  }
+
   clamavFound = false
   return { found: false, clamscan: null, freshclam: null }
 }
 
+function scanCommonPaths(folderName, exeName) {
+  const results = []
+  const roots = [process.env.ProgramFiles, process.env['ProgramFiles(x86)'], process.env.LOCALAPPDATA, 'C:\\', 'D:\\']
+  for (const root of roots) {
+    if (!root) continue
+    results.push(path.join(root, folderName, exeName))
+  }
+  return results
+}
+
+// ── Detect ─────────────────────────────────────────────────
 ipcMain.handle('clamav:detect', async () => {
-  const result = detectClamAV()
-  let version = null
-  let defsVersion = null
-  let defsDate = null
+  const result = findClamAV()
+  let version = null; let defsVersion = null; let defsDate = null
 
   if (result.found && result.clamscan) {
     try {
-      const verOutput = execFileSync(result.clamscan, ['--version'], {
-        encoding: 'utf8', timeout: 10000, windowsHide: true,
-        stdio: ['ignore', 'pipe', 'pipe'],
-      })
+      const verOutput = execFileSync(result.clamscan, ['--version'], { encoding: 'utf8', timeout: 10000, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
       const vMatch = verOutput.match(/ClamAV\s+([0-9.]+)/i)
       if (vMatch) version = vMatch[1]
-      const dMatch = verOutput.match(/virus definitions.*?(\d+)/i)
+      const dMatch = verOutput.match(/(?:virus|engine)\s*(?:definitions?|version)[:\s]*(\d+)/i)
       if (dMatch) defsVersion = dMatch[1]
-      const dateMatch = verOutput.match(/([A-Z][a-z]{2}\s+[A-Z][a-z]{2}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}\s+\d{4})/)
+      const dateMatch = verOutput.match(/(\w{3}\s+\w{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}\s+\d{4})/i)
       if (dateMatch) defsDate = dateMatch[1]
     } catch {}
   }
 
+  const hasDefender = fs.existsSync(path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Windows Defender', 'MpCmdRun.exe'))
+
   return {
     ...result,
-    version,
-    definitionsVersion: defsVersion,
-    definitionsDate: defsDate,
+    version, definitionsVersion: defsVersion, definitionsDate: defsDate,
+    defenderAvailable: hasDefender,
     installUrl: 'https://www.clamav.net/downloads',
   }
 })
 
+// ── Download & Install Portable ClamAV ────────────────────
+ipcMain.handle('clamav:install', async () => {
+  try {
+    mainWindow?.webContents.send('clamav:update-progress', { percent: 5, output: 'Creating ClamAV directory...' })
+    if (!fs.existsSync(CLAMAV_PORTABLE_DIR)) fs.mkdirSync(CLAMAV_PORTABLE_DIR, { recursive: true })
+
+    mainWindow?.webContents.send('clamav:update-progress', { percent: 10, output: 'Downloading ClamAV portable... (this may take a few minutes)' })
+    const zipPath = path.join(CLAMAV_PORTABLE_DIR, 'clamav.zip')
+
+    try {
+      const https = require('https')
+      await new Promise((resolve, reject) => {
+        const file = fs.createWriteStream(zipPath)
+        https.get(CLAMAV_PORTABLE_URL, { timeout: 300000 }, (response) => {
+          if (response.statusCode >= 400) { file.close(); fs.unlinkSync(zipPath); reject(new Error('HTTP ' + response.statusCode)) }
+          else {
+            const total = parseInt(response.headers['content-length'] || '0', 10)
+            let downloaded = 0
+            response.on('data', (chunk) => { downloaded += chunk.length; mainWindow?.webContents.send('clamav:update-progress', { percent: 10 + Math.round((downloaded / (total || 50000000)) * 70), output: `Downloading... ${(downloaded / 1048576).toFixed(1)} MB` }) })
+            response.pipe(file)
+            file.on('finish', () => file.close(resolve))
+          }
+        }).on('error', reject)
+      })
+    } catch (dlErr) {
+      return { success: false, error: 'Download failed: ' + (dlErr.message || 'unknown error') + '. Please install ClamAV manually from https://www.clamav.net/downloads' }
+    }
+
+    mainWindow?.webContents.send('clamav:update-progress', { percent: 80, output: 'Extracting ClamAV...' })
+    try {
+      const AdmZip = require('adm-zip')
+      const zip = new AdmZip(zipPath)
+      const entries = zip.getEntries()
+      for (const entry of entries) {
+        const targetName = entry.entryName.split('/').pop()
+        if (targetName && (targetName.endsWith('.exe') || targetName.endsWith('.dll') || targetName.endsWith('.conf'))) {
+          const dest = path.join(CLAMAV_PORTABLE_DIR, targetName)
+          try { fs.writeFileSync(dest, entry.getData()) } catch {}
+        }
+      }
+    } catch (zipErr) {
+      try { execFileSync('powershell', ['-NoProfile', '-Command', `Expand-Archive -Path '${zipPath}' -DestinationPath '${CLAMAV_PORTABLE_DIR}' -Force`], { timeout: 60000, windowsHide: true }) } catch {}
+    }
+    try { if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath) } catch {}
+
+    mainWindow?.webContents.send('clamav:update-progress', { percent: 85, output: 'Downloading virus definitions...' })
+    const freshClam = path.join(CLAMAV_PORTABLE_DIR, 'freshclam.exe')
+    const clamScan = path.join(CLAMAV_PORTABLE_DIR, 'clamscan.exe')
+
+    if (fs.existsSync(freshClam)) {
+      try { execFileSync(freshClam, ['--stdout', '--no-dns'], { timeout: 120000, windowsHide: true, stdio: 'ignore' }) } catch {}
+    }
+
+    mainWindow?.webContents.send('clamav:update-progress', { percent: 100, output: 'ClamAV installed successfully' })
+    clamavFound = null
+    const fresh = findClamAV()
+    return { success: true, message: 'ClamAV installed. Virus definitions downloaded.', found: fresh.found, clamscan: fresh.clamscan, freshclam: fresh.freshclam }
+  } catch (e) {
+    return { success: false, error: 'Installation failed: ' + errorMessage(e) + '. Try manual install from https://www.clamav.net/downloads' }
+  }
+})
+
+// ── Update Definitions ────────────────────────────────────
 ipcMain.handle('clamav:update', async () => {
-  const av = detectClamAV()
+  const av = findClamAV()
   if (!av.found || !av.freshclam) {
-    return { success: false, error: 'ClamAV not found. Please install ClamAV first.' }
+    return { success: false, error: 'ClamAV not found. Click "Install ClamAV" to download it.' }
   }
 
   return new Promise((resolve) => {
     try {
-      const child = spawn(av.freshclam, ['--stdout'], {
-        windowsHide: true,
-        stdio: ['ignore', 'pipe', 'pipe'],
-      })
-
+      const child = spawn(av.freshclam, ['--stdout', '--no-dns'], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
       let output = ''
-      child.stdout.on('data', (data) => {
-        const text = data.toString()
-        output += text
 
+      child.stdout.on('data', (data) => {
+        const text = data.toString(); output += text
         let percent = 0
         if (text.includes('Downloading')) percent = 30
-        else if (text.includes('daily.cvd')) percent = 50
-        else if (text.includes('bytecode.cvd')) percent = 65
-        else if (text.includes('main.cvd')) percent = 80
-        else if (text.includes('updated')) percent = 100
-        else if (text.includes('up to date')) percent = 100
-
-        mainWindow?.webContents.send('clamav:update-progress', {
-          percent, output: text.trim().slice(0, 200),
-        })
+        else if (text.includes('daily')) percent = 55
+        else if (text.includes('bytecode')) percent = 70
+        else if (text.includes('main')) percent = 85
+        else if (text.includes('updated') || text.includes('up to date')) percent = 100
+        else if (text.includes('already')) percent = 100
+        mainWindow?.webContents.send('clamav:update-progress', { percent, output: text.trim().slice(0, 200) })
       })
 
       child.on('close', (code) => {
-        if (code === 0 || output.includes('up to date') || output.includes('already')) {
-          resolve({ success: true, message: 'Virus definitions are up to date', output: output.slice(-300) })
-        } else {
-          resolve({ success: false, error: 'freshclam exited with code ' + code, output: output.slice(-300) })
-        }
+        const ok = code === 0 || output.includes('up to date') || output.includes('already')
+        resolve({ success: ok, message: ok ? 'Virus definitions are up to date' : 'freshclam exit code ' + code, output: output.slice(-300) })
       })
 
-      child.on('error', (err) => {
-        resolve({ success: false, error: err.message })
-      })
-    } catch (err) {
-      resolve({ success: false, error: err.message })
-    }
+      child.on('error', (err) => resolve({ success: false, error: err.message }))
+    } catch (err) { resolve({ success: false, error: err.message }) }
   })
 })
 
+// ── Scan ──────────────────────────────────────────────────
 ipcMain.handle('clamav:scan', async (_, scanType) => {
-  const av = detectClamAV()
+  const av = findClamAV()
   if (!av.found || !av.clamscan) {
-    return runDefenderScan(scanType)
+    return { threats: [], filesScanned: 0, engine: 'none', error: 'ClamAV not installed. Click Install ClamAV.' }
   }
 
   return new Promise((resolve) => {
-    const paths = scanType === 'quick'
-      ? [os.tmpdir(), process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local')]
-      : scanType === 'deep'
-        ? ['C:\\']
-        : [os.homedir()]
+    const pathMaps = {
+      quick: [os.tmpdir(), process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local')],
+      deep: ['C:\\'],
+      custom: [os.homedir()],
+    }
+    const scanPaths = pathMaps[scanType] || [os.homedir()]
+    const maxFiles = scanType === 'quick' ? 50000 : scanType === 'deep' ? 500000 : 100000
 
-    const maxFiles = scanType === 'quick' ? 20000 : scanType === 'deep' ? 100000 : 50000
     const args = [
       '--no-summary',
       '--infected',
-      '--max-filesize=200M',
-      '--max-scansize=200M',
-      ...paths,
+      '--max-filesize=400M',
+      '--max-scansize=400M',
+      '--max-files=' + maxFiles,
+      ...scanPaths,
     ]
 
     try {
-      const child = spawn(av.clamscan, args, {
-        windowsHide: true,
-        stdio: ['ignore', 'pipe', 'pipe'],
-      })
-
+      scanChildProcess = spawn(av.clamscan, args, { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
       let output = ''
       let filesScanned = 0
-      let threatsFound = []
+      const threatsFound = []
 
-      child.stdout.on('data', (data) => {
-        const text = data.toString()
-        output += text
+      scanChildProcess.stdout.on('data', (data) => {
+        const text = data.toString(); output += text
         const lines = text.split('\n').filter(l => l.trim())
 
         for (const line of lines) {
-          if (line.includes(':') && line.includes('FOUND')) {
-            const parts = line.split(' ')
-            const filePath = parts.slice(0, -1).join(' ').replace(/:$/, '')
-            const threatName = parts[parts.length - 1]
-            if (threatName && threatName !== 'OK') {
-              threatsFound.push({
-                name: threatName,
-                path: filePath.length > 80 ? filePath.slice(0, 77) + '...' : filePath,
-                severity: threatName.includes('Trojan') || threatName.includes('Exploit') ? 'Critical' :
-                         threatName.includes('Adware') || threatName.includes('PUA') ? 'Medium' : 'High',
-                type: threatName.split('.')[0] || 'Malware',
-              })
+          filesScanned++
+
+          if (line.includes('FOUND')) {
+            const colonIdx = line.indexOf(':')
+            if (colonIdx > 0) {
+              const filePath = line.slice(0, colonIdx).trim()
+              const rest = line.slice(colonIdx + 1).trim()
+              const parts = rest.split(/\s+/)
+              const threatName = parts[parts.length - 1]
+
+              if (threatName && threatName !== 'OK') {
+                let severity = 'High'
+                if (/Trojan|Ransom|Exploit|Rootkit|Backdoor/i.test(threatName)) severity = 'Critical'
+                else if (/Adware|PUA|PUP|Potentially|Unwanted|Riskware/i.test(threatName)) severity = 'Medium'
+                else if (/Phish|Spy|Keylog|Steal/i.test(threatName)) severity = 'High'
+
+                threatsFound.push({
+                  name: threatName,
+                  path: filePath,
+                  pathShort: filePath.length > 80 ? '...' + filePath.slice(-77) : filePath,
+                  severity,
+                  type: threatName.split('.')[0] || 'Malware',
+                  engine: 'clamav',
+                  detectedAt: new Date().toISOString(),
+                })
+              }
             }
           }
 
-          const scannedMatch = line.match(/Scanned files:\s*(\d+)/i)
-          if (scannedMatch) filesScanned = parseInt(scannedMatch[1])
+          const sm = line.match(/Scanned\s+(?:files|directories)?[:\s]*(\d+)/i)
+          if (sm) filesScanned = Math.max(filesScanned, parseInt(sm[1]))
         }
 
         const percent = Math.min(99, Math.round((filesScanned / maxFiles) * 100))
+        const stage = scanChildProcess
+          ? 'Scanned ' + filesScanned.toLocaleString() + ' files...'
+          : 'Scan stopped'
+
         mainWindow?.webContents.send('malware:scan-progress', {
-          percent, stage: 'Scanned ' + filesScanned + ' files...',
-          filesScanned, threatsFound: threatsFound.length,
+          percent, stage, filesScanned, threatsFound: threatsFound.length,
         })
       })
 
-      child.stderr.on('data', (data) => {
+      scanChildProcess.stderr.on('data', (data) => {
         const text = data.toString()
-        const warnMatch = text.match(/WARNING:\s*(.+)/i)
-        if (warnMatch) {
+        const wm = text.match(/WARNING:\s*(.{1,120})/i)
+        if (wm) {
           mainWindow?.webContents.send('malware:scan-progress', {
             percent: Math.round((filesScanned / maxFiles) * 100),
-            stage: warnMatch[1].slice(0, 80),
-            filesScanned, threatsFound: threatsFound.length,
+            stage: wm[1].slice(0, 100), filesScanned, threatsFound: threatsFound.length,
           })
         }
       })
 
-      child.on('close', (code) => {
+      scanChildProcess.on('close', (code) => {
+        scanChildProcess = null
+        const lastScan = { total: filesScanned, threats: threatsFound.length }
+        try { fs.writeFileSync(path.join(QUARANTINE_DIR, '.lastscan'), JSON.stringify({ date: new Date().toISOString(), lastScan })) } catch {}
+
         mainWindow?.webContents.send('malware:scan-progress', {
           percent: 100, stage: 'Scan complete: ' + threatsFound.length + ' threat' + (threatsFound.length !== 1 ? 's' : '') + ' found',
           filesScanned, threatsFound: threatsFound.length,
         })
-        resolve({ threats: threatsFound, filesScanned, engine: 'clamav' })
+
+        try { addHistory('Security Scan', `${scanType} scan finished: ${threatsFound.length} threats in ${filesScanned.toLocaleString()} files`, threatsFound.length > 0 ? 'error' : 'success') } catch {}
+        resolve({ threats: threatsFound, filesScanned, engine: 'clamav', scanType })
       })
 
-      child.on('error', async (err) => {
-        console.error('ClamAV scan failed, falling back to Defender:', err.message)
-        resolve(await runDefenderScan(scanType))
+      scanChildProcess.on('error', (err) => {
+        scanChildProcess = null
+        resolve({ threats: [], filesScanned: 0, engine: 'clamav', error: err.message })
       })
     } catch (err) {
-      runDefenderScan(scanType).then(resolve)
+      scanChildProcess = null
+      resolve({ threats: [], filesScanned: 0, engine: 'clamav', error: err.message })
     }
   })
 })
 
-async function runDefenderScan(scanType) {
-  try {
-    const defenderPath = path.join(
-      process.env.ProgramFiles || 'C:\\Program Files',
-      'Windows Defender', 'MpCmdRun.exe'
-    )
-    if (!fs.existsSync(defenderPath)) {
-      return { threats: [], filesScanned: 0, engine: 'pattern' }
-    }
-    const scanArg = scanType === 'quick' ? '-Scan' : '-FullScan'
-    const child = spawn(defenderPath, [scanArg, '-ScanType', scanType === 'quick' ? '1' : '2'], {
-      windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
-    })
-    child.stdout.on('data', (_) => {})
-    await new Promise((resolve) => child.on('close', resolve))
-    return { threats: [], filesScanned: 0, engine: 'defender' }
-  } catch {
-    return { threats: [], filesScanned: 0, engine: 'pattern' }
+// ── Stop Scan ──────────────────────────────────────────────
+ipcMain.handle('clamav:stopScan', async () => {
+  if (scanChildProcess) {
+    try { scanChildProcess.kill('SIGTERM'); setTimeout(() => { try { scanChildProcess?.kill('SIGKILL') } catch {} }, 3000) } catch {}
+    scanChildProcess = null
+    return { success: true }
   }
+  return { success: false, error: 'No scan running' }
+})
+
+// ── Quarantine Management ─────────────────────────────────
+function ensureQuarantineDir() {
+  if (!fs.existsSync(QUARANTINE_DIR)) fs.mkdirSync(QUARANTINE_DIR, { recursive: true })
+  return QUARANTINE_DIR
 }
+
+ipcMain.handle('clamav:quarantine', async (_, threats) => {
+  try {
+    ensureQuarantineDir()
+    let count = 0
+    const results = []
+    for (const t of threats) {
+      if (!fs.existsSync(t.path)) { results.push({ path: t.path, success: false, error: 'File not found' }); continue }
+      try {
+        const name = path.basename(t.path)
+        const destName = `${Date.now()}_${count}_${name}`
+        const dest = path.join(QUARANTINE_DIR, destName)
+        fs.copyFileSync(t.path, dest)
+        const meta = { originalPath: t.path, threatName: t.name, severity: t.severity, quarantinedAt: new Date().toISOString(), quarantinedName: destName }
+        fs.writeFileSync(dest + '.meta.json', JSON.stringify(meta, null, 2))
+        fs.unlinkSync(t.path)
+        count++
+        results.push({ path: t.path, success: true, quarantine: destName })
+      } catch (e) { results.push({ path: t.path, success: false, error: e.message }) }
+    }
+    return { success: true, quarantined: count, results }
+  } catch (e) { return { success: false, error: errorMessage(e) } }
+})
+
+ipcMain.handle('clamav:quarantineList', async () => {
+  try {
+    ensureQuarantineDir()
+    const items = []
+    for (const file of fs.readdirSync(QUARANTINE_DIR)) {
+      if (file.endsWith('.meta.json')) continue
+      const metaFile = path.join(QUARANTINE_DIR, file + '.meta.json')
+      let meta = {}
+      try { if (fs.existsSync(metaFile)) meta = JSON.parse(fs.readFileSync(metaFile, 'utf8')) } catch {}
+      const stat = fs.statSync(path.join(QUARANTINE_DIR, file))
+      items.push({ ...meta, quarantineFile: file, size: stat.size, quarantinedAt: meta.quarantinedAt || stat.mtime.toISOString() })
+    }
+    return { success: true, items: items.sort((a, b) => new Date(b.quarantinedAt) - new Date(a.quarantinedAt)) }
+  } catch (e) { return { success: true, items: [] } }
+})
+
+ipcMain.handle('clamav:restore', async (_, quarantineFile) => {
+  try {
+    const fp = path.join(QUARANTINE_DIR, quarantineFile)
+    const metaFile = path.join(QUARANTINE_DIR, quarantineFile + '.meta.json')
+    let meta = {}
+    try { if (fs.existsSync(metaFile)) meta = JSON.parse(fs.readFileSync(metaFile, 'utf8')) } catch {}
+    const dest = meta.originalPath || path.join(os.homedir(), 'Restored_' + quarantineFile)
+    fs.copyFileSync(fp, dest)
+    fs.unlinkSync(fp)
+    try { if (fs.existsSync(metaFile)) fs.unlinkSync(metaFile) } catch {}
+    return { success: true, restoredTo: dest }
+  } catch (e) { return { success: false, error: errorMessage(e) } }
+})
+
+ipcMain.handle('clamav:deleteQuarantined', async (_, quarantineFile) => {
+  try {
+    const fp = path.join(QUARANTINE_DIR, quarantineFile)
+    const metaFile = path.join(QUARANTINE_DIR, quarantineFile + '.meta.json')
+    if (fs.existsSync(fp)) fs.unlinkSync(fp)
+    try { if (fs.existsSync(metaFile)) fs.unlinkSync(metaFile) } catch {}
+    return { success: true }
+  } catch (e) { return { success: false, error: errorMessage(e) } }
+})
+
+// ── Real-time Protection Status ───────────────────────────
+ipcMain.handle('clamav:protectionStatus', async () => {
+  try {
+    const status = { defenderRealtime: false, defenderAntivirus: false, firewall: false, lastScan: null }
+
+    try {
+      const ps = `Get-MpComputerStatus | Select-Object -Property AntivirusEnabled,RealTimeProtectionEnabled,OnAccessProtectionEnabled | ConvertTo-Json`
+      const r = execFileSync('powershell', ['-NoProfile', '-Command', ps], { encoding: 'utf8', timeout: 10000, windowsHide: true })
+      const data = JSON.parse(r)
+      status.defenderAntivirus = data.AntivirusEnabled || false
+      status.defenderRealtime = data.RealTimeProtectionEnabled || false
+    } catch {}
+
+    try {
+      const fw = execFileSync('netsh', ['advfirewall', 'show', 'currentprofile'], { encoding: 'utf8', timeout: 5000, windowsHide: true })
+      status.firewall = fw.includes('ON')
+    } catch {}
+
+    try {
+      const lsPath = path.join(QUARANTINE_DIR, '.lastscan')
+      if (fs.existsSync(lsPath)) status.lastScan = JSON.parse(fs.readFileSync(lsPath, 'utf8'))
+    } catch {}
+
+    return { success: true, ...status }
+  } catch (e) { return { success: true, defenderRealtime: false, defenderAntivirus: false, firewall: false } }
+})
+
+// ── Scan History ──────────────────────────────────────────
+ipcMain.handle('clamav:scanHistory', async () => {
+  try {
+    const h = await getHistory()
+    const scanHistory = h.filter(e => e.action === 'Security Scan').slice(0, 20)
+    return { success: true, history: scanHistory, total: scanHistory.length }
+  } catch { return { success: true, history: [], total: 0 } }
+})
 
 /* ═══════════════════════════ V3.1: Sparkle Features ═══════════════════════════ */
 
