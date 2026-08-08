@@ -1181,7 +1181,7 @@ ipcMain.handle('performance:applyAll', async () => {
 /* ═══════════════════════════ V3.5: Dual-Engine Security — Defender + ClamAV ═══════════════════════════ */
 
 const QUARANTINE_DIR = path.join(os.tmpdir(), 'winboost-quarantine')
-const CLAMAV_DL_URL = 'https://oss-clamav.clamav.net/clamav-1.4.2.win.x64.zip'
+const CLAMAV_DL_URL = 'https://www.clamav.net/downloads/production/clamav-1.4.6.win.x64.zip'
 const CLAMAV_DIR = path.join(os.homedir(), '.winboost', 'clamav')
 const DEFENDER_EXE_DEFAULT = path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Windows Defender', 'MpCmdRun.exe')
 
@@ -1406,7 +1406,7 @@ ipcMain.handle('clamav:detect', async () => {
       const dtm = out.match(/(\w{3}\s+\w{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}\s+\d{4})/i); if (dtm) defsDate = dtm[1]
     } catch {}
   }
-  return { ...result, version, definitionsVersion: defsVersion, definitionsDate: defsDate, defenderAvailable: !!findDefender(), installUrl: 'https://www.clamav.net/downloads' }
+  return { ...result, version, definitionsVersion: defsVersion, definitionsDate: defsDate, defenderAvailable: !!findDefender(), installUrl: 'https://www.clamav.net/downloads#windows' }
 })
 
 // ── Install ──
@@ -1419,22 +1419,27 @@ ipcMain.handle('clamav:install', async () => {
     try {
       const https = require('https')
       await new Promise((rs, rj) => {
-        const f = fs.createWriteStream(zipPath)
-        const req = https.get(CLAMAV_DL_URL, { timeout: 300000 }, res => {
-          if (res.statusCode >= 400) { f.close(); try { fs.unlinkSync(zipPath) } catch {}; return rj(new Error('HTTP ' + res.statusCode)) }
-          if (res.statusCode >= 300 && res.statusCode < 400) {
-            f.close(); try { fs.unlinkSync(zipPath) } catch {}
-            const loc = res.headers.location
-            if (!loc) return rj(new Error('Redirect missing location'))
-            return https.get(loc, { timeout: 300000 }, r2 => {
-              if (r2.statusCode >= 400) { f.close(); try { fs.unlinkSync(zipPath) } catch {}; return rj(new Error('HTTP ' + r2.statusCode)) }
-              const f2 = fs.createWriteStream(zipPath); r2.pipe(f2); f2.on('finish', () => f2.close(rs))
-            }).on('error', rj)
-          }
-          const total = parseInt(res.headers['content-length'] || '0', 10); let dl = 0
-          res.on('data', c => { dl += c.length; mainWindow?.webContents.send('clamav:install-progress', { percent: 5 + Math.round((dl / (total || 50000000)) * 70), output: `Downloading... ${(dl / 1048576).toFixed(1)} MB` }) })
-          res.pipe(f); f.on('finish', () => f.close(rs))
-        }).on('error', rj)
+        const downloadFrom = (url, timeout, fileHandle) => {
+          const f = fileHandle || fs.createWriteStream(zipPath)
+          const req = https.get(url, { timeout }, res => {
+            if (res.statusCode >= 400) { f.close(); try { fs.unlinkSync(zipPath) } catch {}; return rj(new Error('HTTP ' + res.statusCode)) }
+            if (res.statusCode >= 300 && res.statusCode < 400) {
+              f.close()
+              const loc = res.headers.location
+              return loc ? downloadFrom(loc, timeout, null) : rj(new Error('Redirect missing location'))
+            }
+            const total = parseInt(res.headers['content-length'] || '183000000', 10)
+            let dl = 0
+            res.on('data', c => {
+              dl += c.length
+              mainWindow?.webContents.send('clamav:install-progress', { percent: 5 + Math.round((dl / total) * 70), output: `Downloading... ${(dl / 1048576).toFixed(1)} MB` })
+            })
+            res.pipe(f)
+            f.on('finish', () => f.close(rs))
+          })
+          req.on('error', rj)
+        }
+        downloadFrom(CLAMAV_DL_URL, 600000)
       })
     } catch (e) {
       return { success: false, error: 'Download failed: ' + (e.message || 'unknown') + '. Try manual install from https://www.clamav.net/downloads' }
@@ -1447,6 +1452,7 @@ ipcMain.handle('clamav:install', async () => {
       const AdmZip = require('adm-zip')
       const zip = new AdmZip(zipPath)
       for (const entry of zip.getEntries()) {
+        if (entry.isDirectory) continue
         const parts = entry.entryName.replace(/\\/g, '/').split('/')
         const targetName = parts.pop()
         const subPath = parts.join(path.sep)
