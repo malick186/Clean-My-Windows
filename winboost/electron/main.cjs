@@ -1293,8 +1293,10 @@ function runDefenderScan(scanType, customPath) {
         windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
       })
       scanEngine = 'defender'
+      let defAllOutput = ''
 
       scanProcess.stdout.on('data', d => {
+        defAllOutput += d.toString()
         const lines = d.toString().split('\n').filter(l => /threat/i.test(l))
         for (const line of lines) {
           const m = line.match(/Threat\s*(?:detected)?\s*:?\s*(.+)/i)
@@ -1312,13 +1314,20 @@ function runDefenderScan(scanType, customPath) {
 
       scanProcess.on('close', code => {
         clearInterval(timer); scanProcess = null; scanEngine = null
+        let defenderError = null
+        if (code === 2) {
+          const dlo = defAllOutput.toLowerCase()
+          if (dlo.includes('access is denied') || dlo.includes('permission')) defenderError = 'Defender needs admin privileges.'
+          else if (dlo.includes('not found')) defenderError = 'Defender scan tool not found.'
+          else defenderError = `Defender exited with code ${code}`
+        }
         try { ensureQuarantineDir(); fs.writeFileSync(path.join(QUARANTINE_DIR, '.lastscan'), JSON.stringify({ date: new Date().toISOString(), engine: 'defender', lastScan: { threats: threats.length } })) } catch {}
         mainWindow?.webContents.send('security:scan-progress', {
-          percent: 100, stage: `Defender: ${threats.length} threat${threats.length !== 1 ? 's' : ''} found`,
+          percent: 100, stage: defenderError || `Defender: ${threats.length} threat${threats.length !== 1 ? 's' : ''} found`,
           engine: 'defender', threatsFound: threats.length,
         })
-        addHistory('Defender Scan', `${scanType} scan: ${threats.length} threats`, threats.length > 0 ? 'error' : 'success').catch(() => {})
-        resolve({ threats, engine: 'defender', scanType, exitCode: code })
+        addHistory('Defender Scan', defenderError || `${scanType} scan: ${threats.length} threats`, threats.length > 0 ? 'error' : 'success').catch(() => {})
+        resolve({ threats, engine: 'defender', scanType, exitCode: code, error: defenderError || undefined })
       })
 
       scanProcess.on('error', err => {
@@ -1568,15 +1577,18 @@ function runClamAVScan(scanType, customPath) {
     const args = ['--recursive', '--max-filesize=400M', '--max-scansize=400M', '--max-files', String(maxFiles), ...scanPaths]
 
     try {
-      scanProcess = spawn(av.clamscan, args, { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
+      scanProcess = spawn(av.clamscan, args, { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], cwd: path.dirname(av.clamscan) })
       scanEngine = 'clamav'
 
       let filesScanned = 0
       const threats = []
       let lastEvent = 0
+      let allOutput = ''
+      let allError = ''
 
       scanProcess.stdout.on('data', d => {
-        const lines = d.toString().split('\n').filter(l => l.trim())
+        const text = d.toString(); allOutput += text
+        const lines = text.split('\n').filter(l => l.trim())
         for (const line of lines) {
           if (line.includes('FOUND')) {
             const ci = line.indexOf(':')
@@ -1608,7 +1620,8 @@ function runClamAVScan(scanType, customPath) {
       })
 
       scanProcess.stderr.on('data', d => {
-        const m = d.toString().match(/WARNING:\s*(.{1,120})/i)
+        const text = d.toString(); allError += text
+        const m = text.match(/WARNING:\s*(.{1,120})/i)
         if (m) {
           mainWindow?.webContents.send('security:scan-progress', {
             percent: Math.round((filesScanned / maxFiles) * 100), stage: m[1].slice(0, 100),
@@ -1619,13 +1632,32 @@ function runClamAVScan(scanType, customPath) {
 
       scanProcess.on('close', code => {
         scanProcess = null; scanEngine = null
+
+        // Detect common startup failures
+        let scanError = null
+        if (code !== 0 && code !== 1) {
+          const combined = (allOutput + allError).toLowerCase()
+          if (combined.includes('no supported database') || combined.includes('can\'t open') || combined.includes('cli_loaddb')) {
+            scanError = 'Virus database not found. Run Update Definitions first.'
+          } else if (combined.includes('permission denied')) {
+            scanError = 'Permission denied. Try running as administrator.'
+          } else if (combined.includes('not found') || combined.includes('cannot find')) {
+            scanError = 'Scan path not found.'
+          } else if (allError.trim()) {
+            scanError = allError.trim().slice(0, 200)
+          } else {
+            scanError = `ClamAV exited with code ${code}`
+          }
+        }
+
         try { ensureQuarantineDir(); fs.writeFileSync(path.join(QUARANTINE_DIR, '.lastscan'), JSON.stringify({ date: new Date().toISOString(), engine: 'clamav', lastScan: { total: filesScanned, threats: threats.length } })) } catch {}
         mainWindow?.webContents.send('security:scan-progress', {
-          percent: 100, stage: `ClamAV: ${threats.length} threat${threats.length !== 1 ? 's' : ''} in ${filesScanned.toLocaleString()} files`,
+          percent: 100,
+          stage: scanError || `ClamAV: ${threats.length} threat${threats.length !== 1 ? 's' : ''} in ${filesScanned.toLocaleString()} files`,
           engine: 'clamav', filesScanned, threatsFound: threats.length,
         })
-        addHistory('ClamAV Scan', `${scanType} scan: ${threats.length} threats / ${filesScanned.toLocaleString()} files`, threats.length > 0 ? 'error' : 'success').catch(() => {})
-        resolve({ threats, filesScanned, engine: 'clamav', scanType, exitCode: code })
+        addHistory('ClamAV Scan', scanError || `${scanType} scan: ${threats.length} threats / ${filesScanned.toLocaleString()} files`, threats.length > 0 ? 'error' : 'success').catch(() => {})
+        resolve({ threats, filesScanned, engine: 'clamav', scanType, exitCode: code, error: scanError || undefined })
       })
 
       scanProcess.on('error', err => {

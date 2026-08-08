@@ -181,11 +181,12 @@ export default function Security() {
       setScanResult(result)
       setScanProgress(100)
       const tCount = result?.threats?.length || 0
-      if (tCount === 0 && !result?.errors?.length) {
+      const errors = result?.errors || (result?.error ? [{ engine: result.engine || scanMode, error: result.error }] : [])
+      if (tCount === 0 && errors.length === 0) {
         const engines = result?.engines?.join(' + ') || scanMode
         setNotice({ type: 'success', text: `${engines} scan complete. No threats found.` })
-      } else if (result?.errors?.length) {
-        setNotice({ type: 'error', text: result.errors.map(e => `${e.engine}: ${e.error}`).join('. ') })
+      } else if (errors.length) {
+        setNotice({ type: 'error', text: errors.map(e => `${e.engine}: ${e.error}`).join('. ') })
       }
       await refreshAll()
     } catch (error) {
