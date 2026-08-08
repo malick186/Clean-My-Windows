@@ -16,6 +16,8 @@ const invokeChannels = new Set([
   'clamav:detect', 'clamav:update', 'clamav:scan', 'clamav:install', 'clamav:stopScan',
   'clamav:quarantine', 'clamav:quarantineList', 'clamav:restore', 'clamav:deleteQuarantined',
   'clamav:protectionStatus', 'clamav:scanHistory',
+  'defender:detect', 'defender:scan', 'defender:stopScan',
+  'security:scan', 'security:stopScan', 'security:protectionStatus', 'security:scanHistory',
   'debloat:list', 'debloat:remove', 'debloat:removeAll',
   'winget:featured', 'winget:install',
   'sysutils:sfc', 'sysutils:dismCheck', 'sysutils:dismRestore', 'sysutils:chkdsk', 'sysutils:cleanWinUpdate',
@@ -32,9 +34,10 @@ const sendChannels = new Set(['window-minimize', 'window-maximize', 'window-clos
 
 const receiveChannels = new Set([
   'smart:progress', 'cleanup:progress', 'malware:scan-progress',
+  'security:scan-progress',
   'shredder:progress', 'shredder:log', 'maintenance:progress',
   'diskanalyzer:progress', 'largefiles:progress', 'registry:progress',
-  'clamav:update-progress',
+  'clamav:update-progress', 'clamav:install-progress',
   'debloat:progress', 'winget:progress',
   'sysutils:progress', 'sysutils:chkdsk-progress',
   'duplicates:progress',

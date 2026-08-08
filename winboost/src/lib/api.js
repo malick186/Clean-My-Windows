@@ -230,14 +230,14 @@ export async function scanWithClamAV(scanType, onProgress) {
     onProgress?.({ percent: 100, stage: 'Preview: scan not available', filesScanned: 0, threatsFound: 0 })
     return { threats: [], filesScanned: 0, engine: 'preview' }
   }
-  const off = on('malware:scan-progress', data => onProgress?.(data))
+  const off = on('security:scan-progress', data => onProgress?.(data))
   try { return await invoke('clamav:scan', scanType) }
   finally { off() }
 }
 
 export async function installClamAV(onProgress) {
   if (!hasElectron) return { success: false, error: 'Not available in preview' }
-  const off = on('clamav:update-progress', data => onProgress?.(data))
+  const off = on('clamav:install-progress', data => onProgress?.(data))
   try { return await invoke('clamav:install') }
   finally { off() }
 }
@@ -274,7 +274,40 @@ export async function getProtectionStatus() {
 
 export async function getScanHistory() {
   if (!hasElectron) return { success: true, history: [], total: 0 }
-  return invoke('clamav:scanHistory')
+  return invoke('security:scanHistory')
+}
+
+// Dual-Engine Security
+export async function detectDefender() {
+  if (!hasElectron) return { available: false, path: null }
+  return invoke('defender:detect')
+}
+
+export async function scanWithDefender(scanType, onProgress) {
+  if (!hasElectron) return { threats: [], engine: 'defender', error: 'Preview only' }
+  const off = on('security:scan-progress', data => onProgress?.(data))
+  try { return await invoke('defender:scan', scanType) }
+  finally { off() }
+}
+
+export async function stopDefenderScan() {
+  if (!hasElectron) return { success: false }
+  return invoke('defender:stopScan')
+}
+
+export async function dualScan(scanType, onProgress) {
+  if (!hasElectron) {
+    onProgress?.({ percent: 100, stage: 'Preview only', engine: 'dual', threatsFound: 0 })
+    return { threats: [], engines: [], errors: [] }
+  }
+  const off = on('security:scan-progress', data => onProgress?.(data))
+  try { return await invoke('security:scan', scanType) }
+  finally { off() }
+}
+
+export async function stopSecurityScan() {
+  if (!hasElectron) return { success: false }
+  return invoke('security:stopScan')
 }
 
 export async function listDebloat() {
